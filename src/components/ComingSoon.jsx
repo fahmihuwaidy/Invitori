@@ -91,14 +91,14 @@ const ComingSoon = ({ children }) => {
       }}>
         <h1 style={{
           fontSize: 'clamp(3rem, 10vw, 8rem)',
-          fontFamily: 'var(--font-heading), serif',
-          fontWeight: 300,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
+          fontFamily: 'var(--font-display)',
+          fontWeight: 400,
+          textTransform: 'none',
+          letterSpacing: '0.02em',
           margin: 0,
           textShadow: '0 10px 40px rgba(0,0,0,0.8)'
         }}>
-          Coming Soon
+          Coming Soon!
         </h1>
         <p className="serif-italic" style={{
           fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
