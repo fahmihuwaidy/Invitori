@@ -12,14 +12,14 @@ const ComingSoon = ({ children }) => {
     }
 
     let keySequence = ''
-    
+
     const handleKeyDown = (e) => {
       // Allow sequence of < then >
       keySequence += e.key
       if (keySequence.includes('<>')) {
         setIsVisible(false)
       }
-      
+
       // Keep string short to avoid memory leak
       if (keySequence.length > 5) {
         keySequence = keySequence.slice(-5)
@@ -29,7 +29,7 @@ const ComingSoon = ({ children }) => {
     const handleMouseMove = (e) => {
       // Calculate offset based on mouse position (center is 0,0)
       // Multilpy by factor to adjust the intensity of the effect
-      const x = (e.clientX / window.innerWidth - 0.5) * 30 
+      const x = (e.clientX / window.innerWidth - 0.5) * 30
       const y = (e.clientY / window.innerHeight - 0.5) * 30
       setOffset({ x, y })
     }
@@ -98,7 +98,7 @@ const ComingSoon = ({ children }) => {
           margin: 0,
           textShadow: '0 10px 40px rgba(0,0,0,0.8)'
         }}>
-          Coming Soon!
+          Inviting Soon!
         </h1>
         <p className="serif-italic" style={{
           fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
