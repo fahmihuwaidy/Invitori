@@ -1,0 +1,573 @@
+.editor-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+/* Sidebar */
+.editor-sidebar {
+  width: 180px;
+  background: var(--white);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.editor-sidebar .sidebar-header {
+  padding: 20px 16px 16px;
+}
+
+.editor-sidebar .sidebar-brand {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.editor-sidebar .sidebar-nav {
+  flex: 1;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-sidebar .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.editor-sidebar .sidebar-link:hover {
+  background: var(--cream);
+  color: var(--text-dark);
+}
+
+.editor-sidebar .sidebar-link.active {
+  background: var(--olive-bg);
+  color: var(--olive);
+}
+
+.editor-sidebar .sidebar-bottom {
+  padding: 12px 12px 20px;
+}
+
+.editor-sidebar .sidebar-create {
+  font-size: 11px;
+  padding: 10px 12px;
+}
+
+/* Block Palette */
+.editor-palette {
+  width: 240px;
+  background: var(--white);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.palette-header {
+  padding: 20px 16px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.palette-close {
+  display: none;
+  color: var(--text-muted);
+}
+
+.palette-blocks {
+  flex: 1;
+  padding: 0 16px;
+  overflow-y: auto;
+}
+
+.palette-category {
+  margin-bottom: 20px;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.palette-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  background: var(--white);
+}
+
+.palette-block:hover {
+  border-color: var(--olive);
+  background: var(--olive-bg);
+}
+
+.palette-icon {
+  font-size: 1.3rem;
+}
+
+.palette-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.palette-footer {
+  padding: 12px 16px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Canvas */
+.editor-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
+}
+
+.canvas-toolbar-btn {
+  color: var(--text-muted);
+  padding: 6px;
+  display: none;
+}
+
+.canvas-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.canvas-breadcrumb span:last-child {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.canvas-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 20px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Phone Frame */
+.phone-frame {
+  width: 360px;
+  min-height: 640px;
+  background: #1a1a1a;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15), inset 0 0 0 2px #333;
+  position: relative;
+}
+
+.phone-notch {
+  width: 120px;
+  height: 28px;
+  background: #1a1a1a;
+  border-radius: 0 0 16px 16px;
+  margin: -12px auto 0;
+  position: relative;
+  z-index: 2;
+}
+
+.phone-screen {
+  border-radius: 30px;
+  min-height: 600px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 40px 12px 20px;
+}
+
+.phone-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  gap: 4px;
+}
+
+.canvas-zoom {
+  position: fixed;
+  bottom: 24px;
+  right: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+
+.canvas-zoom button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.canvas-zoom button:hover {
+  background: var(--olive-bg);
+}
+
+/* Block elements */
+.block-selected-label {
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  background: var(--olive);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 0 0 4px 4px;
+  z-index: 5;
+}
+
+.block-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  border: none;
+  opacity: 0.9;
+  transition: opacity var(--transition);
+}
+
+.block-delete-btn:hover {
+  opacity: 1;
+}
+
+/* Drag handle — visible on block hover */
+[id]:hover > .block-drag-handle,
+[id]:focus-within > .block-drag-handle {
+  opacity: 1 !important;
+}
+
+/* When dragging, always show handle */
+.block-drag-handle:active {
+  opacity: 1 !important;
+  cursor: grabbing !important;
+}
+
+/* Countdown block */
+.countdown-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.countdown-num {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.countdown-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.countdown-sep {
+  font-size: 1.5rem;
+  color: var(--text-light);
+  margin-top: -16px;
+}
+
+/* Settings Panel */
+.editor-settings {
+  width: 280px;
+  background: var(--white);
+  border-left: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  transform: translateX(100%);
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  transition: transform 0.3s ease;
+}
+
+.editor-settings.open {
+  transform: translateX(0);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.05);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.settings-header h3 {
+  font-size: 1rem;
+}
+
+.settings-header button {
+  color: var(--text-muted);
+}
+
+.settings-body {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--white);
+  color: var(--text-dark);
+  transition: border-color var(--transition);
+  margin-top: 4px;
+}
+
+.settings-input:focus {
+  border-color: var(--olive);
+}
+
+.settings-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--white);
+  color: var(--text-dark);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.settings-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--white);
+  color: var(--text-dark);
+  resize: vertical;
+  font-family: var(--font-body);
+  margin-top: 4px;
+}
+
+.settings-textarea:focus {
+  border-color: var(--olive);
+}
+
+.color-swatches {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.swatch.active {
+  border-color: var(--text-dark);
+  box-shadow: 0 0 0 2px white, 0 0 0 4px var(--text-dark);
+}
+
+.swatch-picker {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-light);
+  margin-top: 16px;
+}
+
+.settings-actions .btn {
+  flex: 1;
+}
+
+/* Desktop: settings panel in flow */
+@media (min-width: 1100px) {
+  .editor-settings {
+    position: relative;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    transform: none;
+    box-shadow: none;
+  }
+  .editor-settings.open {
+    box-shadow: none;
+  }
+  .canvas-zoom {
+    right: 300px;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .editor-sidebar {
+    display: none;
+  }
+  .canvas-toolbar-btn {
+    display: block;
+  }
+  .canvas-zoom {
+    right: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .editor-palette {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: 60vh;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    z-index: 40;
+    border-right: none;
+    border-top: 1px solid var(--border-light);
+    transition: transform 0.3s ease;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  }
+  .editor-palette.open {
+    transform: translateY(0);
+  }
+  .palette-close {
+    display: block;
+  }
+  .phone-frame {
+    width: 300px;
+    min-height: 540px;
+    border-radius: 32px;
+    padding: 10px;
+  }
+  .phone-screen {
+    border-radius: 24px;
+    min-height: 500px;
+  }
+  .canvas-area {
+    padding: 20px 12px;
+  }
+}
+
+/* Image Uploader */
+.image-uploader {
+  margin-top: 4px;
+}
+
+.image-uploader-preview {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  aspect-ratio: 16 / 10;
+}
+
+.image-uploader-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
