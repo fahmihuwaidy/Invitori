@@ -44,7 +44,7 @@ export default function PublicInvitationPage() {
     return (
       <div className="public-page public-not-found">
         <header style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <img src={Logo} alt="Invitori Logo" style={{ height: 40, margin: '0 auto' }} />
+          <img src={Logo} alt="Invori Logo" style={{ height: 40, margin: '0 auto' }} />
         </header>
         <p>Undangan tidak ditemukan.</p>
       </div>
@@ -97,8 +97,8 @@ export default function PublicInvitationPage() {
 
       {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: 'var(--cream-light)' }}>
-        <img src={Logo} alt="Invitori Logo" style={{ height: 32, margin: '0 auto 8px' }} />
-        <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 4 }}>Made with Invitori</p>
+        <img src={Logo} alt="Invori Logo" style={{ height: 32, margin: '0 auto 8px' }} />
+        <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 4 }}>Made with Invori</p>
       </footer>
     </div>
   )

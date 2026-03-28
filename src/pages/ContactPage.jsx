@@ -13,7 +13,7 @@ export default function ContactPage() {
           <span>Return Home</span>
         </Link>
         <div className="nav-logo">
-          <img src={Logo} alt="Invitori Logo" style={{ height: 32 }} />
+          <img src={Logo} alt="Invori Logo" style={{ height: 32 }} />
         </div>
         <div style={{ width: 100 }}></div> {/* spacer */}
       </nav>
@@ -42,20 +42,20 @@ export default function ContactPage() {
               </div>
             </a>
 
-            <a href="mailto:hello@invitori.com" className="contact-method-card">
+            <a href="mailto:hello@invori.com" className="contact-method-card">
               <div className="method-icon"><HiOutlineMail size={24} /></div>
               <div className="contact-card-content">
                 <h3 className="method-name">Email</h3>
-                <p className="method-detail">hello@invitori.com</p>
+                <p className="method-detail">hello@invori.com</p>
                 <p className="method-note">For collaborations & general questions</p>
               </div>
             </a>
 
-            <a href="https://instagram.com/invitori_studio" target="_blank" rel="noreferrer" className="contact-method-card">
+            <a href="https://instagram.com/invori_studio" target="_blank" rel="noreferrer" className="contact-method-card">
               <div className="method-icon"><HiOutlineCamera size={24} /></div>
               <div className="contact-card-content">
                 <h3 className="method-name">Instagram</h3>
-                <p className="method-detail">@invitori_studio</p>
+                <p className="method-detail">@invori_studio</p>
                 <p className="method-note">Explore our curated gallery</p>
               </div>
             </a>

@@ -13,7 +13,7 @@ export function uploadToCloudinary(file, onProgress) {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', UPLOAD_PRESET)
-    formData.append('folder', 'invitori')
+    formData.append('folder', 'invori')
 
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)

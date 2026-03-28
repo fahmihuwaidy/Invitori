@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="login-header">
           <img 
             src={Logo} 
-            alt="Invitori Logo" 
+            alt="Invori Logo" 
             className="login-logo-img" 
             onClick={() => navigate('/')} 
             style={{ height: 48, cursor: 'pointer', margin: '0 auto 16px' }}
@@ -122,7 +122,7 @@ export default function LoginPage() {
               <HiOutlineMail className="input-icon" />
               <input
                 type="email"
-                placeholder="hello@invitori.com"
+                placeholder="hello@invori.com"
                 value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
                 required

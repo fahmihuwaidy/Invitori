@@ -58,7 +58,7 @@ export default function DashboardPage() {
       {/* Welcome */}
       <div className="dash-header">
         <div className="dash-header-left">
-          <h1 className="serif-italic dash-welcome">Welcome back, {user?.name || 'Invitori Member'}</h1>
+          <h1 className="serif-italic dash-welcome">Welcome back, {user?.name || 'Invori Member'}</h1>
           <p className="dash-subtitle">What masterpiece shall we create today?</p>
         </div>
         <div className="dash-profile">

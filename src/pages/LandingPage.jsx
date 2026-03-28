@@ -38,7 +38,7 @@ export default function LandingPage() {
       <nav className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="nav-inner">
           <a href="/" className="nav-logo">
-            <img src={Logo} alt="Invitori Logo" />
+            <img src={Logo} alt="Invori Logo" />
           </a>
           
           <div className="nav-links-center">
@@ -166,7 +166,7 @@ export default function LandingPage() {
         <div className="note-floating-card">
            <span className="nfc-badge">✿</span>
            <h3 className="nfc-title serif-italic">The Secret Garden</h3>
-           <span className="small-caps" style={{fontSize: 8}}>Invitori Fine Digital Invitations</span>
+           <span className="small-caps" style={{fontSize: 8}}>Invori Fine Digital Invitations</span>
         </div>
       </section>
 
@@ -200,7 +200,7 @@ export default function LandingPage() {
       <footer className="footer-v3">
         <div className="f-col-1">
           <span className="f-logo">
-            <img src={Logo} alt="Invitori Logo" />
+            <img src={Logo} alt="Invori Logo" />
           </span>
           <p>Crafting digital legacies through intentional design and old-world hospitality. Every event deserves an entrance.</p>
         </div>
@@ -219,7 +219,7 @@ export default function LandingPage() {
         </div>
         
         <div className="f-col-3">
-          <span className="f-link" style={{fontSize: 10, letterSpacing: '0.1em'}}>© 2026 THE INVITORI STUDIO.</span>
+          <span className="f-link" style={{fontSize: 10, letterSpacing: '0.1em'}}>© 2026 THE INVORI STUDIO.</span>
           <div className="f-socials">
             {/* simple symbols instead of complex react icons for elegance */}
             <span style={{cursor: 'pointer'}}>❖</span>

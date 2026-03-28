@@ -779,7 +779,7 @@ export default function EditorPage() {
         <div className="sidebar-header">
           <div>
             <div className="sidebar-brand">
-              <img src={Logo} alt="Invitori Logo" style={{ height: 28, width: 'auto', display: 'block', marginBottom: 4 }} />
+              <img src={Logo} alt="Invori Logo" style={{ height: 28, width: 'auto', display: 'block', marginBottom: 4 }} />
             </div>
             <span className="label-caps" style={{ fontSize: 10 }}>Premium Member</span>
           </div>
@@ -802,7 +802,7 @@ export default function EditorPage() {
       <div className={`editor-palette ${paletteOpen ? 'open' : ''}`}>
         <div className="palette-header">
           <div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem' }}>Invitori Blocks</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem' }}>Invori Blocks</h3>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Drag blocks onto the canvas to construct your masterpiece.</p>
           </div>
           <button className="palette-close" onClick={() => setPaletteOpen(false)}><HiX size={18} /></button>

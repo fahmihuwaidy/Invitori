@@ -28,7 +28,7 @@ export default function AtelierLayout({ children }) {
         <div className="sidebar-header">
           <div>
             <div className="sidebar-brand">
-              <img src={Logo} alt="Invitori Logo" />
+              <img src={Logo} alt="Invori Logo" />
             </div>
             <span className="label-caps" style={{ fontSize: 10 }}>Premium Member</span>
           </div>
@@ -90,14 +90,14 @@ export default function AtelierLayout({ children }) {
           {children}
         </div>
         <footer className="atelier-footer">
-          <img src={Logo} alt="Invitori Logo" className="footer-logo" />
+          <img src={Logo} alt="Invori Logo" className="footer-logo" />
           <div className="footer-links" style={{ marginTop: 8 }}>
             <a href="#">Privacy</a>
             <a href="#">Concierge</a>
             <a href="#">Contact</a>
           </div>
           <p style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 8 }}>
-            © 2026 Invitori Your Digital Gateway to Special Moments. Crafted for elegance.
+            © 2026 Invori Your Digital Gateway to Special Moments. Crafted for elegance.
           </p>
         </footer>
       </main>
