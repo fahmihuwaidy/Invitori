@@ -8,6 +8,7 @@ const InvitationContext = createContext(null)
 export function InvitationProvider({ children }) {
   const { user } = useAuth()
   const [invitations, setInvitations] = useState([])
+  const [recentRsvps, setRecentRsvps] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Fetch all invitations for the current user
@@ -47,15 +48,18 @@ export function InvitationProvider({ children }) {
         })
       }
 
-      // Fetch RSVP counts
+      // Fetch RSVPs with full details
       let rsvpMap = {}
+      let allRsvps = []
       if (invIds.length > 0) {
         const { data: rsvpData, error: rsvpError } = await supabase
           .from('rsvps')
-          .select('invitation_id')
+          .select('*')
           .in('invitation_id', invIds)
+          .order('created_at', { ascending: false })
 
         if (!rsvpError && rsvpData) {
+          allRsvps = rsvpData
           rsvpData.forEach(r => {
             rsvpMap[r.invitation_id] = (rsvpMap[r.invitation_id] || 0) + 1
           })
@@ -90,6 +94,21 @@ export function InvitationProvider({ children }) {
       }))
 
       setInvitations(composed)
+
+      // Store recent RSVPs with invitation title info
+      const titleMap = {}
+      invData.forEach(inv => { titleMap[inv.id] = inv.title })
+      const enrichedRsvps = allRsvps.slice(0, 20).map(r => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        attendance: r.attendance,
+        message: r.message,
+        invitationId: r.invitation_id,
+        invitationTitle: titleMap[r.invitation_id] || 'Unknown',
+        createdAt: r.created_at,
+      }))
+      setRecentRsvps(enrichedRsvps)
     } catch (err) {
       console.error('Error fetching invitations:', err)
     } finally {
@@ -370,6 +389,7 @@ export function InvitationProvider({ children }) {
 
   const value = {
     invitations,
+    recentRsvps,
     loading,
     addInvitation,
     updateInvitation,

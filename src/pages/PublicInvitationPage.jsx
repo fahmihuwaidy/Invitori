@@ -80,19 +80,61 @@ export default function PublicInvitationPage() {
 
       {/* Render blocks */}
       <div className="public-blocks">
-        {invitation.blocks.map((block, index) => (
-          <div
-            key={block.id}
-            className="public-block animate-fade-in-up"
-            style={{
-              animationDelay: `${index * 0.15}s`,
-              paddingTop: block.data?.spacingTop ?? 0,
-              paddingBottom: block.data?.spacingBottom ?? 0,
-            }}
-          >
-            {renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent)}
-          </div>
-        ))}
+      {invitation.blocks.map((block, index) => {
+          const hasBg = !!block.data?.backgroundImage
+          const blockMinHeight = block.data?.blockMinHeight || 0
+          const bgAspectRatio = block.data?.backgroundAspectRatio || null
+          return (
+            <div
+              key={block.id}
+              className="public-block animate-fade-in-up"
+              style={{
+                animationDelay: `${index * 0.15}s`,
+                paddingTop: block.data?.spacingTop ?? 0,
+                paddingBottom: block.data?.spacingBottom ?? 0,
+                position: hasBg ? 'relative' : undefined,
+                overflow: hasBg ? 'hidden' : undefined,
+                minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
+                aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
+                display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
+                alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
+              }}
+            >
+              {hasBg && (
+                <>
+                  <img
+                    src={block.data.backgroundImage}
+                    alt=""
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: block.data.backgroundFit || 'cover',
+                      objectPosition: 'center',
+                      zIndex: 0,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundColor: block.data.backgroundOverlayColor || '#000000',
+                      opacity: block.data.backgroundOverlay ?? 0.3,
+                      zIndex: 1,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                </>
+              )}
+              <div style={hasBg ? { position: 'relative', zIndex: 2, width: '100%' } : {}}>
+                {renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent)}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Footer */}

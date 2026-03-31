@@ -96,7 +96,44 @@ function EditorCountdownBlock({ data }) {
 }
 
 /* Block renderers */
+function BlockBackgroundLayer({ data }) {
+  if (!data.backgroundImage) return null
+  return (
+    <>
+      <img
+        src={data.backgroundImage}
+        alt=""
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: data.backgroundFit || 'cover',
+          objectPosition: 'center',
+          zIndex: 0,
+          pointerEvents: 'none',
+          borderRadius: 'inherit',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: data.backgroundOverlayColor || '#000000',
+          opacity: data.backgroundOverlay ?? 0.3,
+          zIndex: 1,
+          pointerEvents: 'none',
+          borderRadius: 'inherit',
+        }}
+      />
+    </>
+  )
+}
+
 function renderBlock(block, isSelected, onSelect) {
+  const hasBg = !!block.data.backgroundImage
+  const blockMinHeight = block.data.blockMinHeight || 0
+  const bgAspectRatio = block.data.backgroundAspectRatio || null
   const blockStyle = {
     padding: '12px 16px',
     cursor: 'pointer',
@@ -105,7 +142,14 @@ function renderBlock(block, isSelected, onSelect) {
     transition: 'border-color 0.2s ease',
     position: 'relative',
     background: isSelected ? 'rgba(86,95,52,0.04)' : 'transparent',
+    overflow: hasBg ? 'hidden' : undefined,
+    minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
+    aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
+    display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
+    alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
+    justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
   }
+  const contentZ = hasBg ? { position: 'relative', zIndex: 2, width: '100%' } : {}
 
   const onClick = (e) => { e.stopPropagation(); onSelect(block.id) }
 
@@ -113,52 +157,61 @@ function renderBlock(block, isSelected, onSelect) {
     case 'heading':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: HEADING</span>}
-          <h2 style={{
-            fontFamily: block.data.fontFamily || 'Gambarino',
-            fontSize: block.data.fontSize || 32,
-            color: block.data.color || '#2D2D2D',
-            textAlign: block.data.align || 'center',
-            fontStyle: block.data.fontStyle || 'normal',
-            margin: 0,
-          }}>{block.data.content}</h2>
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: HEADING</span>}
+            <h2 style={{
+              fontFamily: block.data.fontFamily || 'Gambarino',
+              fontSize: block.data.fontSize || 32,
+              color: block.data.color || '#2D2D2D',
+              textAlign: block.data.align || 'center',
+              fontStyle: block.data.fontStyle || 'normal',
+              margin: 0,
+            }}>{block.data.content}</h2>
+          </div>
         </div>
       )
     case 'paragraph':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: PARAGRAPH</span>}
-          <p style={{
-            fontSize: block.data.fontSize || 15,
-            color: block.data.color || '#8A8A8A',
-            textAlign: block.data.align || 'center',
-            margin: 0,
-            lineHeight: 1.7,
-          }}>{block.data.content}</p>
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: PARAGRAPH</span>}
+            <p style={{
+              fontSize: block.data.fontSize || 15,
+              color: block.data.color || '#8A8A8A',
+              textAlign: block.data.align || 'center',
+              margin: 0,
+              lineHeight: 1.7,
+            }}>{block.data.content}</p>
+          </div>
         </div>
       )
     case 'photo':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: PHOTO</span>}
-          <div style={{
-            background: '#f0eded',
-            borderRadius: block.data.borderRadius || 8,
-            aspectRatio: '16/10',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-light)',
-            fontSize: 13,
-            overflow: 'hidden',
-          }}>
-            {block.data.url ? (
-               <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', height: '100%', objectFit: block.data.fit || 'cover' }} />
-            ) : (
-               <span>📷 Click to add photo</span>
-            )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: PHOTO</span>}
+            <div style={{
+              background: '#f0eded',
+              borderRadius: block.data.borderRadius || 8,
+              aspectRatio: '16/10',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-light)',
+              fontSize: 13,
+              overflow: 'hidden',
+            }}>
+              {block.data.url ? (
+                 <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', height: '100%', objectFit: block.data.fit || 'cover' }} />
+              ) : (
+                 <span>📷 Click to add photo</span>
+              )}
+            </div>
+            {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{block.data.caption}</p>}
           </div>
-          {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{block.data.caption}</p>}
         </div>
       )
     case 'video':
@@ -180,59 +233,68 @@ function renderBlock(block, isSelected, onSelect) {
 
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: VIDEO</span>}
-          <div style={{
-            background: '#f0eded',
-            borderRadius: 8,
-            aspectRatio: '16/9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-light)',
-            fontSize: 13,
-            overflow: 'hidden',
-            pointerEvents: 'none', // Prevents iframe from stealing pointer events during drag or select
-          }}>
-            {block.data.url ? (
-              isIframe ? (
-               <iframe 
-                 src={embedUrl} 
-                 style={{ width: '100%', height: '100%', border: 'none' }} 
-                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                 allowFullScreen
-               />
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: VIDEO</span>}
+            <div style={{
+              background: '#f0eded',
+              borderRadius: 8,
+              aspectRatio: '16/9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-light)',
+              fontSize: 13,
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}>
+              {block.data.url ? (
+                isIframe ? (
+                 <iframe 
+                   src={embedUrl} 
+                   style={{ width: '100%', height: '100%', border: 'none' }} 
+                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                   allowFullScreen
+                 />
+                ) : (
+                  <video 
+                    src={block.data.url} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    autoPlay={block.data.autoplay} 
+                    loop={block.data.loop} 
+                    muted={block.data.autoplay}
+                    controls={!block.data.autoplay}
+                  />
+                )
               ) : (
-                <video 
-                  src={block.data.url} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                  autoPlay={block.data.autoplay} 
-                  loop={block.data.loop} 
-                  muted={block.data.autoplay}
-                  controls={!block.data.autoplay}
-                />
-              )
-            ) : (
-              <span>🎬 Click to add video URL or upload</span>
-            )}
+                <span>🎬 Click to add video URL or upload</span>
+              )}
+            </div>
           </div>
         </div>
       )
     case 'countdown':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: COUNTDOWN</span>}
-          <EditorCountdownBlock data={block.data} />
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: COUNTDOWN</span>}
+            <EditorCountdownBlock data={block.data} />
+          </div>
         </div>
       )
     case 'location':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: LOCATION</span>}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
-              <div><span className="label-caps" style={{ fontSize: 10 }}>Date</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.date || 'TBD'}</p></div>
-              <div><span className="label-caps" style={{ fontSize: 10 }}>Time</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.time || 'TBD'}</p></div>
-              <div><span className="label-caps" style={{ fontSize: 10 }}>Location</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.venue || 'TBD'}</p></div>
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: LOCATION</span>}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
+                <div><span className="label-caps" style={{ fontSize: 10 }}>Date</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.date || 'TBD'}</p></div>
+                <div><span className="label-caps" style={{ fontSize: 10 }}>Time</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.time || 'TBD'}</p></div>
+                <div><span className="label-caps" style={{ fontSize: 10 }}>Location</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.venue || 'TBD'}</p></div>
+              </div>
             </div>
           </div>
         </div>
@@ -240,15 +302,18 @@ function renderBlock(block, isSelected, onSelect) {
     case 'rsvp':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: RSVP</span>}
-          <div style={{ textAlign: 'center' }}>
-            <h4 className="serif-italic" style={{ marginBottom: 12 }}>{block.data.title || 'RSVP'}</h4>
-            <div style={{ maxWidth: 220, margin: '0 auto' }}>
-              <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 8, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Name</div>
-              <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Email</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1, background: 'var(--olive)', color: '#fff', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Will Attend</div>
-                <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 500, textAlign: 'center' }}>Decline</div>
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: RSVP</span>}
+            <div style={{ textAlign: 'center' }}>
+              <h4 className="serif-italic" style={{ marginBottom: 12 }}>{block.data.title || 'RSVP'}</h4>
+              <div style={{ maxWidth: 220, margin: '0 auto' }}>
+                <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 8, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Name</div>
+                <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Email</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1, background: 'var(--olive)', color: '#fff', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Will Attend</div>
+                  <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 500, textAlign: 'center' }}>Decline</div>
+                </div>
               </div>
             </div>
           </div>
@@ -258,100 +323,118 @@ function renderBlock(block, isSelected, onSelect) {
       const images = block.data.images || [];
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: GALLERY</span>}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)`,
-            gap: 8,
-          }}>
-            {images.length > 0 ? images.map((img, i) => (
-              <div key={i} style={{ aspectRatio: '1/1', background: '#f0eded', borderRadius: 4, overflow: 'hidden' }}>
-                <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            )) : (
-              <div style={{ gridColumn: '1 / -1', padding: 32, background: '#f0eded', borderRadius: 8, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
-                📸 Click to add gallery images
-              </div>
-            )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: GALLERY</span>}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)`,
+              gap: 8,
+            }}>
+              {images.length > 0 ? images.map((img, i) => (
+                <div key={i} style={{ aspectRatio: '1/1', background: '#f0eded', borderRadius: 4, overflow: 'hidden' }}>
+                  <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )) : (
+                <div style={{ gridColumn: '1 / -1', padding: 32, background: '#f0eded', borderRadius: 8, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
+                  📸 Click to add gallery images
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )
     case 'gift':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: GIFT</span>}
-          <div style={{ textAlign: 'center', padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
-            <h4 className="serif-italic" style={{ marginBottom: 16, fontSize: 18 }}>{block.data.title || 'Wedding Gift'}</h4>
-            {block.data.bankName ? (
-              <div style={{ background: 'var(--cream)', padding: 16, borderRadius: 6, display: 'inline-block', textAlign: 'left', minWidth: 200 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Bank</div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>{block.data.bankName}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Account Number</div>
-                <div style={{ fontWeight: 600, letterSpacing: 1 }}>{block.data.accountNumber || '-'}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>A/N</div>
-                <div style={{ fontWeight: 600 }}>{block.data.accountName || '-'}</div>
-              </div>
-            ) : (
-              <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure bank details</p>
-            )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: GIFT</span>}
+            <div style={{ textAlign: 'center', padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
+              <h4 className="serif-italic" style={{ marginBottom: 16, fontSize: 18 }}>{block.data.title || 'Wedding Gift'}</h4>
+              {block.data.bankName ? (
+                <div style={{ background: 'var(--cream)', padding: 16, borderRadius: 6, display: 'inline-block', textAlign: 'left', minWidth: 200 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Bank</div>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{block.data.bankName}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Account Number</div>
+                  <div style={{ fontWeight: 600, letterSpacing: 1 }}>{block.data.accountNumber || '-'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>A/N</div>
+                  <div style={{ fontWeight: 600 }}>{block.data.accountName || '-'}</div>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure bank details</p>
+              )}
+            </div>
           </div>
         </div>
       )
     case 'music':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: MUSIC</span>}
-          <div style={{ textAlign: 'center', padding: 16, background: '#f0eded', borderRadius: 8 }}>
-            <span style={{ fontSize: 24 }}>🎵</span>
-            {block.data.url ? (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Background Music Configured</p>
-            ) : (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-light)' }}>Click to add audio URL</p>
-            )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: MUSIC</span>}
+            <div style={{ textAlign: 'center', padding: 16, background: hasBg ? 'transparent' : '#f0eded', borderRadius: 8 }}>
+              <span style={{ fontSize: 24 }}>🎵</span>
+              {block.data.url ? (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Background Music Configured</p>
+              ) : (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-light)' }}>Click to add audio URL</p>
+              )}
+            </div>
           </div>
         </div>
       )
     case 'divider':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: DIVIDER</span>}
-          <div style={{ borderTop: `1px solid ${block.data.color || '#E0DCD8'}`, margin: '16px 40px' }} />
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: DIVIDER</span>}
+            <div style={{ borderTop: `1px solid ${block.data.color || '#E0DCD8'}`, margin: '16px 40px' }} />
+          </div>
         </div>
       )
     case 'signature':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: SIGNATURE</span>}
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <h3 style={{
-              fontFamily: 'Gambarino, serif',
-              fontSize: '3rem',
-              color: 'var(--olive)',
-              margin: 0,
-              fontStyle: 'italic',
-              fontWeight: 400
-            }}>
-              {(block.data.names || []).join(' & ')}
-            </h3>
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: SIGNATURE</span>}
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <h3 style={{
+                fontFamily: 'Gambarino, serif',
+                fontSize: '3rem',
+                color: 'var(--olive)',
+                margin: 0,
+                fontStyle: 'italic',
+                fontWeight: 400
+              }}>
+                {(block.data.names || []).join(' & ')}
+              </h3>
+            </div>
           </div>
         </div>
       )
     case 'registry':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: REGISTRY</span>}
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Gift Registry'}</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-              {(block.data.items || []).length > 0 ? (
-                block.data.items.map((item, i) => (
-                  <div key={i} style={{ padding: '12px 24px', border: '1px solid var(--border)', borderRadius: 24, fontSize: 13, minWidth: 200, color: 'var(--text-light)' }}>
-                    {item.label || 'Store Name'}
-                  </div>
-                ))
-              ) : (
-                <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure registry links</p>
-              )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: REGISTRY</span>}
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Gift Registry'}</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                {(block.data.items || []).length > 0 ? (
+                  block.data.items.map((item, i) => (
+                    <div key={i} style={{ padding: '12px 24px', border: '1px solid var(--border)', borderRadius: 24, fontSize: 13, minWidth: 200, color: 'var(--text-light)' }}>
+                      {item.label || 'Store Name'}
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure registry links</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -359,36 +442,42 @@ function renderBlock(block, isSelected, onSelect) {
     case 'couple':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: COUPLE</span>}
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-              <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
-                {block.data.photo1 ? <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 1</span>}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: COUPLE</span>}
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
+                <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
+                  {block.data.photo1 ? <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 1</span>}
+                </div>
+                <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden', marginTop: 24 }}>
+                  {block.data.photo2 ? <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 2</span>}
+                </div>
               </div>
-              <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden', marginTop: 24 }}>
-                {block.data.photo2 ? <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 2</span>}
-              </div>
+              <h3 className="serif-italic" style={{ fontSize: 24, margin: '0 0 8px 0', color: 'var(--olive)' }}>{block.data.name1 || 'Name'} & {block.data.name2 || 'Name'}</h3>
+              {block.data.description && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{block.data.description}</p>}
             </div>
-            <h3 className="serif-italic" style={{ fontSize: 24, margin: '0 0 8px 0', color: 'var(--olive)' }}>{block.data.name1 || 'Name'} & {block.data.name2 || 'Name'}</h3>
-            {block.data.description && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{block.data.description}</p>}
           </div>
         </div>
       )
     case 'story':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: STORY</span>}
-          <div style={{ textAlign: 'center', padding: '20px 16px' }}>
-            <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 20 }}>Our Story</h4>
-            <div style={{ borderLeft: '1px dashed var(--olive)', paddingLeft: 16, marginLeft: '50%', transform: 'translateX(-50%)', display: 'inline-block', textAlign: 'left' }}>
-              {(block.data.items || []).map((item, i) => (
-                <div key={i} style={{ position: 'relative', marginBottom: 20 }}>
-                  <div style={{ position: 'absolute', left: -21, top: 4, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--olive)' }} />
-                  <span className="label-caps" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.date || 'Date'}</span>
-                  <h5 style={{ margin: '4px 0', fontSize: 15, fontFamily: 'Gambarino, serif' }}>{item.title || 'Milestone Title'}</h5>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-light)' }}>{item.description || 'Brief description goes here.'}</p>
-                </div>
-              ))}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: STORY</span>}
+            <div style={{ textAlign: 'center', padding: '20px 16px' }}>
+              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 20 }}>Our Story</h4>
+              <div style={{ borderLeft: '1px dashed var(--olive)', paddingLeft: 16, marginLeft: '50%', transform: 'translateX(-50%)', display: 'inline-block', textAlign: 'left' }}>
+                {(block.data.items || []).map((item, i) => (
+                  <div key={i} style={{ position: 'relative', marginBottom: 20 }}>
+                    <div style={{ position: 'absolute', left: -21, top: 4, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--olive)' }} />
+                    <span className="label-caps" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.date || 'Date'}</span>
+                    <h5 style={{ margin: '4px 0', fontSize: 15, fontFamily: 'Gambarino, serif' }}>{item.title || 'Milestone Title'}</h5>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-light)' }}>{item.description || 'Brief description goes here.'}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -396,20 +485,23 @@ function renderBlock(block, isSelected, onSelect) {
     case 'wishes':
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: WISHES</span>}
-          <div style={{ textAlign: 'center', padding: '24px 16px', background: 'rgba(86,95,52,0.05)', borderRadius: 8 }}>
-            <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Wishes'}</h4>
-            <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {(block.data.messages || []).length > 0 ? (
-                block.data.messages.map((msg, i) => (
-                  <div key={i} style={{ background: '#fff', padding: 12, borderRadius: 8, textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: 13, color: 'var(--text-light)', lineHeight: 1.5 }}>"{msg.content}"</p>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--olive)' }}>- {msg.author || 'Guest'}</span>
-                  </div>
-                ))
-              ) : (
-                <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>No wishes added yet. Configure in settings.</p>
-              )}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: WISHES</span>}
+            <div style={{ textAlign: 'center', padding: '24px 16px', background: hasBg ? 'transparent' : 'rgba(86,95,52,0.05)', borderRadius: 8 }}>
+              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Wishes'}</h4>
+              <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {(block.data.messages || []).length > 0 ? (
+                  block.data.messages.map((msg, i) => (
+                    <div key={i} style={{ background: '#fff', padding: 12, borderRadius: 8, textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: 13, color: 'var(--text-light)', lineHeight: 1.5 }}>"{msg.content}"</p>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--olive)' }}>- {msg.author || 'Guest'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>No wishes added yet. Configure in settings.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -417,9 +509,12 @@ function renderBlock(block, isSelected, onSelect) {
     default:
       return (
         <div style={blockStyle} onClick={onClick}>
-          {isSelected && <span className="block-selected-label">SELECTED: {block.type.toUpperCase()}</span>}
-          <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13 }}>
-            {BLOCK_TYPES[block.type]?.icon} {BLOCK_TYPES[block.type]?.label || block.type}
+          <BlockBackgroundLayer data={block.data} />
+          <div style={contentZ}>
+            {isSelected && <span className="block-selected-label">SELECTED: {block.type.toUpperCase()}</span>}
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13 }}>
+              {BLOCK_TYPES[block.type]?.icon} {BLOCK_TYPES[block.type]?.label || block.type}
+            </div>
           </div>
         </div>
       )
@@ -1029,6 +1124,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <textarea className="settings-textarea" value={data.content || ''} onChange={e => onChange({ content: e.target.value })} rows={4} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1054,6 +1151,8 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1078,6 +1177,8 @@ function BlockSettingsPanel({ block, onChange }) {
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Autoplay videos are automatically muted by modern browsers.</p>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1095,6 +1196,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <input className="settings-input" value={data.label || ''} onChange={e => onChange({ label: e.target.value })} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1128,6 +1231,8 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1141,6 +1246,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1155,6 +1262,8 @@ function BlockSettingsPanel({ block, onChange }) {
           ))}
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1188,6 +1297,8 @@ function BlockSettingsPanel({ block, onChange }) {
           }} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1213,6 +1324,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <input className="settings-input" value={data.accountName || ''} onChange={e => onChange({ accountName: e.target.value })} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1227,6 +1340,8 @@ function BlockSettingsPanel({ block, onChange }) {
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Background music requires the user to interact with the page before it can play.</p>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1252,6 +1367,8 @@ function BlockSettingsPanel({ block, onChange }) {
           }} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1296,6 +1413,8 @@ function BlockSettingsPanel({ block, onChange }) {
           }}>+ Add Registry Link</button>
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1334,6 +1453,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <textarea className="settings-textarea" value={data.description || ''} onChange={e => onChange({ description: e.target.value })} rows={3} />
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1381,6 +1502,8 @@ function BlockSettingsPanel({ block, onChange }) {
           }}>+ Add Milestone</button>
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1428,6 +1551,8 @@ function BlockSettingsPanel({ block, onChange }) {
           </p>
         </div>
         <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1438,6 +1563,8 @@ function BlockSettingsPanel({ block, onChange }) {
       <span className="label-caps">Settings</span>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Settings for {BLOCK_TYPES[type]?.label || type} block.</p>
       <SpacingSection data={data} onChange={onChange} />
+      <SizeSection data={data} onChange={onChange} />
+      <BackgroundImageSection data={data} onChange={onChange} />
     </div>
   )
 }
@@ -1475,6 +1602,136 @@ function SpacingSection({ data, onChange }) {
           onChange={e => onChange({ spacingBottom: Number(e.target.value) })}
           style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
         />
+      </div>
+    </div>
+  )
+}
+
+function BackgroundImageSection({ data, onChange }) {
+  const detectAndSetAspectRatio = (url) => {
+    if (!url) return
+    const img = new Image()
+    img.onload = () => {
+      const ratio = `${img.naturalWidth}/${img.naturalHeight}`
+      onChange({ backgroundAspectRatio: ratio })
+    }
+    img.src = url
+  }
+
+  const handleUpload = (url) => {
+    onChange({ backgroundImage: url })
+    detectAndSetAspectRatio(url)
+  }
+
+  const handlePasteUrl = (url) => {
+    onChange({ backgroundImage: url })
+    if (url) detectAndSetAspectRatio(url)
+  }
+
+  return (
+    <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        🖼 Background Image
+      </span>
+      <div style={{ marginTop: 12 }}>
+        <ImageUploader
+          currentUrl={data.backgroundImage || ''}
+          onUpload={handleUpload}
+        />
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <label>Or paste URL</label>
+          <input
+            className="settings-input"
+            value={data.backgroundImage || ''}
+            onChange={e => handlePasteUrl(e.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+        {data.backgroundImage && (
+          <>
+            {data.backgroundAspectRatio && (
+              <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(86,95,52,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📐 Aspect Ratio: <strong style={{ color: 'var(--olive)' }}>{data.backgroundAspectRatio}</strong></span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '2px 8px', fontSize: 10 }}
+                  onClick={() => onChange({ backgroundAspectRatio: '' })}
+                >Reset</button>
+              </div>
+            )}
+            <div className="input-group" style={{ marginTop: 10 }}>
+              <label>Fit Mode</label>
+              <select
+                className="settings-select"
+                value={data.backgroundFit || 'cover'}
+                onChange={e => onChange({ backgroundFit: e.target.value })}
+              >
+                <option value="cover">Cover (fill)</option>
+                <option value="contain">Contain (fit)</option>
+                <option value="fill">Stretch</option>
+              </select>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Overlay Opacity</label>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{Math.round((data.backgroundOverlay ?? 0.3) * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0} max={1} step={0.05}
+                value={data.backgroundOverlay ?? 0.3}
+                onChange={e => onChange({ backgroundOverlay: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
+              />
+            </div>
+            <div className="input-group" style={{ marginTop: 10 }}>
+              <label>Overlay Color</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={data.backgroundOverlayColor || '#000000'}
+                  onChange={e => onChange({ backgroundOverlayColor: e.target.value })}
+                  style={{ width: 36, height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{data.backgroundOverlayColor || '#000000'}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              style={{ marginTop: 12, color: 'var(--error)', width: '100%' }}
+              onClick={() => onChange({ backgroundImage: '', backgroundOverlay: 0.3, backgroundFit: 'cover', backgroundOverlayColor: '#000000', backgroundAspectRatio: '' })}
+            >
+              ✕ Remove Background
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SizeSection({ data, onChange }) {
+  const minHeight = data.blockMinHeight ?? 0
+  return (
+    <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        📏 Block Size
+      </span>
+      <div style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Min Height</label>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 40, textAlign: 'right' }}>{minHeight === 0 ? 'Auto' : `${minHeight}px`}</span>
+        </div>
+        <input
+          type="range"
+          min={0} max={600} step={10}
+          value={minHeight}
+          onChange={e => onChange({ blockMinHeight: Number(e.target.value) })}
+          style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
+        />
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, margin: '4px 0 0' }}>Set to 0 for auto height. When background image is set, aspect ratio is used by default.</p>
       </div>
     </div>
   )
