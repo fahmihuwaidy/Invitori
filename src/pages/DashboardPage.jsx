@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvitations } from '../contexts/InvitationContext'
+import { PRESET_LIST } from '../utils/presets'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX } from 'react-icons/hi'
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX, HiX } from 'react-icons/hi'
 import './DashboardPage.css'
 
 function timeAgo(dateStr) {
@@ -22,10 +23,118 @@ function timeAgo(dateStr) {
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+/* ---- Preset Selection Modal ---- */
+function PresetModal({ onClose, onSelect }) {
+  const [step, setStep] = useState('choose') // 'choose' or 'title'
+  const [selectedPreset, setSelectedPreset] = useState(null)
+  const [title, setTitle] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+
+  const handlePresetClick = (preset) => {
+    setSelectedPreset(preset)
+    setTitle(preset.key === 'wedding' ? 'Undangan Pernikahan' : preset.key === 'birthday' ? 'Undangan Ulang Tahun' : preset.key === 'aqiqah' ? 'Undangan Aqiqah' : 'Undangan Saya')
+    setStep('title')
+  }
+
+  const handleCreate = async () => {
+    if (!title.trim() || isCreating) return
+    setIsCreating(true)
+    try {
+      await onSelect(selectedPreset.key, title.trim())
+    } catch (err) {
+      console.error(err)
+      alert('Gagal membuat undangan. Silakan coba lagi.')
+      setIsCreating(false)
+    }
+  }
+
+  return (
+    <div className="preset-modal-overlay" onClick={isCreating ? null : onClose}>
+      <div className="preset-modal" onClick={e => e.stopPropagation()}>
+        {!isCreating && <button className="preset-modal-close" onClick={onClose}><HiX size={20} /></button>}
+
+        {step === 'choose' ? (
+          <>
+            <div className="preset-modal-header">
+              <h2 className="serif-italic">Pilih Template</h2>
+              <p>Pilih kategori undangan untuk memulai dengan template yang sesuai.</p>
+            </div>
+            <div className="preset-grid">
+              {PRESET_LIST.map(preset => (
+                <button
+                  key={preset.key}
+                  className="preset-card"
+                  onClick={() => handlePresetClick(preset)}
+                  style={{ '--preset-color': preset.color }}
+                >
+                  <div className="preset-card-icon">{preset.icon}</div>
+                  <div className="preset-card-body">
+                    <h3>{preset.label}</h3>
+                    <span className="preset-card-label-id">{preset.labelId}</span>
+                    <p>{preset.description}</p>
+                  </div>
+                  <div className="preset-card-blocks">
+                    {preset.blocks.length > 0 ? (
+                      <span>{preset.blocks.length} blok</span>
+                    ) : (
+                      <span>Kanvas kosong</span>
+                    )}
+                  </div>
+                  <div className="preset-card-arrow">→</div>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="preset-modal-header">
+              {!isCreating && <button className="preset-back-btn" onClick={() => setStep('choose')}>← Kembali</button>}
+              <div className="preset-chosen-badge" style={{ background: `${selectedPreset.color}15`, color: selectedPreset.color }}>
+                <span>{selectedPreset.icon}</span> {selectedPreset.label}
+              </div>
+              <h2 className="serif-italic" style={{ marginTop: 12 }}>Beri Nama Undangan</h2>
+              <p>Masukkan judul untuk undangan Anda. Bisa diubah nanti.</p>
+            </div>
+            <div className="preset-title-form">
+              <input
+                type="text"
+                className="preset-title-input"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                placeholder="cth: Undangan Pernikahan Aqil & Anty"
+                autoFocus
+                disabled={isCreating}
+              />
+              <button
+                className="btn btn-primary btn-full preset-create-btn"
+                onClick={handleCreate}
+                disabled={!title.trim() || isCreating}
+              >
+                {isCreating ? (
+                  <>
+                    <div className="spinner-sm" style={{ marginRight: 8 }}></div>
+                    Membuat...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlinePlus size={16} /> Buat Undangan
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const { invitations, recentRsvps, loading, deleteInvitation, addInvitation } = useInvitations()
   const navigate = useNavigate()
+  const [showPresetModal, setShowPresetModal] = useState(false)
 
   // ---- Computed Stats from REAL data ----
   const totalViews = useMemo(
@@ -92,12 +201,12 @@ export default function DashboardPage() {
     }
   }
 
-  const handleCreate = async () => {
-    const title = prompt('Judul Undangan:', 'Undangan Saya')
-    if (!title) return
-    const newInv = await addInvitation({ title })
+  const handlePresetSelect = async (presetKey, title) => {
+    setShowPresetModal(false)
+    const category = presetKey === 'wedding' ? 'Wedding' : presetKey === 'birthday' ? 'Birthday' : presetKey === 'aqiqah' ? 'Aqiqah' : 'Custom'
+    const newInv = await addInvitation({ title, category })
     if (newInv) {
-      navigate(`/editor/${newInv.id}`)
+      navigate(`/editor/${newInv.id}?preset=${presetKey}`)
     }
   }
 
@@ -271,17 +380,25 @@ export default function DashboardPage() {
           ))}
 
           {/* Create new card */}
-          <div className="project-card card project-new" onClick={handleCreate}>
+          <div className="project-card card project-new" onClick={() => setShowPresetModal(true)}>
             <div className="project-new-inner">
               <div className="project-new-icon">
                 <HiOutlinePlus size={28} />
               </div>
               <h4 className="serif-italic">Buat Undangan Baru</h4>
-              <p>Mulai membuat undangan digital dari awal.</p>
+              <p>Pilih template dan mulai membuat undangan digital.</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Preset Modal */}
+      {showPresetModal && (
+        <PresetModal
+          onClose={() => setShowPresetModal(false)}
+          onSelect={handlePresetSelect}
+        />
+      )}
     </div>
   )
 }

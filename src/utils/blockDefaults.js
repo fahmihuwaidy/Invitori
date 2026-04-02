@@ -1,4 +1,19 @@
 export const BLOCK_TYPES = {
+  cover: {
+    label: 'Cover',
+    category: 'essential',
+    icon: '🎴',
+    defaults: {
+      backgroundImage: '',
+      coupleName: 'Aqil & Anty',
+      date: 'Senin, 30 Maret 2026',
+      subtitle: 'We Are Getting Married',
+      showGuestName: true,
+      showScrollIndicator: true,
+      overlayOpacity: 0.4,
+      overlayColor: '#000000',
+    }
+  },
   heading: {
     label: 'Heading',
     category: 'typography',
@@ -63,7 +78,7 @@ export const BLOCK_TYPES = {
     label: 'Couple',
     category: 'details',
     icon: '💑',
-    defaults: { name1: '', name2: '', photo1: '', photo2: '', description: '' }
+    defaults: { name1: '', name2: '', photo1: '', photo2: '', description: '', instagram1: '', instagram2: '', title1: '', title2: '' }
   },
   story: {
     label: 'Story',
@@ -95,9 +110,23 @@ export const BLOCK_TYPES = {
     icon: '📸',
     defaults: { images: [], layout: 'grid', columns: 2 }
   },
+  footer: {
+    label: 'Footer',
+    category: 'essential',
+    icon: '🏁',
+    defaults: {
+      thankYouText: 'Thank You',
+      coupleName: 'Aqil & Anty',
+      subtitle: 'For Being Part of Our Special Day',
+      photos: [],
+      showWatermark: true,
+      backgroundGradient: 'linear-gradient(180deg, #2D2D2D 0%, #1a1a1a 100%)',
+    }
+  },
 }
 
 export const BLOCK_CATEGORIES = [
+  { key: 'essential', label: 'ESSENTIALS' },
   { key: 'typography', label: 'TYPOGRAPHY' },
   { key: 'media', label: 'MEDIA & VISUALS' },
   { key: 'details', label: 'DETAILS' },

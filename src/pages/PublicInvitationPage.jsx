@@ -10,6 +10,7 @@ export default function PublicInvitationPage() {
   const [searchParams] = useSearchParams()
   const { fetchPublicInvitation, incrementView, addRsvp } = useInvitations()
   const guestName = searchParams.get('to') || 'Tamu Undangan'
+  const isPreviewUrl = searchParams.get('preview') === 'true'
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', attendance: '' })
@@ -20,7 +21,6 @@ export default function PublicInvitationPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const isPreviewUrl = searchParams.get('preview') === 'true'
       const inv = await fetchPublicInvitation(slug, isPreviewUrl)
       setInvitation(inv)
       setLoading(false)
@@ -34,19 +34,23 @@ export default function PublicInvitationPage() {
 
   if (loading) {
     return (
-      <div className="public-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <p className="serif-italic" style={{ color: '#8A8A8A' }}>Loading invitation...</p>
+      <div className="public-page-wrapper">
+        <div className="public-blocks" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p className="serif-italic" style={{ color: '#8A8A8A' }}>Loading invitation...</p>
+        </div>
       </div>
     )
   }
 
   if (!invitation) {
     return (
-      <div className="public-page public-not-found">
-        <header style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <img src={Logo} alt="Invori Logo" style={{ height: 40, margin: '0 auto' }} />
-        </header>
-        <p>Undangan tidak ditemukan.</p>
+      <div className="public-page-wrapper">
+        <div className="public-blocks public-not-found">
+          <header style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <img src={Logo} alt="Invori Logo" style={{ height: 40, margin: '0 auto' }} />
+          </header>
+          <p>Undangan tidak ditemukan.</p>
+        </div>
       </div>
     )
   }
@@ -69,39 +73,41 @@ export default function PublicInvitationPage() {
   }
 
   return (
-    <div className="public-page" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
-      {/* Guest name header */}
-      <div className="public-guest-header animate-fade-in">
-        <span className="label-caps" style={{ fontSize: 10 }}>Dear</span>
-        <h3 className="serif-italic" style={{ fontSize: '1.2rem', color: theme.primaryColor || '#565F34' }}>
-          {guestName}
-        </h3>
-      </div>
-
-      {/* Render blocks */}
-      <div className="public-blocks">
-      {invitation.blocks.map((block, index) => {
+    <div className="public-page-wrapper">
+      <div className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
+        {invitation.blocks.map((block, index) => {
           const hasBg = !!block.data?.backgroundImage
           const blockMinHeight = block.data?.blockMinHeight || 0
           const bgAspectRatio = block.data?.backgroundAspectRatio || null
+          const isCover = block.type === 'cover'
+          const isFooter = block.type === 'footer'
+          const isFullWidth = isCover || isFooter
+          
           return (
             <div
               key={block.id}
-              className="public-block animate-fade-in-up"
+              className={`public-block animate-fade-in-up ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`}
               style={{
                 animationDelay: `${index * 0.15}s`,
-                paddingTop: block.data?.spacingTop ?? 0,
-                paddingBottom: block.data?.spacingBottom ?? 0,
+                paddingTop: isFullWidth ? 0 : (block.data?.spacingTop ?? 40),
+                paddingBottom: isFullWidth ? 0 : (block.data?.spacingBottom ?? 40),
                 position: hasBg ? 'relative' : undefined,
-                overflow: hasBg ? 'hidden' : undefined,
+                overflow: hasBg || block.data?.customBorderRadius ? 'hidden' : undefined,
                 minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
                 aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
                 display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
                 alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
                 justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                background: block.data?.customBgColor || undefined,
+                color: block.data?.customTextColor || undefined,
+                textAlign: block.data?.customTextAlign || undefined,
+                borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
+                '--text-dark': block.data?.customTextColor || undefined,
+                '--text-muted': block.data?.customTextColor || undefined,
+                '--text-light': block.data?.customTextColor || undefined,
               }}
             >
-              {hasBg && (
+              {hasBg && !isCover && (
                 <>
                   <img
                     src={block.data.backgroundImage}
@@ -129,47 +135,77 @@ export default function PublicInvitationPage() {
                   />
                 </>
               )}
-              <div style={hasBg ? { position: 'relative', zIndex: 2, width: '100%' } : {}}>
-                {renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent)}
+              <div className="public-block-content" style={(hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}}>
+                {renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent, guestName, isPreviewUrl)}
               </div>
             </div>
           )
         })}
       </div>
-
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: 'var(--cream-light)' }}>
-        <img src={Logo} alt="Invori Logo" style={{ height: 32, margin: '0 auto 8px' }} />
-        <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 4 }}>Made with Invori</p>
-      </footer>
     </div>
   )
 }
 
-function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent) {
+function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent, guestName, isPreviewUrl) {
   switch (block.type) {
+    case 'cover':
+      return (
+        <div className="public-cover">
+          {block.data.backgroundImage && (
+            <>
+              <img
+                src={block.data.backgroundImage}
+                alt=""
+                className="public-cover-bg"
+              />
+              <div
+                className="public-cover-overlay"
+                style={{
+                  backgroundColor: block.data.overlayColor || '#000000',
+                  opacity: block.data.overlayOpacity ?? 0.4,
+                }}
+              />
+            </>
+          )}
+          <div className="public-cover-content">
+            <p className="public-cover-subtitle">{block.data.subtitle || 'We Are Getting Married'}</p>
+            <h1 className="public-cover-name">{block.data.coupleName || 'Couple Name'}</h1>
+            <p className="public-cover-date">{block.data.date || ''}</p>
+            {block.data.showGuestName && guestName && (
+              <div className="public-cover-guest">
+                <p className="public-cover-guest-label">Kepada Yth</p>
+                <p className="public-cover-guest-name">{guestName}</p>
+              </div>
+            )}
+            {block.data.showScrollIndicator && (
+              <div className="public-cover-scroll">
+                <div className="scroll-mouse">
+                  <div className="scroll-wheel" />
+                </div>
+                <span>Scroll</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )
     case 'heading':
       return (
-        <h2 style={{
+        <h2 className="public-heading" style={{
           fontFamily: block.data.fontFamily || 'Gambarino',
-          fontSize: Math.min(block.data.fontSize || 32, 48),
+          fontSize: `clamp(1.5rem, 5vw, ${block.data.fontSize || 32}px)`,
           color: block.data.color || theme.primaryColor || '#2D2D2D',
           textAlign: block.data.align || 'center',
           fontStyle: block.data.fontStyle || 'normal',
-          lineHeight: 1.3,
         }}>
           {block.data.content}
         </h2>
       )
     case 'paragraph':
       return (
-        <p style={{
+        <p className="public-paragraph" style={{
           fontSize: block.data.fontSize || 15,
           color: block.data.color || '#8A8A8A',
           textAlign: block.data.align || 'center',
-          lineHeight: 1.8,
-          maxWidth: 480,
-          margin: '0 auto',
         }}>
           {block.data.content}
         </p>
@@ -178,11 +214,16 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       return block.data.url ? (
         <div style={{ borderRadius: block.data.borderRadius || 8, overflow: 'hidden' }}>
           <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', objectFit: block.data.fit || 'cover', display: 'block' }} />
-          {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>{block.data.caption}</p>}
+          {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>{block.data.caption}</p>}
         </div>
       ) : null
     case 'video':
-      if (!block.data.url) return null;
+      if (!block.data.url) {
+        if (isPreviewUrl) {
+          return <div style={{ aspectRatio: '16/9', background: 'rgba(0,0,0,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>[ Video Placeholder ]</div>
+        }
+        return null;
+      }
       
       const isYouTube = block.data.url.includes('youtube.com') || block.data.url.includes('youtu.be');
       const isVimeo = block.data.url.includes('vimeo.com');
@@ -224,39 +265,46 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       )
     case 'gallery':
       const images = block.data.images || [];
-      if (images.length === 0) return null;
+      if (images.length === 0) {
+        if (!isPreviewUrl) return null;
+        return (
+          <div className="public-gallery" style={{ gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)` }}>
+            {Array(block.data.columns || 2).fill(0).map((_, i) => (
+              <div key={i} className="public-gallery-item" style={{ background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                 Foto {i+1}
+              </div>
+            ))}
+          </div>
+        )
+      }
       return (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)`,
-          gap: 8,
-        }}>
+        <div className="public-gallery" style={{ gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)` }}>
           {images.map((img, i) => (
-            <div key={i} style={{ aspectRatio: '1/1', borderRadius: 4, overflow: 'hidden' }}>
-              <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <div key={i} className="public-gallery-item">
+              <img src={img} className="public-gallery-img" />
             </div>
           ))}
         </div>
       )
     case 'gift':
-      if (!block.data.bankName) return null;
+      if (!block.data.bankName && !isPreviewUrl) return null;
       return (
-        <div style={{ textAlign: 'center', padding: 24, border: `1px solid ${theme.primaryColor || '#E0DCD8'}`, borderRadius: 8, margin: '24px 0' }}>
+        <div style={{ textAlign: 'center', padding: 32, border: `1px solid ${theme.primaryColor || '#E0DCD8'}`, borderRadius: 12, margin: '12px 0' }}>
           <h4 className="serif-italic" style={{ marginBottom: 16, fontSize: 20, color: theme.primaryColor }}>{block.data.title || 'Wedding Gift'}</h4>
-          <div style={{ background: 'rgba(255,255,255,0.5)', padding: 16, borderRadius: 6, display: 'inline-block', textAlign: 'left', minWidth: 200 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Bank</div>
-            <div style={{ fontWeight: 600, marginBottom: 8, color: '#2D2D2D' }}>{block.data.bankName}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Account Number</div>
-            <div style={{ fontWeight: 600, letterSpacing: 1, color: '#2D2D2D' }}>{block.data.accountNumber || '-'}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>A/N</div>
-            <div style={{ fontWeight: 600, color: '#2D2D2D' }}>{block.data.accountName || '-'}</div>
+          <div style={{ background: 'rgba(255,255,255,0.5)', padding: 20, borderRadius: 10, display: 'inline-block', textAlign: 'left', minWidth: 200, width: '100%', maxWidth: 300 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bank / Dompet</div>
+            <div style={{ fontWeight: 600, marginBottom: 12, color: '#2D2D2D', fontSize: 16 }}>{block.data.bankName || '(Nama Bank)'}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nomor Rekening</div>
+            <div style={{ fontWeight: 600, letterSpacing: 1, color: '#2D2D2D', fontSize: 18, margin: '4px 0 12px' }}>{block.data.accountNumber || '(No. Rekening)'}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Atas Nama</div>
+            <div style={{ fontWeight: 600, color: '#2D2D2D', fontSize: 15 }}>{block.data.accountName || '(Nama Pemilik)'}</div>
           </div>
         </div>
       )
     case 'music':
       return block.data.url ? (
-        <div style={{ textAlign: 'center', margin: '24px 0' }}>
-          <audio controls src={block.data.url} autoPlay style={{ maxWidth: '100%' }}>
+        <div style={{ textAlign: 'center', padding: '12px 0' }}>
+          <audio controls src={block.data.url} style={{ maxWidth: '100%', height: 36 }}>
             Your browser does not support the audio element.
           </audio>
         </div>
@@ -266,25 +314,25 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
     case 'location':
       return (
         <div className="public-location">
-          <div className="pl-row">
+          <div className="pl-grid">
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10 }}>Date</span>
-              <p>{block.data.date || 'TBD'}</p>
+              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Tanggal</span>
+              <p>{block.data.date || 'TBA'}</p>
             </div>
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10 }}>Time</span>
-              <p>{block.data.time || 'TBD'}</p>
+              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Waktu</span>
+              <p>{block.data.time || 'TBA'}</p>
             </div>
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10 }}>Venue</span>
-              <p>{block.data.venue || 'TBD'}</p>
+              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Tempat</span>
+              <p>{block.data.venue || 'TBA'}</p>
             </div>
           </div>
-          {block.data.address && <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{block.data.address}</p>}
+          {block.data.address && <p className="pl-address">{block.data.address}</p>}
           {block.data.mapUrl && (
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <a href={block.data.mapUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: 'var(--olive)', color: '#fff', padding: '10px 20px', borderRadius: 24, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-                Buka Peta
+            <div style={{ textAlign: 'center', marginTop: 24 }}>
+              <a href={block.data.mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ padding: '12px 32px', borderRadius: 30 }}>
+                Buka Peta Lokasi
               </a>
             </div>
           )}
@@ -294,45 +342,48 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       if (rsvpSent) {
         return (
           <div className="public-rsvp-done">
-            <h4 className="serif-italic">Thank You!</h4>
-            <p>Your response has been recorded.</p>
+            <HiOutlineCheck size={40} style={{ color: 'var(--olive)', marginBottom: 16 }} />
+            <h4 className="serif-italic">Terima Kasih!</h4>
+            <p>Konfirmasi kehadiran Anda telah tersimpan.</p>
           </div>
         )
       }
       return (
-        <form className="public-rsvp">
-          <h4 className="serif-italic">{block.data.title || 'RSVP'}</h4>
-          <input
-            className="public-input"
-            placeholder="Name"
-            value={rsvpForm.name}
-            onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })}
-            required
-          />
-          <input
-            className="public-input"
-            type="email"
-            placeholder="Email"
-            value={rsvpForm.email}
-            onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })}
-            required
-          />
-          <div className="rsvp-buttons">
-            <button type="submit" className="rsvp-attend" onClick={(e) => handleRsvp(e, 'yes')}>
-              Will Attend
-            </button>
-            <button type="submit" className="rsvp-decline" onClick={(e) => handleRsvp(e, 'no')}>
-              Decline
-            </button>
-          </div>
-        </form>
+        <div className="public-rsvp-container">
+          <form className="public-rsvp">
+            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 12 }}>{block.data.title || 'RSVP'}</h4>
+            <input
+              className="public-input"
+              placeholder="Nama Lengkap"
+              value={rsvpForm.name}
+              onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })}
+              required
+            />
+            <input
+              className="public-input"
+              type="email"
+              placeholder="Alamat Email"
+              value={rsvpForm.email}
+              onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })}
+              required
+            />
+            <div className="rsvp-buttons">
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} onClick={(e) => handleRsvp(e, 'yes')}>
+                Akan Hadir
+              </button>
+              <button type="submit" className="btn btn-outline" style={{ flex: 1 }} onClick={(e) => handleRsvp(e, 'no')}>
+                Berhalangan
+              </button>
+            </div>
+          </form>
+        </div>
       )
     case 'signature':
       return (
-        <div style={{ textAlign: 'center', margin: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
           <h3 style={{
             fontFamily: 'Gambarino, serif',
-            fontSize: '3rem',
+            fontSize: 'clamp(2.5rem, 8vw, 3.5rem)',
             color: theme.primaryColor || 'var(--olive)',
             margin: 0,
             fontStyle: 'italic',
@@ -345,12 +396,12 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
     case 'registry':
       if (!block.data.items || block.data.items.length === 0) return null;
       return (
-        <div style={{ textAlign: 'center', margin: '32px 0' }}>
-          <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 20, color: theme.primaryColor }}>{block.data.title || 'Gift Registry'}</h4>
+        <div style={{ textAlign: 'center', padding: '12px 0' }}>
+          <h4 className="serif-italic" style={{ fontSize: 22, marginBottom: 20, color: theme.primaryColor }}>{block.data.title || 'Gift Registry'}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
             {block.data.items.map((item, i) => (
-              <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '12px 24px', border: `1px solid ${theme.primaryColor || 'var(--border)'}`, borderRadius: 24, fontSize: 13, minWidth: 200, color: theme.primaryColor || 'var(--text-light)', textDecoration: 'none', transition: 'all 0.2s ease' }}>
-                {item.label || 'Store Name'}
+              <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-full" style={{ maxWidth: 280, borderRadius: 30 }}>
+                {item.label || 'Kunjungi Toko'}
               </a>
             ))}
           </div>
@@ -358,51 +409,85 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       )
     case 'couple':
       return (
-        <div style={{ textAlign: 'center', margin: '40px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 20 }}>
-            {block.data.photo1 && (
-              <div style={{ width: 120, height: 160, borderRadius: '60px 60px 0 0', overflow: 'hidden' }}>
-                <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div className="public-couple">
+          <div className="public-couple-row">
+            {/* Person 1 */}
+            <div className="public-person">
+              {block.data.photo1 && (
+                <div className="public-person-img-wrapper">
+                  <img src={block.data.photo1} className="public-person-img" />
+                </div>
+              )}
+              <div className="public-person-info">
+                <h4>{block.data.name1 || ''}</h4>
+                {block.data.title1 && <p>{block.data.title1}</p>}
               </div>
-            )}
-            {block.data.photo2 && (
-              <div style={{ width: 120, height: 160, borderRadius: '60px 60px 0 0', overflow: 'hidden', marginTop: 32 }}>
-                <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {block.data.instagram1 && (
+                <a href={`https://instagram.com/${block.data.instagram1}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ background: theme.primaryColor ? `${theme.primaryColor}15` : 'rgba(86,95,52,0.08)', color: theme.primaryColor || 'var(--olive)' }}>
+                  📷 @{block.data.instagram1}
+                </a>
+              )}
+            </div>
+            {/* Person 2 */}
+            <div className="public-person" style={{ marginTop: 40 }}>
+              {block.data.photo2 && (
+                <div className="public-person-img-wrapper">
+                  <img src={block.data.photo2} className="public-person-img" />
+                </div>
+              )}
+              <div className="public-person-info">
+                <h4>{block.data.name2 || ''}</h4>
+                {block.data.title2 && <p>{block.data.title2}</p>}
               </div>
-            )}
+              {block.data.instagram2 && (
+                <a href={`https://instagram.com/${block.data.instagram2}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ background: theme.primaryColor ? `${theme.primaryColor}15` : 'rgba(86,95,52,0.08)', color: theme.primaryColor || 'var(--olive)' }}>
+                  📷 @{block.data.instagram2}
+                </a>
+              )}
+            </div>
           </div>
-          <h3 className="serif-italic" style={{ fontSize: 28, margin: '0 0 12px 0', color: theme.primaryColor || 'var(--olive)' }}>{block.data.name1} & {block.data.name2}</h3>
-          {block.data.description && <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 auto', maxWidth: 400, lineHeight: 1.6 }}>{block.data.description}</p>}
+          {block.data.description && <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '24px auto 0', maxWidth: 400, lineHeight: 1.6 }}>{block.data.description}</p>}
         </div>
       )
     case 'story':
       if (!block.data.items || block.data.items.length === 0) return null;
       return (
-        <div style={{ textAlign: 'center', margin: '48px 16px' }}>
-          <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 32, color: theme.primaryColor }}>Our Story</h4>
-          <div style={{ borderLeft: `1px dashed ${theme.primaryColor || 'var(--olive)'}`, paddingLeft: 24, marginLeft: '50%', transform: 'translateX(-50%)', display: 'inline-block', textAlign: 'left', maxWidth: 300 }}>
+        <div className="public-story">
+          <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 40, textAlign: 'center', color: theme.primaryColor }}>Our Stories</h4>
+          <div className="public-story-timeline">
+            <div className="public-story-line" style={{ borderColor: theme.primaryColor || 'var(--olive)' }} />
             {block.data.items.map((item, i) => (
-              <div key={i} style={{ position: 'relative', marginBottom: 24 }}>
-                <div style={{ position: 'absolute', left: -29, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: theme.primaryColor || 'var(--olive)' }} />
-                <span className="label-caps" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.date || 'Date'}</span>
-                <h5 style={{ margin: '6px 0', fontSize: 18, fontFamily: 'Gambarino, serif', color: '#2D2D2D' }}>{item.title || 'Milestone Title'}</h5>
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-light)', lineHeight: 1.5 }}>{item.description}</p>
+              <div key={i} className="public-story-item">
+                <div className="public-story-dot" style={{ backgroundColor: theme.primaryColor || 'var(--olive)' }} />
+                <span className="public-story-date">{item.date || 'Tanggal'}</span>
+                <h5 className="public-story-title">{item.title || 'Momen'}</h5>
+                <p className="public-story-text">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       )
     case 'wishes':
-      if (!block.data.messages || block.data.messages.length === 0) return null;
+      const messages = block.data.messages || [];
+      if (messages.length === 0) {
+        if (!isPreviewUrl) return null;
+        return (
+          <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(255,255,255,0.4)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.03)' }}>
+            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 16, color: theme.primaryColor }}>{block.data.title || 'Wishes'}</h4>
+            <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>Belum ada ucapan.</div>
+          </div>
+        )
+      }
       return (
-        <div style={{ textAlign: 'center', margin: '40px 0', padding: '32px 16px', background: 'rgba(255,255,255,0.4)', borderRadius: 12 }}>
-          <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 24, color: theme.primaryColor }}>{block.data.title || 'Wishes'}</h4>
+        <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(255,255,255,0.4)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.03)' }}>
+          <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 28, color: theme.primaryColor }}>{block.data.title || 'Wishes'}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {block.data.messages.map((msg, i) => (
-              <div key={i} style={{ background: '#fff', padding: 16, borderRadius: 8, textAlign: 'left', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                <p style={{ margin: '0 0 12px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, fontStyle: 'italic' }}>"{msg.content}"</p>
-                <div style={{ fontSize: 12, fontWeight: 600, color: theme.primaryColor || 'var(--olive)', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                  {msg.author || 'Guest'}
+            {messages.map((msg, i) => (
+              <div key={i} style={{ background: '#fff', padding: 20, borderRadius: 12, textAlign: 'left', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}>
+                <p style={{ margin: '0 0 16px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, fontStyle: 'italic' }}>"{msg.content}"</p>
+                <div style={{ fontSize: 12, fontWeight: 600, color: theme.primaryColor || 'var(--olive)', borderTop: '1px solid var(--border-light)', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.primaryColor || 'var(--olive)', opacity: 0.4 }} />
+                  {msg.author || 'Tamu'}
                 </div>
               </div>
             ))}
@@ -410,7 +495,32 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
         </div>
       )
     case 'divider':
-      return <div style={{ borderTop: `1px solid ${block.data.color || '#E0DCD8'}`, margin: '8px 40px' }} />
+      return <div style={{ borderTop: `1px solid ${block.data.color || '#E0DCD8'}`, margin: '12px auto', width: '30%', opacity: 0.6 }} />
+    case 'footer':
+      const footerPhotos = block.data.photos || [];
+      return (
+        <div className="public-footer-block">
+          {footerPhotos.length > 0 && (
+            <div className="public-footer-slideshow">
+              {footerPhotos.map((photo, i) => (
+                <img key={i} src={photo} alt="" className="public-footer-slide" style={{ animationDelay: `${i * 5}s` }} />
+              ))}
+              <div className="public-footer-slideshow-overlay" />
+            </div>
+          )}
+          <div className="public-footer-content">
+            <p className="public-footer-thankyou">{block.data.thankYouText || 'Terima Kasih'}</p>
+            <h2 className="public-footer-couple">{block.data.coupleName || ''}</h2>
+            <p className="public-footer-subtitle" style={{ fontSize: 14, opacity: 0.8, maxWidth: 300, margin: '0 auto 40px' }}>{block.data.subtitle || ''}</p>
+            {block.data.showWatermark && (
+              <div className="public-footer-watermark">
+                <img src={Logo} alt="Invitori" style={{ height: 20, opacity: 0.4 }} />
+                <p>Digital Invitation by Invitori</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )
     default:
       return null
   }

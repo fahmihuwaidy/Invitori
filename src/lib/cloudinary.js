@@ -26,14 +26,30 @@ export function uploadToCloudinary(file, onProgress) {
 
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        const data = JSON.parse(xhr.responseText)
-        resolve({ url: data.secure_url, publicId: data.public_id })
+        try {
+          const data = JSON.parse(xhr.responseText)
+          resolve({ url: data.secure_url, publicId: data.public_id })
+        } catch (e) {
+          reject(new Error('Invalid response from Cloudinary'))
+        }
       } else {
-        reject(new Error(`Upload failed: ${xhr.statusText}`))
+        try {
+          const errData = JSON.parse(xhr.responseText)
+          reject(new Error(errData.error?.message || `Upload failed: ${xhr.statusText}`))
+        } catch {
+          reject(new Error(`Upload failed HTTP ${xhr.status}: ${xhr.statusText}`))
+        }
       }
     })
 
-    xhr.addEventListener('error', () => reject(new Error('Upload failed')))
-    xhr.send(formData)
+    xhr.addEventListener('error', () => {
+      reject(new Error('Koneksi terputus. Pastikan internet stabil dan matikan Ad-Blocker (pemblokir iklan) jika ada.'))
+    })
+    
+    try {
+      xhr.send(formData)
+    } catch (e) {
+      reject(new Error(`Gagal mengirim data: ${e.message}`))
+    }
   })
 }

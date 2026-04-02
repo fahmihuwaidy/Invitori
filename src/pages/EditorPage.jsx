@@ -4,6 +4,7 @@ import { useInvitations } from '../contexts/InvitationContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BLOCK_TYPES, BLOCK_CATEGORIES } from '../utils/blockDefaults'
+import { PRESETS } from '../utils/presets'
 import { uploadToCloudinary } from '../lib/cloudinary'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
@@ -138,11 +139,16 @@ function renderBlock(block, isSelected, onSelect) {
     padding: '12px 16px',
     cursor: 'pointer',
     border: isSelected ? '2px solid var(--olive)' : '2px solid transparent',
-    borderRadius: 'var(--radius-sm)',
+    borderRadius: block.data.customBorderRadius ? `${block.data.customBorderRadius}px` : 'var(--radius-sm)',
     transition: 'border-color 0.2s ease',
     position: 'relative',
-    background: isSelected ? 'rgba(86,95,52,0.04)' : 'transparent',
-    overflow: hasBg ? 'hidden' : undefined,
+    background: block.data.customBgColor || (isSelected ? 'rgba(86,95,52,0.04)' : 'transparent'),
+    color: block.data.customTextColor || 'inherit',
+    textAlign: block.data.customTextAlign || 'inherit',
+    '--text-dark': block.data.customTextColor || undefined,
+    '--text-muted': block.data.customTextColor || undefined,
+    '--text-light': block.data.customTextColor || undefined,
+    overflow: hasBg || block.data.customBorderRadius ? 'hidden' : undefined,
     minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
     aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
     display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
@@ -154,6 +160,37 @@ function renderBlock(block, isSelected, onSelect) {
   const onClick = (e) => { e.stopPropagation(); onSelect(block.id) }
 
   switch (block.type) {
+    case 'cover':
+      return (
+        <div style={{ ...blockStyle, minHeight: 360, background: '#1a1a1a', borderRadius: 8, overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClick}>
+          {block.data.backgroundImage && (
+            <>
+              <img src={block.data.backgroundImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+              <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.overlayColor || '#000', opacity: block.data.overlayOpacity ?? 0.4, zIndex: 1 }} />
+            </>
+          )}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '40px 20px', color: '#fff' }}>
+            {isSelected && <span className="block-selected-label" style={{ color: '#fff', background: 'rgba(86,95,52,0.8)' }}>SELECTED: COVER</span>}
+            <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>{block.data.subtitle || 'We Are Getting Married'}</p>
+            <h2 style={{ fontFamily: 'Gambarino, serif', fontSize: 36, fontWeight: 400, margin: '0 0 12px', fontStyle: 'italic', color: '#fff' }}>{block.data.coupleName || 'Couple Name'}</h2>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', margin: '0 0 20px' }}>{block.data.date || 'Date'}</p>
+            {block.data.showGuestName && (
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 16, marginTop: 8 }}>
+                <p style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px' }}>Kepada Yth</p>
+                <p style={{ fontFamily: 'Gambarino, serif', fontSize: 16, color: '#fff', margin: 0 }}>Nama Tamu</p>
+              </div>
+            )}
+            {block.data.showScrollIndicator && (
+              <div style={{ marginTop: 24, opacity: 0.6 }}>
+                <div style={{ width: 20, height: 30, border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 10, margin: '0 auto', position: 'relative' }}>
+                  <div style={{ width: 3, height: 6, background: 'rgba(255,255,255,0.7)', borderRadius: 2, position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)' }} />
+                </div>
+                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>Scroll</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )
     case 'heading':
       return (
         <div style={blockStyle} onClick={onClick}>
@@ -446,16 +483,39 @@ function renderBlock(block, isSelected, onSelect) {
           <div style={contentZ}>
             {isSelected && <span className="block-selected-label">SELECTED: COUPLE</span>}
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-                <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
-                  {block.data.photo1 ? <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 1</span>}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 16 }}>
+                {/* Person 1 */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 100, height: 130, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
+                    {block.data.photo1 ? <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 1</span>}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 600, margin: '0 0 2px', color: '#2D2D2D' }}>{block.data.name1 || 'Name 1'}</p>
+                    {block.data.title1 && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>{block.data.title1}</p>}
+                  </div>
+                  {block.data.instagram1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--cream)', borderRadius: 20, fontSize: 11, color: 'var(--text-light)' }}>
+                      📷 @{block.data.instagram1}
+                    </div>
+                  )}
                 </div>
-                <div style={{ width: 100, height: 120, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden', marginTop: 24 }}>
-                  {block.data.photo2 ? <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 2</span>}
+                {/* Person 2 */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 24 }}>
+                  <div style={{ width: 100, height: 130, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
+                    {block.data.photo2 ? <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 2</span>}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 600, margin: '0 0 2px', color: '#2D2D2D' }}>{block.data.name2 || 'Name 2'}</p>
+                    {block.data.title2 && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>{block.data.title2}</p>}
+                  </div>
+                  {block.data.instagram2 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--cream)', borderRadius: 20, fontSize: 11, color: 'var(--text-light)' }}>
+                      📷 @{block.data.instagram2}
+                    </div>
+                  )}
                 </div>
               </div>
-              <h3 className="serif-italic" style={{ fontSize: 24, margin: '0 0 8px 0', color: 'var(--olive)' }}>{block.data.name1 || 'Name'} & {block.data.name2 || 'Name'}</h3>
-              {block.data.description && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{block.data.description}</p>}
+              {block.data.description && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '8px 0 0' }}>{block.data.description}</p>}
             </div>
           </div>
         </div>
@@ -503,6 +563,32 @@ function renderBlock(block, isSelected, onSelect) {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )
+    case 'footer':
+      const footerPhotos = block.data.photos || [];
+      return (
+        <div style={{ ...blockStyle, background: '#2D2D2D', borderRadius: 8, overflow: 'hidden', position: 'relative' }} onClick={onClick}>
+          <div style={{ textAlign: 'center', padding: '32px 20px', color: '#fff' }}>
+            {isSelected && <span className="block-selected-label" style={{ color: '#fff', background: 'rgba(86,95,52,0.8)' }}>SELECTED: FOOTER</span>}
+            {footerPhotos.length > 0 && (
+              <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 20, borderRadius: 8, overflow: 'hidden' }}>
+                {footerPhotos.slice(0, 3).map((p, i) => (
+                  <div key={i} style={{ width: 60, height: 80, overflow: 'hidden' }}>
+                    <img src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))}
+              </div>
+            )}
+            <p style={{ fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px' }}>{block.data.thankYouText || 'Thank You'}</p>
+            <h3 style={{ fontFamily: 'Gambarino, serif', fontSize: 28, fontWeight: 400, fontStyle: 'italic', color: '#fff', margin: '0 0 8px' }}>{block.data.coupleName || 'Couple Name'}</h3>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: 0 }}>{block.data.subtitle || ''}</p>
+            {block.data.showWatermark && (
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', margin: 0 }}>Made with Invitori</p>
+              </div>
+            )}
           </div>
         </div>
       )
@@ -769,6 +855,7 @@ export default function EditorPage() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [activeModal, setActiveModal] = useState(null)
   const hasCreated = useRef(false)
+  const hasAppliedPreset = useRef(false)
 
   // Create new invitation if needed
   useEffect(() => {
@@ -782,6 +869,32 @@ export default function EditorPage() {
       })
     }
   }, [])
+
+  // Apply preset blocks if ?preset= param exists
+  useEffect(() => {
+    const presetKey = searchParams.get('preset')
+    if (!presetKey || hasAppliedPreset.current) return
+    const invitation = invitations.find(inv => inv.id === id)
+    if (!invitation) return
+    // Only apply if invitation has no blocks yet
+    if (invitation.blocks && invitation.blocks.length > 0) return
+
+    const preset = PRESETS[presetKey]
+    if (!preset || preset.blocks.length === 0) {
+      hasAppliedPreset.current = true
+      return
+    }
+
+    hasAppliedPreset.current = true
+    // Add blocks sequentially
+    const addBlocksSequentially = async () => {
+      for (let i = 0; i < preset.blocks.length; i++) {
+        const blockDef = preset.blocks[i]
+        await ctxAddBlock(id, blockDef.type, blockDef.data, i)
+      }
+    }
+    addBlocksSequentially()
+  }, [id, invitations, searchParams])
 
   // Find invitation
   const invitation = invitations.find(inv => inv.id === id)
@@ -1040,7 +1153,7 @@ function ImageUploader({ currentUrl, onUpload }) {
       onUpload(result.url)
     } catch (err) {
       console.error('Upload error:', err)
-      alert('Failed to upload image. Please try again.')
+      alert(`Gagal mengunggah foto: ${err.message}`)
     } finally {
       setUploading(false)
       setProgress(0)
@@ -1081,6 +1194,70 @@ function ImageUploader({ currentUrl, onUpload }) {
 function BlockSettingsPanel({ block, onChange }) {
   const type = block.type
   const data = block.data
+
+  if (type === 'cover') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Cover Background</span>
+          <div style={{ marginTop: 8 }}>
+            <ImageUploader
+              currentUrl={data.backgroundImage}
+              onUpload={(url) => onChange({ backgroundImage: url })}
+            />
+          </div>
+          <div className="input-group" style={{ marginTop: 12 }}>
+            <label>Or paste URL</label>
+            <input className="settings-input" value={data.backgroundImage || ''} onChange={e => onChange({ backgroundImage: e.target.value })} placeholder="https://..." />
+          </div>
+          {data.backgroundImage && (
+            <>
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Overlay Opacity</label>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{Math.round((data.overlayOpacity ?? 0.4) * 100)}%</span>
+                </div>
+                <input type="range" min={0} max={1} step={0.05} value={data.overlayOpacity ?? 0.4} onChange={e => onChange({ overlayOpacity: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
+              </div>
+              <div className="input-group" style={{ marginTop: 10 }}>
+                <label>Overlay Color</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="color" value={data.overlayColor || '#000000'} onChange={e => onChange({ overlayColor: e.target.value })} style={{ width: 36, height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{data.overlayColor || '#000000'}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Cover Content</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Subtitle</label>
+            <input className="settings-input" value={data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })} placeholder="We Are Getting Married" />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Couple Name</label>
+            <input className="settings-input" value={data.coupleName || ''} onChange={e => onChange({ coupleName: e.target.value })} placeholder="Aqil & Anty" />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Date</label>
+            <input className="settings-input" value={data.date || ''} onChange={e => onChange({ date: e.target.value })} placeholder="Senin, 30 Maret 2026" />
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={data.showGuestName ?? true} onChange={e => onChange({ showGuestName: e.target.checked })} />
+              Show Guest Name
+            </label>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={data.showScrollIndicator ?? true} onChange={e => onChange({ showScrollIndicator: e.target.checked })} />
+              Show Scroll Indicator
+            </label>
+          </div>
+        </div>
+        <SpacingSection data={data} onChange={onChange} />
+      </>
+    )
+  }
 
   if (type === 'heading' || type === 'paragraph') {
     return (
@@ -1126,6 +1303,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1153,6 +1331,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1179,6 +1358,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1198,6 +1378,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1233,6 +1414,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </>
     )
   }
@@ -1248,6 +1430,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1264,6 +1447,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1299,6 +1483,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1326,6 +1511,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1342,6 +1528,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1369,6 +1556,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1415,6 +1603,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1425,26 +1614,42 @@ function BlockSettingsPanel({ block, onChange }) {
         <span className="label-caps">Couple Profiles</span>
         
         <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 6, marginTop: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 1</label>
+          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 1 (Bride/Groom)</label>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Name</label>
             <input className="settings-input" value={data.name1 || ''} onChange={e => onChange({ name1: e.target.value })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Title / Gelar</label>
+            <input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} placeholder="Putra pertama dari Bpk. ... & Ibu ..." />
           </div>
           <div style={{ marginTop: 8 }}>
             <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label>
             <ImageUploader currentUrl={data.photo1} onUpload={url => onChange({ photo1: url })} />
           </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Instagram Username</label>
+            <input className="settings-input" value={data.instagram1 || ''} onChange={e => onChange({ instagram1: e.target.value })} placeholder="username" />
+          </div>
         </div>
 
         <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 6, marginTop: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 2</label>
+          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 2 (Bride/Groom)</label>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Name</label>
             <input className="settings-input" value={data.name2 || ''} onChange={e => onChange({ name2: e.target.value })} />
           </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Title / Gelar</label>
+            <input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} placeholder="Putri kedua dari Bpk. ... & Ibu ..." />
+          </div>
           <div style={{ marginTop: 8 }}>
             <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label>
             <ImageUploader currentUrl={data.photo2} onUpload={url => onChange({ photo2: url })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Instagram Username</label>
+            <input className="settings-input" value={data.instagram2 || ''} onChange={e => onChange({ instagram2: e.target.value })} placeholder="username" />
           </div>
         </div>
 
@@ -1455,6 +1660,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1504,6 +1710,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
@@ -1553,7 +1760,55 @@ function BlockSettingsPanel({ block, onChange }) {
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
+    )
+  }
+
+  if (type === 'footer') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Footer Content</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Thank You Text</label>
+            <input className="settings-input" value={data.thankYouText || ''} onChange={e => onChange({ thankYouText: e.target.value })} placeholder="Thank You" />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Couple Name</label>
+            <input className="settings-input" value={data.coupleName || ''} onChange={e => onChange({ coupleName: e.target.value })} placeholder="Aqil & Anty" />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Subtitle</label>
+            <input className="settings-input" value={data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })} placeholder="For Being Part of Our Special Day" />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={data.showWatermark ?? true} onChange={e => onChange({ showWatermark: e.target.checked })} />
+              Show Invitori Watermark
+            </label>
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Photo Slideshow</span>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {(data.photos || []).map((photo, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <img src={photo} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                  const newPhotos = [...(data.photos || [])];
+                  newPhotos.splice(i, 1);
+                  onChange({ photos: newPhotos });
+                }} style={{ padding: 4 }}>Remove</button>
+              </div>
+            ))}
+            <ImageUploader currentUrl="" onUpload={(url) => {
+              onChange({ photos: [...(data.photos || []), url] })
+            }} />
+          </div>
+        </div>
+        <SpacingSection data={data} onChange={onChange} />
+      </>
     )
   }
 
@@ -1565,6 +1820,7 @@ function BlockSettingsPanel({ block, onChange }) {
       <SpacingSection data={data} onChange={onChange} />
       <SizeSection data={data} onChange={onChange} />
       <BackgroundImageSection data={data} onChange={onChange} />
+      <AdvancedDesignSection data={data} onChange={onChange} />
     </div>
   )
 }
@@ -1731,8 +1987,68 @@ function SizeSection({ data, onChange }) {
           onChange={e => onChange({ blockMinHeight: Number(e.target.value) })}
           style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
         />
-        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, margin: '4px 0 0' }}>Set to 0 for auto height. When background image is set, aspect ratio is used by default.</p>
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, margin: '0' }}>Set to 0 for auto height.</p>
       </div>
+    </div>
+  )
+}
+
+function AdvancedDesignSection({ data, onChange }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
+      <button 
+        type="button" 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="label-caps">✨ Advanced Design</span>
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{isOpen ? '▲' : '▼'}</span>
+      </button>
+      
+      {isOpen && (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="input-group">
+            <label>Background Color Override</label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input type="color" value={data.customBgColor || '#ffffff'} onChange={e => onChange({ customBgColor: e.target.value })} style={{ width: 40, height: 32, padding: 0, cursor: 'pointer', borderRadius: 4, border: '1px solid var(--border)' }} />
+              <input type="text" className="settings-input" value={data.customBgColor || ''} onChange={e => onChange({ customBgColor: e.target.value })} placeholder="HEX or transparent" style={{ flex: 1 }} />
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customBgColor: '' })}>Clear Override</button>
+          </div>
+          
+          <div className="input-group">
+            <label>Text Color Override</label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input type="color" value={data.customTextColor || '#000000'} onChange={e => onChange({ customTextColor: e.target.value })} style={{ width: 40, height: 32, padding: 0, cursor: 'pointer', borderRadius: 4, border: '1px solid var(--border)' }} />
+              <input type="text" className="settings-input" value={data.customTextColor || ''} onChange={e => onChange({ customTextColor: e.target.value })} placeholder="HEX e.g. #2a3125" style={{ flex: 1 }} />
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customTextColor: '' })}>Clear Override</button>
+          </div>
+
+          <div className="input-group">
+            <label>Text Alignment</label>
+            <select className="settings-input" value={data.customTextAlign || ''} onChange={e => onChange({ customTextAlign: e.target.value })} style={{ marginTop: 8 }}>
+              <option value="">Default Center</option>
+              <option value="left">Left Align</option>
+              <option value="center">Center Align</option>
+              <option value="right">Right Align</option>
+              <option value="justify">Justify</option>
+            </select>
+          </div>
+
+          <div className="input-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label>Corner Radius</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.customBorderRadius || 0}px</span>
+            </div>
+            <input type="range" min="0" max="100" value={data.customBorderRadius || 0} onChange={e => onChange({ customBorderRadius: Number(e.target.value) })} style={{ accentColor: 'var(--olive)' }} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

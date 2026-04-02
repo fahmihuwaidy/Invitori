@@ -138,7 +138,7 @@ export function InvitationProvider({ children }) {
       .select()
       .single()
 
-    if (error) {
+    if (error || !data) {
       console.error('Error creating invitation:', error)
       return null
     }
@@ -213,10 +213,13 @@ export function InvitationProvider({ children }) {
 
   // --- Block Operations ---
 
-  const addBlock = async (invId, blockType, blockData) => {
-    // Get current max sort_order
-    const inv = invitations.find(i => i.id === invId)
-    const maxOrder = inv?.blocks?.length || 0
+  const addBlock = async (invId, blockType, blockData, explicitOrder) => {
+    // Get current max sort_order if not provided explicitly
+    let finalOrder = explicitOrder
+    if (finalOrder === undefined) {
+      const inv = invitations.find(i => i.id === invId)
+      finalOrder = inv?.blocks?.length || 0
+    }
 
     const { data, error } = await supabase
       .from('blocks')
@@ -224,14 +227,14 @@ export function InvitationProvider({ children }) {
         invitation_id: invId,
         type: blockType,
         data: blockData,
-        sort_order: maxOrder,
+        sort_order: finalOrder,
       })
       .select()
       .single()
 
-    if (error) {
+    if (error || !data) {
       console.error('Error adding block:', error)
-      return
+      return null
     }
 
     setInvitations(prev =>
@@ -247,32 +250,39 @@ export function InvitationProvider({ children }) {
   }
 
   const updateBlock = async (invId, blockId, blockData) => {
-    // Optimistic update first
-    setInvitations(prev =>
-      prev.map(inv => {
+    let finalMergedData = null
+
+    setInvitations(prev => {
+      const inv = prev.find(i => i.id === invId)
+      if (!inv) return prev
+      
+      const block = inv.blocks.find(b => b.id === blockId)
+      if (!block) return prev
+      
+      // Compute the freshest merged data directly inside the guaranteed state queue
+      finalMergedData = { ...block.data, ...blockData }
+
+      return prev.map(inv => {
         if (inv.id !== invId) return inv
         return {
           ...inv,
           blocks: inv.blocks.map(b =>
-            b.id === blockId ? { ...b, data: { ...b.data, ...blockData } } : b
+            b.id === blockId ? { ...b, data: finalMergedData } : b
           ),
           updatedAt: new Date().toISOString(),
         }
       })
-    )
+    })
 
-    // Find the current full block data after merge
-    const inv = invitations.find(i => i.id === invId)
-    const block = inv?.blocks.find(b => b.id === blockId)
-    const mergedData = { ...block?.data, ...blockData }
+    if (finalMergedData) {
+      const { error } = await supabase
+        .from('blocks')
+        .update({ data: finalMergedData })
+        .eq('id', blockId)
 
-    const { error } = await supabase
-      .from('blocks')
-      .update({ data: mergedData })
-      .eq('id', blockId)
-
-    if (error) {
-      console.error('Error updating block:', error)
+      if (error) {
+        console.error('Error updating block:', error)
+      }
     }
   }
 
