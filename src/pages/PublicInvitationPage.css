@@ -57,7 +57,8 @@
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
+  box-sizing: border-box;
 }
 
 .public-block-cover .public-block-content,
@@ -123,13 +124,13 @@
 
 .public-person-info h4 {
   font-family: 'Gambarino', serif;
-  font-size: 1.2rem;
+  font-size: 2.2rem;
   margin: 0 0 4px;
   color: var(--text-dark);
 }
 
 .public-person-info p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
@@ -223,14 +224,14 @@
 
 .public-story-title {
   font-family: 'Gambarino', serif;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   margin: 0 0 8px;
   color: var(--text-dark);
 }
 
 .public-story-text {
   font-size: 14px;
-  color: var(--text-light);
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0;
 }
@@ -256,8 +257,8 @@
 }
 
 .pl-item p {
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 15px;
   margin: 0;
 }
 
@@ -289,7 +290,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(8px, 4vw, 24px);
+  gap: clamp(2px, 1.5vw, 8px);
   padding: 24px 0;
 }
 
@@ -297,13 +298,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 60px;
+  min-width: 36px;
 }
 
 .pc-num {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 6vw, 2.8rem);
-  font-weight: 500;
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 400;
   color: var(--text-dark);
   line-height: 1;
 }
@@ -317,22 +318,22 @@
 }
 
 .pc-sep {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: var(--text-light);
-  margin-top: -12px;
-  opacity: 0.5;
+  margin-top: -10px;
+  opacity: 0.3;
 }
 
 /* ==================== */
 /* RSVP                 */
 /* ==================== */
 .public-rsvp-container {
-  background: rgba(255, 255, 255, 0.4);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  padding: 32px 24px;
-  border-radius: 16px;
+  background: var(--white);
+  padding: 40px 32px;
+  border-radius: 20px;
   width: 100%;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
 }
 
 .public-rsvp {
@@ -345,11 +346,11 @@
 
 .public-input {
   width: 100%;
-  padding: 14px 18px;
-  border: 1px solid rgba(0,0,0,0.1);
-  border-radius: 10px;
-  font-size: 14px;
-  background: #fff;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  background: var(--cream-light);
   transition: all 0.2s;
 }
 
@@ -357,6 +358,28 @@
   border-color: var(--olive);
   box-shadow: 0 0 0 3px rgba(86,95,52,0.1);
   outline: none;
+}
+
+.public-wish-form .public-input {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.public-wishes-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.public-wishes-list::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.02);
+  border-radius: 10px;
+}
+
+.public-wishes-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.public-wishes-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
 }
 
 /* ==================== */

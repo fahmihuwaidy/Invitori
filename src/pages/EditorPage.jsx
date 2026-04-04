@@ -13,6 +13,8 @@ import { HiOutlineArrowLeft, HiOutlineMenuAlt2, HiX, HiOutlineEye, HiOutlineTras
   HiOutlineViewGrid, HiOutlineMail, HiOutlineUserGroup, HiOutlineGift, HiOutlineCog, HiOutlineUpload } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import './EditorPage.css'
+import './PublicInvitationPage.css'
+import { renderPublicBlock } from './PublicInvitationPage'
 
 /* Sortable block wrapper */
 function SortableBlock({ id, children }) {
@@ -131,12 +133,15 @@ function BlockBackgroundLayer({ data }) {
   )
 }
 
-function renderBlock(block, isSelected, onSelect) {
+function renderBlock(block, isSelected, onSelect, theme) {
   const hasBg = !!block.data.backgroundImage
+  const isCover = block.type === 'cover'
+  const isFooter = block.type === 'footer'
+  const isFullWidthBlock = isCover || isFooter || block.data.fullWidth !== false
   const blockMinHeight = block.data.blockMinHeight || 0
   const bgAspectRatio = block.data.backgroundAspectRatio || null
   const blockStyle = {
-    padding: '12px 16px',
+    padding: isFullWidthBlock ? 0 : '12px 0',
     cursor: 'pointer',
     border: isSelected ? '2px solid var(--olive)' : '2px solid transparent',
     borderRadius: block.data.customBorderRadius ? `${block.data.customBorderRadius}px` : 'var(--radius-sm)',
@@ -159,452 +164,33 @@ function renderBlock(block, isSelected, onSelect) {
 
   const onClick = (e) => { e.stopPropagation(); onSelect(block.id) }
 
-  switch (block.type) {
-    case 'cover':
-      return (
-        <div style={{ ...blockStyle, minHeight: 360, background: '#1a1a1a', borderRadius: 8, overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClick}>
-          {block.data.backgroundImage && (
-            <>
-              <img src={block.data.backgroundImage} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
-              <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.overlayColor || '#000', opacity: block.data.overlayOpacity ?? 0.4, zIndex: 1 }} />
-            </>
-          )}
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '40px 20px', color: '#fff' }}>
-            {isSelected && <span className="block-selected-label" style={{ color: '#fff', background: 'rgba(86,95,52,0.8)' }}>SELECTED: COVER</span>}
-            <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>{block.data.subtitle || 'We Are Getting Married'}</p>
-            <h2 style={{ fontFamily: 'Gambarino, serif', fontSize: 36, fontWeight: 400, margin: '0 0 12px', fontStyle: 'italic', color: '#fff' }}>{block.data.coupleName || 'Couple Name'}</h2>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', margin: '0 0 20px' }}>{block.data.date || 'Date'}</p>
-            {block.data.showGuestName && (
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 16, marginTop: 8 }}>
-                <p style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px' }}>Kepada Yth</p>
-                <p style={{ fontFamily: 'Gambarino, serif', fontSize: 16, color: '#fff', margin: 0 }}>Nama Tamu</p>
-              </div>
-            )}
-            {block.data.showScrollIndicator && (
-              <div style={{ marginTop: 24, opacity: 0.6 }}>
-                <div style={{ width: 20, height: 30, border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 10, margin: '0 auto', position: 'relative' }}>
-                  <div style={{ width: 3, height: 6, background: 'rgba(255,255,255,0.7)', borderRadius: 2, position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)' }} />
-                </div>
-                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>Scroll</p>
-              </div>
-            )}
-          </div>
+  return (
+    <div style={blockStyle} onClick={onClick}>
+      {hasBg && !isCover && <BlockBackgroundLayer data={block.data} />}
+      <div style={contentZ}>
+        {isSelected && (
+          <span className="block-selected-label">SELECTED: {BLOCK_TYPES[block.type]?.label?.toUpperCase() || block.type.toUpperCase()}</span>
+        )}
+        <div style={{ pointerEvents: 'none', width: '100%' }}>
+           {renderPublicBlock(
+             block, 
+             theme || { primaryColor: 'var(--olive)' }, 
+             { name: '', email: '', attendance: '' }, // rsvpForm
+             () => {}, // setRsvpForm
+             () => {}, // handleRsvp
+             false,    // rsvpSent
+             { name: '', content: '' }, // wishForm
+             () => {}, // setWishForm
+             () => {}, // handleSendWish
+             false,    // wishSent
+             'Tamu Undangan', // guestName (for editor preview)
+             true,            // isPreviewUrl
+             []               // wishes (Empty by default)
+           )}
         </div>
-      )
-    case 'heading':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: HEADING</span>}
-            <h2 style={{
-              fontFamily: block.data.fontFamily || 'Gambarino',
-              fontSize: block.data.fontSize || 32,
-              color: block.data.color || '#2D2D2D',
-              textAlign: block.data.align || 'center',
-              fontStyle: block.data.fontStyle || 'normal',
-              margin: 0,
-            }}>{block.data.content}</h2>
-          </div>
-        </div>
-      )
-    case 'paragraph':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: PARAGRAPH</span>}
-            <p style={{
-              fontSize: block.data.fontSize || 15,
-              color: block.data.color || '#8A8A8A',
-              textAlign: block.data.align || 'center',
-              margin: 0,
-              lineHeight: 1.7,
-            }}>{block.data.content}</p>
-          </div>
-        </div>
-      )
-    case 'photo':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: PHOTO</span>}
-            <div style={{
-              background: '#f0eded',
-              borderRadius: block.data.borderRadius || 8,
-              aspectRatio: '16/10',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-light)',
-              fontSize: 13,
-              overflow: 'hidden',
-            }}>
-              {block.data.url ? (
-                 <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', height: '100%', objectFit: block.data.fit || 'cover' }} />
-              ) : (
-                 <span>📷 Click to add photo</span>
-              )}
-            </div>
-            {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{block.data.caption}</p>}
-          </div>
-        </div>
-      )
-    case 'video':
-      let embedUrl = block.data.url;
-      let isIframe = false;
-      if (embedUrl) {
-         const isYouTube = embedUrl.includes('youtube.com') || embedUrl.includes('youtu.be');
-         const isVimeo = embedUrl.includes('vimeo.com');
-         if (isYouTube) {
-           const videoId = embedUrl.includes('v=') ? embedUrl.split('v=')[1].split('&')[0] : embedUrl.split('/').pop();
-           embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${block.data.autoplay ? 1 : 0}&mute=${block.data.autoplay ? 1 : 0}&loop=${block.data.loop ? 1 : 0}`;
-           isIframe = true;
-         } else if (isVimeo) {
-           const videoId = embedUrl.split('/').pop();
-           embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=${block.data.autoplay ? 1 : 0}&muted=${block.data.autoplay ? 1 : 0}&loop=${block.data.loop ? 1 : 0}`;
-           isIframe = true;
-         }
-      }
-
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: VIDEO</span>}
-            <div style={{
-              background: '#f0eded',
-              borderRadius: 8,
-              aspectRatio: '16/9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-light)',
-              fontSize: 13,
-              overflow: 'hidden',
-              pointerEvents: 'none',
-            }}>
-              {block.data.url ? (
-                isIframe ? (
-                 <iframe 
-                   src={embedUrl} 
-                   style={{ width: '100%', height: '100%', border: 'none' }} 
-                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                   allowFullScreen
-                 />
-                ) : (
-                  <video 
-                    src={block.data.url} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    autoPlay={block.data.autoplay} 
-                    loop={block.data.loop} 
-                    muted={block.data.autoplay}
-                    controls={!block.data.autoplay}
-                  />
-                )
-              ) : (
-                <span>🎬 Click to add video URL or upload</span>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    case 'countdown':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: COUNTDOWN</span>}
-            <EditorCountdownBlock data={block.data} />
-          </div>
-        </div>
-      )
-    case 'location':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: LOCATION</span>}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
-                <div><span className="label-caps" style={{ fontSize: 10 }}>Date</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.date || 'TBD'}</p></div>
-                <div><span className="label-caps" style={{ fontSize: 10 }}>Time</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.time || 'TBD'}</p></div>
-                <div><span className="label-caps" style={{ fontSize: 10 }}>Location</span><p style={{ fontWeight: 500, fontSize: 14 }}>{block.data.venue || 'TBD'}</p></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    case 'rsvp':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: RSVP</span>}
-            <div style={{ textAlign: 'center' }}>
-              <h4 className="serif-italic" style={{ marginBottom: 12 }}>{block.data.title || 'RSVP'}</h4>
-              <div style={{ maxWidth: 220, margin: '0 auto' }}>
-                <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 8, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Name</div>
-                <div style={{ background: 'var(--cream)', borderRadius: 6, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--text-light)', textAlign: 'left' }}>Email</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ flex: 1, background: 'var(--olive)', color: '#fff', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 600, textAlign: 'center' }}>Will Attend</div>
-                  <div style={{ flex: 1, border: '1px solid var(--border)', borderRadius: 6, padding: '8px', fontSize: 12, fontWeight: 500, textAlign: 'center' }}>Decline</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    case 'gallery':
-      const images = block.data.images || [];
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: GALLERY</span>}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)`,
-              gap: 8,
-            }}>
-              {images.length > 0 ? images.map((img, i) => (
-                <div key={i} style={{ aspectRatio: '1/1', background: '#f0eded', borderRadius: 4, overflow: 'hidden' }}>
-                  <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              )) : (
-                <div style={{ gridColumn: '1 / -1', padding: 32, background: '#f0eded', borderRadius: 8, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
-                  📸 Click to add gallery images
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    case 'gift':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: GIFT</span>}
-            <div style={{ textAlign: 'center', padding: 16, border: '1px solid var(--border)', borderRadius: 8 }}>
-              <h4 className="serif-italic" style={{ marginBottom: 16, fontSize: 18 }}>{block.data.title || 'Wedding Gift'}</h4>
-              {block.data.bankName ? (
-                <div style={{ background: 'var(--cream)', padding: 16, borderRadius: 6, display: 'inline-block', textAlign: 'left', minWidth: 200 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Bank</div>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{block.data.bankName}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Account Number</div>
-                  <div style={{ fontWeight: 600, letterSpacing: 1 }}>{block.data.accountNumber || '-'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>A/N</div>
-                  <div style={{ fontWeight: 600 }}>{block.data.accountName || '-'}</div>
-                </div>
-              ) : (
-                <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure bank details</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    case 'music':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: MUSIC</span>}
-            <div style={{ textAlign: 'center', padding: 16, background: hasBg ? 'transparent' : '#f0eded', borderRadius: 8 }}>
-              <span style={{ fontSize: 24 }}>🎵</span>
-              {block.data.url ? (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Background Music Configured</p>
-              ) : (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-light)' }}>Click to add audio URL</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    case 'divider':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: DIVIDER</span>}
-            <div style={{ borderTop: `1px solid ${block.data.color || '#E0DCD8'}`, margin: '16px 40px' }} />
-          </div>
-        </div>
-      )
-    case 'signature':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: SIGNATURE</span>}
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <h3 style={{
-                fontFamily: 'Gambarino, serif',
-                fontSize: '3rem',
-                color: 'var(--olive)',
-                margin: 0,
-                fontStyle: 'italic',
-                fontWeight: 400
-              }}>
-                {(block.data.names || []).join(' & ')}
-              </h3>
-            </div>
-          </div>
-        </div>
-      )
-    case 'registry':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: REGISTRY</span>}
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Gift Registry'}</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-                {(block.data.items || []).length > 0 ? (
-                  block.data.items.map((item, i) => (
-                    <div key={i} style={{ padding: '12px 24px', border: '1px solid var(--border)', borderRadius: 24, fontSize: 13, minWidth: 200, color: 'var(--text-light)' }}>
-                      {item.label || 'Store Name'}
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>Click to configure registry links</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    case 'couple':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: COUPLE</span>}
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 16 }}>
-                {/* Person 1 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 100, height: 130, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
-                    {block.data.photo1 ? <img src={block.data.photo1} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 1</span>}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, margin: '0 0 2px', color: '#2D2D2D' }}>{block.data.name1 || 'Name 1'}</p>
-                    {block.data.title1 && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>{block.data.title1}</p>}
-                  </div>
-                  {block.data.instagram1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--cream)', borderRadius: 20, fontSize: 11, color: 'var(--text-light)' }}>
-                      📷 @{block.data.instagram1}
-                    </div>
-                  )}
-                </div>
-                {/* Person 2 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 24 }}>
-                  <div style={{ width: 100, height: 130, borderRadius: '50px 50px 0 0', backgroundColor: '#f0eded', overflow: 'hidden' }}>
-                    {block.data.photo2 ? <img src={block.data.photo2} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-light)'}}>Photo 2</span>}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, margin: '0 0 2px', color: '#2D2D2D' }}>{block.data.name2 || 'Name 2'}</p>
-                    {block.data.title2 && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>{block.data.title2}</p>}
-                  </div>
-                  {block.data.instagram2 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--cream)', borderRadius: 20, fontSize: 11, color: 'var(--text-light)' }}>
-                      📷 @{block.data.instagram2}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {block.data.description && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '8px 0 0' }}>{block.data.description}</p>}
-            </div>
-          </div>
-        </div>
-      )
-    case 'story':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: STORY</span>}
-            <div style={{ textAlign: 'center', padding: '20px 16px' }}>
-              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 20 }}>Our Story</h4>
-              <div style={{ borderLeft: '1px dashed var(--olive)', paddingLeft: 16, marginLeft: '50%', transform: 'translateX(-50%)', display: 'inline-block', textAlign: 'left' }}>
-                {(block.data.items || []).map((item, i) => (
-                  <div key={i} style={{ position: 'relative', marginBottom: 20 }}>
-                    <div style={{ position: 'absolute', left: -21, top: 4, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--olive)' }} />
-                    <span className="label-caps" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.date || 'Date'}</span>
-                    <h5 style={{ margin: '4px 0', fontSize: 15, fontFamily: 'Gambarino, serif' }}>{item.title || 'Milestone Title'}</h5>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-light)' }}>{item.description || 'Brief description goes here.'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    case 'wishes':
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: WISHES</span>}
-            <div style={{ textAlign: 'center', padding: '24px 16px', background: hasBg ? 'transparent' : 'rgba(86,95,52,0.05)', borderRadius: 8 }}>
-              <h4 className="serif-italic" style={{ fontSize: 20, marginBottom: 16 }}>{block.data.title || 'Wishes'}</h4>
-              <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {(block.data.messages || []).length > 0 ? (
-                  block.data.messages.map((msg, i) => (
-                    <div key={i} style={{ background: '#fff', padding: 12, borderRadius: 8, textAlign: 'left', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: 13, color: 'var(--text-light)', lineHeight: 1.5 }}>"{msg.content}"</p>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--olive)' }}>- {msg.author || 'Guest'}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: 'var(--text-light)', fontSize: 13, margin: 0 }}>No wishes added yet. Configure in settings.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    case 'footer':
-      const footerPhotos = block.data.photos || [];
-      return (
-        <div style={{ ...blockStyle, background: '#2D2D2D', borderRadius: 8, overflow: 'hidden', position: 'relative' }} onClick={onClick}>
-          <div style={{ textAlign: 'center', padding: '32px 20px', color: '#fff' }}>
-            {isSelected && <span className="block-selected-label" style={{ color: '#fff', background: 'rgba(86,95,52,0.8)' }}>SELECTED: FOOTER</span>}
-            {footerPhotos.length > 0 && (
-              <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 20, borderRadius: 8, overflow: 'hidden' }}>
-                {footerPhotos.slice(0, 3).map((p, i) => (
-                  <div key={i} style={{ width: 60, height: 80, overflow: 'hidden' }}>
-                    <img src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
-            )}
-            <p style={{ fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px' }}>{block.data.thankYouText || 'Thank You'}</p>
-            <h3 style={{ fontFamily: 'Gambarino, serif', fontSize: 28, fontWeight: 400, fontStyle: 'italic', color: '#fff', margin: '0 0 8px' }}>{block.data.coupleName || 'Couple Name'}</h3>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: 0 }}>{block.data.subtitle || ''}</p>
-            {block.data.showWatermark && (
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', margin: 0 }}>Made with Invitori</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )
-    default:
-      return (
-        <div style={blockStyle} onClick={onClick}>
-          <BlockBackgroundLayer data={block.data} />
-          <div style={contentZ}>
-            {isSelected && <span className="block-selected-label">SELECTED: {block.type.toUpperCase()}</span>}
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13 }}>
-              {BLOCK_TYPES[block.type]?.icon} {BLOCK_TYPES[block.type]?.label || block.type}
-            </div>
-          </div>
-        </div>
-      )
-  }
+      </div>
+    </div>
+  )
 }
 
 function GuestListModal({ invitation, onClose }) {
@@ -1067,7 +653,6 @@ export default function EditorPage() {
 
         <div className="canvas-area" onClick={() => setSelectedBlock(null)}>
           <div className="phone-frame">
-            <div className="phone-notch" />
             <div className="phone-screen" style={{ background: invitation.theme?.backgroundColor || '#EDE9E7' }}>
               {blocks.length === 0 ? (
                 <div className="phone-empty">
@@ -1083,7 +668,7 @@ export default function EditorPage() {
                           {renderBlock(block, selectedBlock === block.id, (id) => {
                             setSelectedBlock(id)
                             setSettingsOpen(true)
-                          })}
+                          }, invitation?.theme)}
                           {selectedBlock === block.id && (
                             <button className="block-delete-btn" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id) }}>
                               <HiOutlineTrash size={14} />
@@ -1723,39 +1308,8 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Title</label>
           <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
         </div>
-        <div style={{ marginTop: 16 }}>
-          <span className="label-caps" style={{ fontSize: 10 }}>Pinned Messages</span>
-          {(data.messages || []).map((msg, i) => (
-            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 6, marginTop: 8 }}>
-              <div className="input-group">
-                <label>Guest Name</label>
-                <input className="settings-input" value={msg.author || ''} onChange={e => {
-                  const newMsgs = [...(data.messages || [])];
-                  newMsgs[i] = { ...msg, author: e.target.value };
-                  onChange({ messages: newMsgs });
-                }} />
-              </div>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label>Message</label>
-                <textarea className="settings-textarea" value={msg.content || ''} onChange={e => {
-                  const newMsgs = [...(data.messages || [])];
-                  newMsgs[i] = { ...msg, content: e.target.value };
-                  onChange({ messages: newMsgs });
-                }} rows={2} />
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
-                const newMsgs = [...(data.messages || [])];
-                newMsgs.splice(i, 1);
-                onChange({ messages: newMsgs });
-              }}>Remove Message</button>
-            </div>
-          ))}
-          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-            onChange({ messages: [...(data.messages || []), { author: '', content: '' }] })
-          }}>+ Add Message</button>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12 }}>
-            These messages are manually curated by you to be displayed on the public invitation.
-          </p>
+        <div style={{ marginTop: 16, padding: 12, background: 'rgba(86,95,52,0.05)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
+          Wishes and messages will automatically populate here when guests submit their RSVP via the public invitation link.
         </div>
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
@@ -1785,7 +1339,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
               <input type="checkbox" checked={data.showWatermark ?? true} onChange={e => onChange({ showWatermark: e.target.checked })} />
-              Show Invitori Watermark
+              Show Invori Watermark
             </label>
           </div>
         </div>
@@ -2011,6 +1565,14 @@ function AdvancedDesignSection({ data, onChange }) {
       
       {isOpen && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="input-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dark)' }}>
+              <input type="checkbox" checked={data.fullWidth !== false} onChange={e => onChange({ fullWidth: e.target.checked })} />
+              Full Width (Edge-to-Edge)
+            </label>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '4px 0 0 20px', lineHeight: 1.4 }}>Removes padding/margins so this block spans the entire screen width.</p>
+          </div>
+
           <div className="input-group">
             <label>Background Color Override</label>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>

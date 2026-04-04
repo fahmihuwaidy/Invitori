@@ -15,6 +15,8 @@ export default function PublicInvitationPage() {
   const [loading, setLoading] = useState(true)
   const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', attendance: '' })
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [wishForm, setWishForm] = useState({ name: guestName, content: '' })
+  const [wishSent, setWishSent] = useState(false)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 })
 
   // Fetch invitation from Supabase
@@ -48,8 +50,9 @@ export default function PublicInvitationPage() {
         <div className="public-blocks public-not-found">
           <header style={{ textAlign: 'center', padding: '40px 20px' }}>
             <img src={Logo} alt="Invori Logo" style={{ height: 40, margin: '0 auto' }} />
+            <h1 className="serif-italic" style={{ color: 'var(--olive)', marginTop: 16 }}>Undangan Tidak Tersedia</h1>
+            <p style={{ color: '#8A8A8A' }}>Pastikan link yang Anda akses benar.</p>
           </header>
-          <p>Undangan tidak ditemukan.</p>
         </div>
       </div>
     )
@@ -69,6 +72,34 @@ export default function PublicInvitationPage() {
     const success = await addRsvp(invitation.id, { ...rsvpForm, attendance: submitAttendance, sentAt: new Date().toISOString() })
     if (success) {
       setRsvpSent(true)
+    }
+  }
+
+  const handleSendWish = async (e) => {
+    if (e) e.preventDefault()
+    if (!wishForm.content.trim()) return
+
+    const success = await addRsvp(invitation.id, { 
+      name: wishForm.name, 
+      email: 'wish@invori.com', // Placeholder for wishes
+      message: wishForm.content,
+      attendance: null, // Use null to avoid 'yes'/'no' constraint if it's just a wish
+      sentAt: new Date().toISOString() 
+    })
+
+    if (success) {
+      setWishSent(true)
+      // Update local state is important so the user sees their wish without refresh
+      setInvitation(prev => ({
+        ...prev,
+        wishes: [{
+          author: wishForm.name,
+          content: wishForm.content,
+          date: new Date().toISOString()
+        }, ...(prev.wishes || [])]
+      }))
+      // Reset form but keep name
+      setWishForm(prev => ({ ...prev, content: '' }))
     }
   }
 
@@ -135,8 +166,28 @@ export default function PublicInvitationPage() {
                   />
                 </>
               )}
-              <div className="public-block-content" style={(hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}}>
-                {renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent, guestName, isPreviewUrl)}
+              <div 
+                className="public-block-content" 
+                style={{
+                  ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
+                  ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none' } : {})
+                }}
+              >
+                {renderPublicBlock(
+                  block, 
+                  theme, 
+                  rsvpForm, 
+                  setRsvpForm, 
+                  handleRsvp, 
+                  rsvpSent, 
+                  wishForm, 
+                  setWishForm, 
+                  handleSendWish, 
+                  wishSent,
+                  guestName, 
+                  isPreviewUrl, 
+                  invitation.wishes || []
+                )}
               </div>
             </div>
           )
@@ -146,7 +197,21 @@ export default function PublicInvitationPage() {
   )
 }
 
-function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvpSent, guestName, isPreviewUrl) {
+export function renderPublicBlock(
+  block, 
+  theme, 
+  rsvpForm, 
+  setRsvpForm, 
+  handleRsvp, 
+  rsvpSent, 
+  wishForm, 
+  setWishForm, 
+  handleSendWish, 
+  wishSent,
+  guestName, 
+  isPreviewUrl, 
+  wishes = []
+) {
   switch (block.type) {
     case 'cover':
       return (
@@ -192,7 +257,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       return (
         <h2 className="public-heading" style={{
           fontFamily: block.data.fontFamily || 'Gambarino',
-          fontSize: `clamp(1.5rem, 5vw, ${block.data.fontSize || 32}px)`,
+          fontSize: `clamp(1.8rem, 8vw, ${block.data.fontSize || 36}px)`,
           color: block.data.color || theme.primaryColor || '#2D2D2D',
           textAlign: block.data.align || 'center',
           fontStyle: block.data.fontStyle || 'normal',
@@ -204,7 +269,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       return (
         <p className="public-paragraph" style={{
           fontSize: block.data.fontSize || 15,
-          color: block.data.color || '#8A8A8A',
+          color: block.data.color || 'var(--text-muted)',
           textAlign: block.data.align || 'center',
         }}>
           {block.data.content}
@@ -212,7 +277,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       )
     case 'photo':
       return block.data.url ? (
-        <div style={{ borderRadius: block.data.borderRadius || 8, overflow: 'hidden' }}>
+        <div style={{ borderRadius: block.data.fullWidth ? 0 : (block.data.borderRadius || 8), overflow: 'hidden' }}>
           <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', objectFit: block.data.fit || 'cover', display: 'block' }} />
           {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>{block.data.caption}</p>}
         </div>
@@ -239,7 +304,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
         }
         
         return (
-          <div style={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '16/9' }}>
+          <div style={{ borderRadius: block.data.fullWidth ? 0 : 8, overflow: 'hidden', aspectRatio: '16/9' }}>
             <iframe 
               src={embedUrl} 
               style={{ width: '100%', height: '100%', border: 'none' }} 
@@ -251,7 +316,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       }
       
       return (
-        <div style={{ borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ borderRadius: block.data.fullWidth ? 0 : 8, overflow: 'hidden' }}>
           <video 
             src={block.data.url} 
             style={{ width: '100%', objectFit: 'cover', display: 'block' }} 
@@ -280,7 +345,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
       return (
         <div className="public-gallery" style={{ gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)` }}>
           {images.map((img, i) => (
-            <div key={i} className="public-gallery-item">
+            <div key={i} className="public-gallery-item" style={{ borderRadius: block.data.fullWidth ? 0 : 8 }}>
               <img src={img} className="public-gallery-img" />
             </div>
           ))}
@@ -316,15 +381,15 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
         <div className="public-location">
           <div className="pl-grid">
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Tanggal</span>
+              <span className="label-caps" style={{ fontSize: 11, opacity: 0.6, display: 'block', marginBottom: 4 }}>Tanggal</span>
               <p>{block.data.date || 'TBA'}</p>
             </div>
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Waktu</span>
+              <span className="label-caps" style={{ fontSize: 11, opacity: 0.6, display: 'block', marginBottom: 4 }}>Waktu</span>
               <p>{block.data.time || 'TBA'}</p>
             </div>
             <div className="pl-item">
-              <span className="label-caps" style={{ fontSize: 10, opacity: 0.6 }}>Tempat</span>
+              <span className="label-caps" style={{ fontSize: 11, opacity: 0.6, display: 'block', marginBottom: 4 }}>Tempat</span>
               <p>{block.data.venue || 'TBA'}</p>
             </div>
           </div>
@@ -361,18 +426,18 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
             />
             <input
               className="public-input"
-              type="email"
-              placeholder="Alamat Email"
+              type="tel"
+              placeholder="Nomor HP"
               value={rsvpForm.email}
               onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })}
               required
             />
-            <div className="rsvp-buttons">
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} onClick={(e) => handleRsvp(e, 'yes')}>
+            <div className="rsvp-buttons" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '14px' }} onClick={(e) => handleRsvp(e, 'yes')}>
                 Akan Hadir
               </button>
-              <button type="submit" className="btn btn-outline" style={{ flex: 1 }} onClick={(e) => handleRsvp(e, 'no')}>
-                Berhalangan
+              <button type="submit" className="btn btn-outline" style={{ flex: 1, padding: '14px' }} onClick={(e) => handleRsvp(e, 'no')}>
+                Maaf, Batal
               </button>
             </div>
           </form>
@@ -429,7 +494,7 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
               )}
             </div>
             {/* Person 2 */}
-            <div className="public-person" style={{ marginTop: 40 }}>
+            <div className="public-person" style={{ marginTop: block.data.photo2 ? 40 : 0 }}>
               {block.data.photo2 && (
                 <div className="public-person-img-wrapper">
                   <img src={block.data.photo2} className="public-person-img" />
@@ -468,29 +533,90 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
         </div>
       )
     case 'wishes':
-      const messages = block.data.messages || [];
-      if (messages.length === 0) {
-        if (!isPreviewUrl) return null;
-        return (
-          <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(255,255,255,0.4)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.03)' }}>
-            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 16, color: theme.primaryColor }}>{block.data.title || 'Wishes'}</h4>
-            <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>Belum ada ucapan.</div>
-          </div>
-        )
-      }
+      const messages = wishes;
       return (
         <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(255,255,255,0.4)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.03)' }}>
           <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 28, color: theme.primaryColor }}>{block.data.title || 'Wishes'}</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {messages.map((msg, i) => (
-              <div key={i} style={{ background: '#fff', padding: 20, borderRadius: 12, textAlign: 'left', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}>
-                <p style={{ margin: '0 0 16px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, fontStyle: 'italic' }}>"{msg.content}"</p>
-                <div style={{ fontSize: 12, fontWeight: 600, color: theme.primaryColor || 'var(--olive)', borderTop: '1px solid var(--border-light)', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.primaryColor || 'var(--olive)', opacity: 0.4 }} />
-                  {msg.author || 'Tamu'}
-                </div>
+          
+          {/* Wish Submission Form */}
+          <form className="public-wish-form" style={{ marginBottom: 40, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }} onSubmit={handleSendWish}>
+            {wishSent && (
+              <div style={{ padding: '12px 16px', background: 'rgba(74, 84, 46, 0.05)', borderRadius: 8, marginBottom: 8, textAlign: 'center' }}>
+                <p className="serif-italic" style={{ color: 'var(--olive)', margin: 0, fontSize: 13 }}>Ucapan terkirim! Terima kasih.</p>
               </div>
-            ))}
+            )}
+            <input
+              className="public-input"
+              placeholder="Nama Anda"
+              value={wishForm.name}
+              onChange={e => {
+                setWishForm({ ...wishForm, name: e.target.value });
+                if (wishSent) setWishSent(false); // Clear success msg on type
+              }}
+              required
+            />
+            <textarea
+              className="public-input"
+              placeholder="Tulis ucapan/doa untuk kami..."
+              rows={3}
+              style={{ resize: 'none', minHeight: 100 }}
+              value={wishForm.content}
+              onChange={e => {
+                setWishForm({ ...wishForm, content: e.target.value });
+                if (wishSent) setWishSent(false); // Clear success msg on type
+              }}
+              required
+            />
+            <button type="submit" className="btn btn-primary btn-full" style={{ padding: '14px' }}>
+              Kirim Ucapan
+            </button>
+          </form>
+
+          <div className="public-wishes-list" style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 16,
+            maxHeight: 400,
+            overflowY: 'auto',
+            paddingRight: 8,
+          }}>
+            {messages.length === 0 ? (
+              <div style={{ fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic', padding: '20px 0' }}>Belum ada ucapan.</div>
+            ) : (
+              messages.map((msg, i) => (
+                <div key={i} style={{ 
+                  background: '#fff', 
+                  padding: 20, 
+                  borderRadius: 12, 
+                  textAlign: 'left', 
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
+                  border: '1px solid rgba(0,0,0,0.02)'
+                }}>
+                  <p style={{ margin: '0 0 16px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, fontStyle: 'italic' }}>"{msg.content}"</p>
+                  <div style={{ 
+                    fontSize: 12, 
+                    fontWeight: 600, 
+                    color: theme.primaryColor || 'var(--olive)', 
+                    borderTop: '1px solid var(--border-light)', 
+                    paddingTop: 14, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    gap: 8 
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.primaryColor || 'var(--olive)', opacity: 0.4 }} />
+                      {msg.author || 'Tamu'}
+                    </div>
+                    {msg.date && (
+                      <span style={{ fontSize: 10, opacity: 0.4, fontWeight: 400 }}>
+                        {new Date(msg.date).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )
@@ -513,9 +639,17 @@ function renderPublicBlock(block, theme, rsvpForm, setRsvpForm, handleRsvp, rsvp
             <h2 className="public-footer-couple">{block.data.coupleName || ''}</h2>
             <p className="public-footer-subtitle" style={{ fontSize: 14, opacity: 0.8, maxWidth: 300, margin: '0 auto 40px' }}>{block.data.subtitle || ''}</p>
             {block.data.showWatermark && (
-              <div className="public-footer-watermark">
-                <img src={Logo} alt="Invitori" style={{ height: 20, opacity: 0.4 }} />
-                <p>Digital Invitation by Invitori</p>
+              <div style={{ 
+                marginTop: 40, 
+                paddingTop: 24, 
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <img src={Logo} alt="Invori" style={{ height: 16, opacity: 0.5, filter: 'brightness(0) invert(1)' }} />
+                <p style={{ margin: 0, fontSize: 10, opacity: 0.5, letterSpacing: '0.05em' }}>DIGITAL INVITATION BY INVORI</p>
               </div>
             )}
           </div>

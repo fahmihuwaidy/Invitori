@@ -194,30 +194,27 @@
 /* Phone Frame */
 .phone-frame {
   width: 360px;
-  min-height: 640px;
-  background: #1a1a1a;
-  border-radius: 40px;
-  padding: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15), inset 0 0 0 2px #333;
+  aspect-ratio: 932 / 1920; /* Prevents stretching, maintains exact mockup proportion */
+  background: transparent;
+  background-image: url('../assets/frame phone.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-sizing: border-box;
+  padding: 41px 10px 8px 10px; /* Precise mask padding based on PNG bounding box */
   position: relative;
-}
-
-.phone-notch {
-  width: 120px;
-  height: 28px;
-  background: #1a1a1a;
-  border-radius: 0 0 16px 16px;
-  margin: -12px auto 0;
-  position: relative;
-  z-index: 2;
+  display: flex;
+  flex-direction: column;
 }
 
 .phone-screen {
-  border-radius: 30px;
-  min-height: 600px;
+  border-radius: 28px; /* High curvature to strictly match inside screen */
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 40px 12px 20px;
+  padding: 0;
+  background: transparent;
 }
 
 .phone-empty {

@@ -56,7 +56,7 @@ export function InvitationProvider({ children }) {
           .from('rsvps')
           .select('*')
           .in('invitation_id', invIds)
-          .order('created_at', { ascending: false })
+          .order('sent_at', { ascending: false })
 
         if (!rsvpError && rsvpData) {
           allRsvps = rsvpData
@@ -106,7 +106,7 @@ export function InvitationProvider({ children }) {
         message: r.message,
         invitationId: r.invitation_id,
         invitationTitle: titleMap[r.invitation_id] || 'Unknown',
-        createdAt: r.created_at,
+        sentAt: r.sent_at,
       }))
       setRecentRsvps(enrichedRsvps)
     } catch (err) {
@@ -352,6 +352,13 @@ export function InvitationProvider({ children }) {
       .eq('invitation_id', inv.id)
       .order('sort_order', { ascending: true })
 
+    const { data: rsvpData } = await supabase
+      .from('rsvps')
+      .select('name, message, sent_at')
+      .eq('invitation_id', inv.id)
+      .not('message', 'is', null)
+      .order('sent_at', { ascending: false })
+
     return {
       id: inv.id,
       title: inv.title,
@@ -369,6 +376,11 @@ export function InvitationProvider({ children }) {
         type: b.type,
         data: b.data,
         sortOrder: b.sort_order,
+      })),
+      wishes: (rsvpData || []).filter(r => r.message?.trim().length > 0).map(r => ({
+        author: r.name,
+        content: r.message,
+        date: r.sent_at,
       })),
       analytics: { totalViews: inv.total_views },
       createdAt: inv.created_at,
