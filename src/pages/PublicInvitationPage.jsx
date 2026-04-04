@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useInvitations } from '../contexts/InvitationContext'
 import { useState, useEffect } from 'react'
+import { HiOutlineCheck, HiOutlineX, HiX, HiOutlineLocationMarker, HiOutlineCalendar, HiOutlineClock } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import '../index.css'
 import './PublicInvitationPage.css'
@@ -13,9 +14,11 @@ export default function PublicInvitationPage() {
   const isPreviewUrl = searchParams.get('preview') === 'true'
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', attendance: '' })
+  const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', message: '', attendance: '' })
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [isRsvpLoading, setIsRsvpLoading] = useState(false)
   const [wishForm, setWishForm] = useState({ name: guestName, content: '' })
+  const [isWishLoading, setIsWishLoading] = useState(false)
   const [wishSent, setWishSent] = useState(false)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 })
 
@@ -62,51 +65,60 @@ export default function PublicInvitationPage() {
 
   const handleRsvp = async (e, attendanceValue) => {
     if (e) e.preventDefault()
+    if (isRsvpLoading) return
     
-    // Default to 'yes' if not set
     const submitAttendance = attendanceValue || rsvpForm.attendance || 'yes'
-    
-    // Update state to reflect final choice just in case
-    setRsvpForm(prev => ({ ...prev, attendance: submitAttendance }))
-    
-    const success = await addRsvp(invitation.id, { ...rsvpForm, attendance: submitAttendance, sentAt: new Date().toISOString() })
-    if (success) {
-      setRsvpSent(true)
+    setIsRsvpLoading(true)
+    try {
+      const success = await addRsvp(invitation.id, { ...rsvpForm, attendance: submitAttendance, sentAt: new Date().toISOString() })
+      if (success) {
+        setRsvpSent(true)
+      }
+    } catch (err) {
+      console.error('RSVP Error:', err)
+    } finally {
+      setIsRsvpLoading(false)
     }
   }
 
   const handleSendWish = async (e) => {
     if (e) e.preventDefault()
-    if (!wishForm.content.trim()) return
+    if (!wishForm.content.trim() || isWishLoading) return
 
-    const success = await addRsvp(invitation.id, { 
-      name: wishForm.name, 
-      email: 'wish@invori.com', // Placeholder for wishes
-      message: wishForm.content,
-      attendance: null, // Use null to avoid 'yes'/'no' constraint if it's just a wish
-      sentAt: new Date().toISOString() 
-    })
+    setIsWishLoading(true)
+    try {
+      const success = await addRsvp(invitation.id, { 
+        name: wishForm.name, 
+        email: 'wish@invori.com', 
+        message: wishForm.content,
+        attendance: null,
+        sentAt: new Date().toISOString() 
+      })
 
-    if (success) {
-      setWishSent(true)
-      // Update local state is important so the user sees their wish without refresh
-      setInvitation(prev => ({
-        ...prev,
-        wishes: [{
-          author: wishForm.name,
-          content: wishForm.content,
-          date: new Date().toISOString()
-        }, ...(prev.wishes || [])]
-      }))
-      // Reset form but keep name
-      setWishForm(prev => ({ ...prev, content: '' }))
+      if (success) {
+        setWishSent(true)
+        setInvitation(prev => ({
+          ...prev,
+          wishes: [{
+            author: wishForm.name,
+            content: wishForm.content,
+            date: new Date().toISOString()
+          }, ...(prev.wishes || [])]
+        }))
+        setWishForm(prev => ({ ...prev, content: '' }))
+        setTimeout(() => setWishSent(false), 3000)
+      }
+    } catch (err) {
+      console.error('Wish Error:', err)
+    } finally {
+      setIsWishLoading(false)
     }
   }
 
   return (
     <div className="public-page-wrapper">
       <div className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
-        {invitation.blocks.map((block, index) => {
+        {(invitation.blocks || []).map((block, index) => {
           const hasBg = !!block.data?.backgroundImage
           const blockMinHeight = block.data?.blockMinHeight || 0
           const bgAspectRatio = block.data?.backgroundAspectRatio || null
@@ -186,7 +198,9 @@ export default function PublicInvitationPage() {
                   wishSent,
                   guestName, 
                   isPreviewUrl, 
-                  invitation.wishes || []
+                  invitation.wishes || [],
+                  isRsvpLoading,
+                  isWishLoading
                 )}
               </div>
             </div>
@@ -210,7 +224,9 @@ export function renderPublicBlock(
   wishSent,
   guestName, 
   isPreviewUrl, 
-  wishes = []
+  wishes = [],
+  isRsvpLoading = false,
+  isWishLoading = false
 ) {
   switch (block.type) {
     case 'cover':
@@ -414,30 +430,48 @@ export function renderPublicBlock(
         )
       }
       return (
-        <div className="public-rsvp-container">
+        <div className="public-rsvp-container animate-fade-in-up">
           <form className="public-rsvp">
-            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 12 }}>{block.data.title || 'RSVP'}</h4>
-            <input
-              className="public-input"
-              placeholder="Nama Lengkap"
-              value={rsvpForm.name}
-              onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })}
-              required
-            />
-            <input
-              className="public-input"
-              type="tel"
-              placeholder="Nomor HP"
-              value={rsvpForm.email}
-              onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })}
-              required
-            />
+            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 12 }}>{block.data.title || 'Konfirmasi Kehadiran'}</h4>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 4 }}>Nama Tamu</label>
+              <input
+                className="public-input"
+                placeholder="Nama Lengkap"
+                value={rsvpForm.name}
+                onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 4 }}>Nomor HP</label>
+              <input
+                className="public-input"
+                type="tel"
+                placeholder="Nomor HP / WhatsApp"
+                value={rsvpForm.email}
+                onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })}
+                required
+              />
+            </div>
             <div className="rsvp-buttons" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '14px' }} onClick={(e) => handleRsvp(e, 'yes')}>
-                Akan Hadir
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '14px', position: 'relative' }} 
+                onClick={(e) => handleRsvp(e, 'yes')}
+                disabled={isRsvpLoading}
+              >
+                {isRsvpLoading ? '...' : 'Akan Hadir'}
               </button>
-              <button type="submit" className="btn btn-outline" style={{ flex: 1, padding: '14px' }} onClick={(e) => handleRsvp(e, 'no')}>
-                Maaf, Batal
+              <button 
+                type="submit" 
+                className="btn btn-outline" 
+                style={{ flex: 1, padding: '14px' }} 
+                onClick={(e) => handleRsvp(e, 'no')}
+                disabled={isRsvpLoading}
+              >
+                {isRsvpLoading ? '...' : 'Maaf, Batal'}
               </button>
             </div>
           </form>
@@ -549,11 +583,9 @@ export function renderPublicBlock(
               className="public-input"
               placeholder="Nama Anda"
               value={wishForm.name}
-              onChange={e => {
-                setWishForm({ ...wishForm, name: e.target.value });
-                if (wishSent) setWishSent(false); // Clear success msg on type
-              }}
+              onChange={e => setWishForm({ ...wishForm, name: e.target.value })}
               required
+              disabled={isWishLoading}
             />
             <textarea
               className="public-input"
@@ -561,14 +593,12 @@ export function renderPublicBlock(
               rows={3}
               style={{ resize: 'none', minHeight: 100 }}
               value={wishForm.content}
-              onChange={e => {
-                setWishForm({ ...wishForm, content: e.target.value });
-                if (wishSent) setWishSent(false); // Clear success msg on type
-              }}
+              onChange={e => setWishForm({ ...wishForm, content: e.target.value })}
               required
+              disabled={isWishLoading}
             />
-            <button type="submit" className="btn btn-primary btn-full" style={{ padding: '14px' }}>
-              Kirim Ucapan
+            <button type="submit" className="btn btn-primary btn-full" style={{ padding: '14px' }} disabled={isWishLoading || !wishForm.content.trim()}>
+              {isWishLoading ? 'Mengirim...' : 'Kirim Ucapan'}
             </button>
           </form>
 

@@ -409,6 +409,17 @@ export function InvitationProvider({ children }) {
     return true
   }
 
+  const deleteRsvp = async (rsvpId) => {
+    const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId)
+    if (error) {
+      console.error('Error deleting RSVP:', error)
+      return false
+    }
+    // Refresh to update UI
+    fetchInvitations()
+    return true
+  }
+
   const value = {
     invitations,
     recentRsvps,
@@ -423,6 +434,7 @@ export function InvitationProvider({ children }) {
     fetchPublicInvitation,
     incrementView,
     addRsvp,
+    deleteRsvp, // Added
     refreshInvitations: fetchInvitations,
   }
 

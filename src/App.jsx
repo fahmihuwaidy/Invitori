@@ -26,38 +26,36 @@ function ProtectedRoute({ children }) {
 
 function App() {
   return (
-    <ComingSoon>
-      <BrowserRouter>
-        <AuthProvider>
-          <InvitationProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/undangan/:slug" element={<PublicInvitationPage />} />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AtelierLayout>
-                      <DashboardPage />
-                    </AtelierLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/editor/:id"
-                element={
-                  <ProtectedRoute>
-                    <EditorPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </InvitationProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ComingSoon>
+    <BrowserRouter>
+      <AuthProvider>
+        <InvitationProvider>
+          <Routes>
+            <Route path="/" element={<ComingSoon><LandingPage /></ComingSoon>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/undangan/:slug" element={<PublicInvitationPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AtelierLayout>
+                    <DashboardPage />
+                  </AtelierLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/editor/:id"
+              element={
+                <ProtectedRoute>
+                  <EditorPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </InvitationProvider>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

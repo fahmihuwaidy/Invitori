@@ -193,181 +193,7 @@ function renderBlock(block, isSelected, onSelect, theme) {
   )
 }
 
-function GuestListModal({ invitation, onClose }) {
-  const [guests, setGuests] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [newName, setNewName] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [copiedId, setCopiedId] = useState(null)
 
-  const baseUrl = `${window.location.origin}/undangan/${invitation.slug}`
-
-  const fetchGuests = async () => {
-    const { data } = await supabase
-      .from('guests')
-      .select('*')
-      .eq('invitation_id', invitation.id)
-      .order('created_at', { ascending: true })
-    if (data) setGuests(data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchGuests()
-  }, [invitation.id])
-
-  const handleAdd = async () => {
-    if (!newName.trim()) return
-    setAdding(true)
-    const { data, error } = await supabase
-      .from('guests')
-      .insert({ invitation_id: invitation.id, name: newName.trim(), phone: newPhone.trim() || null })
-      .select()
-      .single()
-    if (data) setGuests(prev => [...prev, data])
-    setNewName('')
-    setNewPhone('')
-    setAdding(false)
-  }
-
-  const handleDelete = async (guestId) => {
-    await supabase.from('guests').delete().eq('id', guestId)
-    setGuests(prev => prev.filter(g => g.id !== guestId))
-  }
-
-  const getLink = (name) => `${baseUrl}?to=${encodeURIComponent(name)}&preview=true`
-
-  const copyLink = (guest) => {
-    navigator.clipboard.writeText(getLink(guest.name))
-    setCopiedId(guest.id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: '92%', maxWidth: 680, maxHeight: '88vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        
-        {/* Header */}
-        <div style={{ padding: '24px 28px 0', borderBottom: '1px solid var(--border)', paddingBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <h3 className="serif-italic" style={{ margin: 0, fontSize: 26, color: 'var(--olive)' }}>Guest List</h3>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-                Tambahkan nama tamu dan bagikan link undangan personal mereka
-              </p>
-            </div>
-            <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, marginLeft: 16 }}>
-              <HiX size={22} color="var(--text-light)"/>
-            </button>
-          </div>
-        </div>
-
-        {/* Add Guest Form */}
-        <div style={{ padding: '20px 28px', background: '#fafaf8', borderBottom: '1px solid var(--border)' }}>
-          <p className="label-caps" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 12 }}>Tambah Tamu Baru</p>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-            <div style={{ flex: 2 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nama Tamu *</label>
-              <input
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                placeholder="cth: Budi Santoso"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div style={{ flex: 2 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>No. HP / WA (opsional)</label>
-              <input
-                value={newPhone}
-                onChange={e => setNewPhone(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                placeholder="cth: 08123456789"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <button
-              onClick={handleAdd}
-              disabled={adding || !newName.trim()}
-              style={{ padding: '10px 20px', background: adding || !newName.trim() ? '#ccc' : 'var(--olive)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: adding || !newName.trim() ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', height: 42 }}
-            >
-              {adding ? 'Menambah...' : '+ Tambah'}
-            </button>
-          </div>
-        </div>
-
-        {/* Guest List */}
-        <div style={{ padding: '0 28px 28px', flex: 1 }}>
-          {loading ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>Memuat daftar tamu...</p>
-          ) : guests.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
-              <p className="serif-italic" style={{ fontSize: 18, color: 'var(--text-light)', margin: 0 }}>Belum ada tamu ditambahkan</p>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Tambahkan nama tamu di atas untuk membuat link undangan personal mereka</p>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0 12px' }}>
-                <span className="label-caps" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{guests.length} Tamu Terdaftar</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {guests.map((guest, i) => {
-                  const link = getLink(guest.name)
-                  const waLink = guest.phone
-                    ? `https://wa.me/${guest.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Halo ${guest.name},\n\nKami mengundang Anda untuk hadir di acara kami 🌿\n${link}`)}`
-                    : null
-                  return (
-                    <div key={guest.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10, background: '#fafaf8', transition: 'box-shadow 0.2s' }}>
-                      {/* Number */}
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--olive)', flexShrink: 0 }}>
-                        {i + 1}
-                      </div>
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 15, color: '#2D2D2D', marginBottom: 3 }}>{guest.name}</div>
-                        {guest.phone && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{guest.phone}</div>}
-                        <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          🔗 {link}
-                        </div>
-                      </div>
-                      {/* Actions */}
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                        <button
-                          onClick={() => copyLink(guest)}
-                          title="Salin Link"
-                          style={{ padding: '7px 12px', background: copiedId === guest.id ? '#edf5ed' : '#fff', color: copiedId === guest.id ? '#3a7a3a' : 'var(--olive)', border: `1px solid ${copiedId === guest.id ? '#3a7a3a' : 'var(--border)'}`, borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                        >
-                          {copiedId === guest.id ? '✓ Tersalin' : '📋 Salin Link'}
-                        </button>
-                        {waLink && (
-                          <a href={waLink} target="_blank" rel="noopener noreferrer"
-                            title="Kirim via WhatsApp"
-                            style={{ padding: '7px 12px', background: '#25D366', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center' }}
-                          >
-                            WA
-                          </a>
-                        )}
-                        <button
-                          onClick={() => handleDelete(guest.id)}
-                          title="Hapus Tamu"
-                          style={{ padding: '7px 10px', background: 'transparent', color: '#ccc', border: '1px solid #eee', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function SettingsModal({ invitation, onSave, onClose }) {
   const [data, setData] = useState({ title: invitation.title, slug: invitation.slug, theme_fontFamily: invitation.theme?.fontFamily || 'Inter', theme_primaryColor: invitation.theme?.primaryColor || '#565F34', theme_backgroundColor: invitation.theme?.backgroundColor || '#EDE9E7' })
@@ -552,20 +378,6 @@ export default function EditorPage() {
     }
   }
 
-  const handleSidebarRegistry = () => {
-    const hasRegistry = invitation.blocks?.find(b => b.type === 'registry' || b.type === 'gift')
-    if (!hasRegistry) {
-      addBlock('registry')
-    } else {
-      setSelectedBlock(hasRegistry.id)
-      setSettingsOpen(true)
-      setTimeout(() => {
-        const el = document.getElementById(hasRegistry.id)
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 150)
-    }
-  }
-
   return (
     <div className="editor-page">
       {/* Sidebar */}
@@ -580,9 +392,8 @@ export default function EditorPage() {
         </div>
         <nav className="sidebar-nav">
           <a className="sidebar-link" onClick={() => navigate('/admin')}><HiOutlineViewGrid size={18} /><span>DASHBOARD</span></a>
-          <a className="sidebar-link active"><HiOutlineMail size={18} /><span>INVITATIONS</span></a>
-          <a className="sidebar-link" onClick={() => setActiveModal('guestlist')}><HiOutlineUserGroup size={18} /><span>GUEST LIST</span></a>
-          <a className="sidebar-link" onClick={handleSidebarRegistry}><HiOutlineGift size={18} /><span>REGISTRY</span></a>
+          <a className="sidebar-link active"><HiOutlineMail size={18} /><span>EDITOR</span></a>
+          <a className="sidebar-link" onClick={() => navigate('/admin?tab=rsvps')}><HiOutlineGift size={18} /><span>RSVPS & WISHES</span></a>
           <a className="sidebar-link" onClick={() => setActiveModal('settings')}><HiOutlineCog size={18} /><span>SETTINGS</span></a>
         </nav>
         <div className="sidebar-bottom">
@@ -706,9 +517,7 @@ export default function EditorPage() {
         )}
       </div>
 
-      {activeModal === 'guestlist' && (
-        <GuestListModal invitation={invitation} onClose={() => setActiveModal(null)} />
-      )}
+
       {activeModal === 'settings' && (
         <SettingsModal 
           invitation={invitation} 

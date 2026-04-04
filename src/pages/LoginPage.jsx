@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi'
@@ -13,14 +13,17 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  if (user) {
-    if (user.email === 'fahmihuwaidy8@gmail.com') {
-      navigate('/admin', { replace: true })
-    } else {
-      navigate('/', { replace: true })
+  useEffect(() => {
+    if (user) {
+      if (user.email === 'fahmihuwaidy8@gmail.com') {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     }
-    return null
-  }
+  }, [user, navigate])
+
+  if (user) return null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
