@@ -467,27 +467,47 @@ export default function DashboardPage() {
           <h1 className="serif-italic dash-welcome">Selamat datang, {user?.name || 'Member'}</h1>
           <p className="dash-subtitle">Kelola undangan digital Anda dari sini.</p>
         </div>
-        <div className="dash-profile" style={{ flexWrap: 'wrap', gap: 16 }}>
+        <div className="dash-profile" style={{ flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
           {invitations.length > 0 && selectedInv && (
-            <div className="dash-inv-selector-wrapper" style={{ minWidth: 220 }}>
-              <span className="label-caps" style={{ fontSize: 10, display: 'block', marginBottom: 4 }}>Pilih Undangan</span>
+            <div className="dash-inv-selector-wrapper" style={{ minWidth: 240 }}>
+              <span className="label-caps" style={{ fontSize: 10, display: 'block', marginBottom: 6, color: 'var(--olive)', fontWeight: 600 }}>Pilih Undangan</span>
               <div style={{ position: 'relative' }}>
                 <select 
                   className="settings-input" 
                   value={selectedInvId} 
                   onChange={handleInvChange}
-                  style={{ width: '100%', paddingRight: 32, appearance: 'none', background: 'var(--card-bg)', fontWeight: 500 }}
+                  style={{ 
+                    width: '100%', 
+                    paddingRight: 36, 
+                    appearance: 'none', 
+                    background: 'var(--white)', 
+                    fontWeight: 600,
+                    height: 42,
+                    border: '1.5px solid var(--border)',
+                    borderRadius: '8px'
+                  }}
                 >
                   {invitations.map(inv => (
                     <option key={inv.id} value={inv.id}>{inv.title || 'Untitled Project'}</option>
                   ))}
                 </select>
-                <HiSelector size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                <HiSelector size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--olive)' }} />
               </div>
             </div>
           )}
-          <button className="btn btn-primary btn-sm" onClick={() => setShowPresetModal(true)}>
-            <HiOutlinePlus size={14} /> Buat Baru
+          <button 
+            className="btn btn-primary" 
+            onClick={() => setShowPresetModal(true)}
+            style={{ 
+              height: 42, 
+              padding: '0 24px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <HiOutlinePlus size={18} /> Buat Baru
           </button>
         </div>
       </div>
