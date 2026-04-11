@@ -6,6 +6,53 @@ import Logo from '../assets/Logo.png'
 import '../index.css'
 import './PublicInvitationPage.css'
 
+
+/** Detects if a URL points to a video file */
+export const isMediaVideo = (url) => {
+  if (!url) return false;
+  // Common video extensions
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.mov'];
+  const lowerUrl = url.toLowerCase();
+  
+  // Check extensions
+  if (videoExtensions.some(ext => lowerUrl.includes(ext))) return true;
+  
+  // Check Cloudinary video paths
+  if (lowerUrl.includes('/video/upload/')) return true;
+  
+  return false;
+};
+
+/** Shared component to render either <img> or <video> */
+export const MediaRenderer = ({ src, className, style, alt = "", ...props }) => {
+  if (!src) return null;
+  
+  if (isMediaVideo(src)) {
+    return (
+      <video 
+        src={src} 
+        className={className}
+        style={{ ...style, objectFit: style?.objectFit || 'cover' }}
+        autoPlay
+        loop
+        muted
+        playsInline
+        {...props}
+      />
+    );
+  }
+  
+  return (
+    <img 
+      src={src} 
+      className={className} 
+      style={style} 
+      alt={alt} 
+      {...props} 
+    />
+  );
+};
+
 export default function PublicInvitationPage() {
   const { slug } = useParams()
   const [searchParams] = useSearchParams()
@@ -152,9 +199,8 @@ export default function PublicInvitationPage() {
             >
               {hasBg && !isCover && (
                 <>
-                  <img
+                  <MediaRenderer
                     src={block.data.backgroundImage}
-                    alt=""
                     style={{
                       position: 'absolute',
                       inset: 0,
@@ -164,6 +210,7 @@ export default function PublicInvitationPage() {
                       objectPosition: 'center',
                       zIndex: 0,
                       pointerEvents: 'none',
+                      borderRadius: 'inherit'
                     }}
                   />
                   <div
@@ -174,6 +221,7 @@ export default function PublicInvitationPage() {
                       opacity: block.data.backgroundOverlay ?? 0.3,
                       zIndex: 1,
                       pointerEvents: 'none',
+                      borderRadius: 'inherit'
                     }}
                   />
                 </>
@@ -182,7 +230,7 @@ export default function PublicInvitationPage() {
                 className="public-block-content" 
                 style={{
                   ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
-                  ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none' } : {})
+                  ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: isFullWidth ? 0 : 24, paddingRight: isFullWidth ? 0 : 24 } : { paddingLeft: 24, paddingRight: 24 })
                 }}
               >
                 {renderPublicBlock(
@@ -231,24 +279,25 @@ export function renderPublicBlock(
   switch (block.type) {
     case 'cover':
       return (
-        <div className="public-cover">
-          {block.data.backgroundImage && (
-            <>
-              <img
-                src={block.data.backgroundImage}
-                alt=""
-                className="public-cover-bg"
-              />
-              <div
-                className="public-cover-overlay"
-                style={{
-                  backgroundColor: block.data.overlayColor || '#000000',
-                  opacity: block.data.overlayOpacity ?? 0.4,
-                }}
-              />
-            </>
-          )}
-          <div className="public-cover-content">
+        <div className="public-cover" style={{ alignItems: block.data.coverAlignItems || 'center' }}>
+          <div className="public-cover-bg-wrapper" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            <MediaRenderer 
+              src={block.data.backgroundImage} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              className="public-cover-bg"
+            />
+            <div
+              className="public-cover-overlay"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: block.data.overlayColor || '#000000',
+                opacity: block.data.overlayOpacity ?? 0.4,
+                zIndex: 1,
+              }}
+            />
+          </div>
+          <div className="public-cover-content" style={{ width: '100%', textAlign: block.data.coverTextAlign || 'center' }}>
             <p className="public-cover-subtitle">{block.data.subtitle || 'We Are Getting Married'}</p>
             <h1 className="public-cover-name">{block.data.coupleName || 'Couple Name'}</h1>
             <p className="public-cover-date">{block.data.date || ''}</p>
@@ -294,7 +343,11 @@ export function renderPublicBlock(
     case 'photo':
       return block.data.url ? (
         <div style={{ borderRadius: block.data.fullWidth ? 0 : (block.data.borderRadius || 8), overflow: 'hidden' }}>
-          <img src={block.data.url} alt={block.data.caption || ''} style={{ width: '100%', objectFit: block.data.fit || 'cover', display: 'block' }} />
+          <MediaRenderer 
+            src={block.data.url} 
+            alt={block.data.caption || ''} 
+            style={{ width: '100%', objectFit: block.data.fit || 'cover', display: 'block' }} 
+          />
           {block.data.caption && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>{block.data.caption}</p>}
         </div>
       ) : null
@@ -352,7 +405,7 @@ export function renderPublicBlock(
           <div className="public-gallery" style={{ gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)` }}>
             {Array(block.data.columns || 2).fill(0).map((_, i) => (
               <div key={i} className="public-gallery-item" style={{ background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-                 Foto {i+1}
+                 Media {i+1}
               </div>
             ))}
           </div>
@@ -362,7 +415,7 @@ export function renderPublicBlock(
         <div className="public-gallery" style={{ gridTemplateColumns: `repeat(${block.data.columns || 2}, 1fr)` }}>
           {images.map((img, i) => (
             <div key={i} className="public-gallery-item" style={{ borderRadius: block.data.fullWidth ? 0 : 8 }}>
-              <img src={img} className="public-gallery-img" />
+              <MediaRenderer src={img} className="public-gallery-img" />
             </div>
           ))}
         </div>
@@ -514,7 +567,7 @@ export function renderPublicBlock(
             <div className="public-person">
               {block.data.photo1 && (
                 <div className="public-person-img-wrapper">
-                  <img src={block.data.photo1} className="public-person-img" />
+                  <MediaRenderer src={block.data.photo1} className="public-person-img" />
                 </div>
               )}
               <div className="public-person-info">
@@ -531,7 +584,7 @@ export function renderPublicBlock(
             <div className="public-person" style={{ marginTop: block.data.photo2 ? 40 : 0 }}>
               {block.data.photo2 && (
                 <div className="public-person-img-wrapper">
-                  <img src={block.data.photo2} className="public-person-img" />
+                  <MediaRenderer src={block.data.photo2} className="public-person-img" />
                 </div>
               )}
               <div className="public-person-info">
@@ -659,7 +712,7 @@ export function renderPublicBlock(
           {footerPhotos.length > 0 && (
             <div className="public-footer-slideshow">
               {footerPhotos.map((photo, i) => (
-                <img key={i} src={photo} alt="" className="public-footer-slide" style={{ animationDelay: `${i * 5}s` }} />
+                <MediaRenderer key={i} src={photo} className="public-footer-slide" style={{ animationDelay: `${i * 5}s` }} />
               ))}
               <div className="public-footer-slideshow-overlay" />
             </div>

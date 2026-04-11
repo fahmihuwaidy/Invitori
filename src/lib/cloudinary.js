@@ -9,7 +9,7 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
  */
 export function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
-    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`
+    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', UPLOAD_PRESET)

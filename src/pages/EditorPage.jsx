@@ -14,7 +14,7 @@ import { HiOutlineArrowLeft, HiOutlineMenuAlt2, HiX, HiOutlineEye, HiOutlineTras
 import Logo from '../assets/Logo.png'
 import './EditorPage.css'
 import './PublicInvitationPage.css'
-import { renderPublicBlock } from './PublicInvitationPage'
+import { renderPublicBlock, isMediaVideo, MediaRenderer } from './PublicInvitationPage'
 
 /* Sortable block wrapper */
 function SortableBlock({ id, children }) {
@@ -103,9 +103,8 @@ function BlockBackgroundLayer({ data }) {
   if (!data.backgroundImage) return null
   return (
     <>
-      <img
+      <MediaRenderer
         src={data.backgroundImage}
-        alt=""
         style={{
           position: 'absolute',
           inset: 0,
@@ -137,19 +136,22 @@ function renderBlock(block, isSelected, onSelect, theme) {
   const hasBg = !!block.data.backgroundImage
   const isCover = block.type === 'cover'
   const isFooter = block.type === 'footer'
-  const isFullWidthBlock = isCover || isFooter || block.data.fullWidth !== false
+  const isFullWidthBlock = isCover || isFooter
   const blockMinHeight = block.data.blockMinHeight || 0
   const bgAspectRatio = block.data.backgroundAspectRatio || null
+
   const blockStyle = {
-    padding: isFullWidthBlock ? 0 : '12px 0',
+    opacity: 1, // override .public-block default
+    paddingTop: isFullWidthBlock ? 0 : (block.data?.spacingTop ?? 40),
+    paddingBottom: isFullWidthBlock ? 0 : (block.data?.spacingBottom ?? 40),
     cursor: 'pointer',
     border: isSelected ? '2px solid var(--olive)' : '2px solid transparent',
-    borderRadius: block.data.customBorderRadius ? `${block.data.customBorderRadius}px` : 'var(--radius-sm)',
+    borderRadius: block.data.customBorderRadius ? `${block.data.customBorderRadius}px` : undefined,
     transition: 'border-color 0.2s ease',
-    position: 'relative',
-    background: block.data.customBgColor || (isSelected ? 'rgba(86,95,52,0.04)' : 'transparent'),
-    color: block.data.customTextColor || 'inherit',
-    textAlign: block.data.customTextAlign || 'inherit',
+    position: hasBg ? 'relative' : undefined,
+    background: block.data.customBgColor || (isSelected ? 'rgba(86,95,52,0.04)' : undefined),
+    color: block.data.customTextColor || undefined,
+    textAlign: block.data.customTextAlign || undefined,
     '--text-dark': block.data.customTextColor || undefined,
     '--text-muted': block.data.customTextColor || undefined,
     '--text-light': block.data.customTextColor || undefined,
@@ -160,14 +162,20 @@ function renderBlock(block, isSelected, onSelect, theme) {
     alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
     justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
   }
-  const contentZ = hasBg ? { position: 'relative', zIndex: 2, width: '100%' } : {}
+
+  const px = isCover || isFooter ? 0 : 32
+  const contentStyle = {
+    ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
+    ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: px, paddingRight: px } : { paddingLeft: px, paddingRight: px })
+  }
 
   const onClick = (e) => { e.stopPropagation(); onSelect(block.id) }
 
   return (
-    <div style={blockStyle} onClick={onClick}>
+    <div className={`public-block ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`} style={blockStyle} onClick={onClick}>
       {hasBg && !isCover && <BlockBackgroundLayer data={block.data} />}
-      <div style={contentZ}>
+      
+      <div className="public-block-content" style={contentStyle}>
         {isSelected && (
           <span className="block-selected-label">SELECTED: {BLOCK_TYPES[block.type]?.label?.toUpperCase() || block.type.toUpperCase()}</span>
         )}
@@ -266,6 +274,7 @@ export default function EditorPage() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [activeModal, setActiveModal] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
   const hasCreated = useRef(false)
   const hasAppliedPreset = useRef(false)
 
@@ -350,9 +359,19 @@ export default function EditorPage() {
     }, 150)
   }
 
-  const deleteBlock = (blockId) => {
-    ctxDeleteBlock(invitation.id, blockId)
-    if (selectedBlock === blockId) setSelectedBlock(null)
+  const deleteBlock = async (blockId) => {
+    if (!blockId) return
+    
+    // Clear selection immediately
+    setSelectedBlock(null)
+    setSettingsOpen(false)
+    
+    // Trigger delete in context
+    try {
+      await ctxDeleteBlock(invitation.id, blockId)
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
   }
 
   const updateBlock = (blockId, data) => {
@@ -375,6 +394,27 @@ export default function EditorPage() {
     
     if (isPublishing) {
       alert(`Invitation published successfully!\n\nPublic link is live at:\n${window.location.origin}/undangan/${invitation.slug}`)
+    }
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    
+    // Create a timeout promise to ensure the UI doesn't stay stuck
+    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000))
+    
+    try {
+      // Race the update against the timeout
+      await Promise.race([
+        updateInvitation(invitation.id, { updatedAt: new Date().toISOString() }),
+        timeoutPromise
+      ])
+    } catch (error) {
+      console.error('Error saving:', error)
+    } finally {
+      // Ensure we stay in "Saving..." for at least 800ms for visual feedback, 
+      // but definitely reset after the race is over.
+      setTimeout(() => setIsSaving(false), 500)
     }
   }
 
@@ -431,7 +471,10 @@ export default function EditorPage() {
             )
           })}
         </div>
-        <div className="palette-footer">
+        <div className="palette-footer" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button className="btn btn-outline btn-full" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : '💾 Save Changes'}
+          </button>
           <button className="btn btn-primary btn-full" onClick={handlePublish}>
             ▶ {invitation.status === 'published' ? 'Unpublish' : 'Publish Design'}
           </button>
@@ -453,6 +496,9 @@ export default function EditorPage() {
             <span>{invitation.title}</span>
           </div>
           <div className="canvas-toolbar-actions">
+            <button className="btn btn-outline btn-sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
             <button className="btn btn-outline btn-sm" onClick={() => window.open(`/undangan/${invitation.slug}?preview=true`, '_blank')}>
               <HiOutlineEye size={14} /> Preview
             </button>
@@ -464,6 +510,32 @@ export default function EditorPage() {
 
         <div className="canvas-area" onClick={() => setSelectedBlock(null)}>
           <div className="phone-frame">
+            {/* Native Status Bar */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 48,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '0 28px', zIndex: 50, pointerEvents: 'none',
+              color: '#fff', mixBlendMode: 'difference',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
+              fontSize: 15, fontWeight: 600, letterSpacing: '-0.02em'
+            }}>
+              <span style={{ marginTop: 2 }}>9:41</span>
+              <div style={{ display: 'flex', gap: 7, alignItems: 'center', opacity: 0.9 }}>
+                <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 11H3V8H1V11ZM5 11H7V5H5V11ZM9 11H11V2H9V11ZM13 11H15V0H13V11Z" fill="currentColor"/></svg>
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 12C9.10457 12 10 11.1046 10 10C10 8.89543 9.10457 8 8 8C6.89543 8 6 8.89543 6 10C6 11.1046 6.89543 12 8 12Z" fill="currentColor"/><path d="M2.34315 5.65685C3.84277 4.15723 5.87673 3.31481 8 3.31481C10.1233 3.31481 12.1572 4.15723 13.6569 5.65685L16 3.31371C13.8752 1.18893 11.0028 0 8 0C4.99718 0 2.12479 1.18893 0 3.31371L2.34315 5.65685Z" fill="currentColor"/></svg>
+                <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M24 4V8" stroke="currentColor" strokeLinecap="round"/></svg>
+              </div>
+            </div>
+
+            {/* Native Home Indicator */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 34,
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
+              pointerEvents: 'none', zIndex: 50,
+            }}>
+              <div style={{ width: 134, height: 5, backgroundColor: '#fff', borderRadius: 10, mixBlendMode: 'difference' }} />
+            </div>
+
             <div className="phone-screen" style={{ background: invitation.theme?.backgroundColor || '#EDE9E7' }}>
               {blocks.length === 0 ? (
                 <div className="phone-empty">
@@ -475,16 +547,11 @@ export default function EditorPage() {
                   <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
                     {blocks.map(block => (
                       <SortableBlock key={block.id} id={block.id}>
-                        <div style={{ paddingTop: block.data?.spacingTop ?? 0, paddingBottom: block.data?.spacingBottom ?? 0 }}>
+                        <div style={{ position: 'relative' }}>
                           {renderBlock(block, selectedBlock === block.id, (id) => {
                             setSelectedBlock(id)
                             setSettingsOpen(true)
                           }, invitation?.theme)}
-                          {selectedBlock === block.id && (
-                            <button className="block-delete-btn" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id) }}>
-                              <HiOutlineTrash size={14} />
-                            </button>
-                          )}
                         </div>
                       </SortableBlock>
                     ))}
@@ -510,8 +577,19 @@ export default function EditorPage() {
           <div className="settings-body">
             <BlockSettingsPanel block={selected} onChange={(data) => updateBlock(selected.id, data)} />
             <div className="settings-actions">
+              <button 
+                className="btn btn-ghost btn-sm" 
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this block?')) {
+                    deleteBlock(selected.id)
+                  }
+                }}
+                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                Delete
+              </button>
               <button className="btn btn-ghost btn-sm" onClick={() => { setSettingsOpen(false); setSelectedBlock(null) }}>Discard</button>
-              <button className="btn btn-primary btn-sm" onClick={() => setSettingsOpen(false)}>Apply Changes</button>
+              <button className="btn btn-primary btn-sm" onClick={() => setSettingsOpen(false)}>Apply</button>
             </div>
           </div>
         )}
@@ -529,8 +607,8 @@ export default function EditorPage() {
   )
 }
 
-/* ImageUploader inline component */
-function ImageUploader({ currentUrl, onUpload }) {
+/* MediaUploader inline component */
+function MediaUploader({ currentUrl, onUpload }) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const fileInputRef = useRef(null)
@@ -547,7 +625,7 @@ function ImageUploader({ currentUrl, onUpload }) {
       onUpload(result.url)
     } catch (err) {
       console.error('Upload error:', err)
-      alert(`Gagal mengunggah foto: ${err.message}`)
+      alert(`Gagal mengunggah media: ${err.message}`)
     } finally {
       setUploading(false)
       setProgress(0)
@@ -558,7 +636,7 @@ function ImageUploader({ currentUrl, onUpload }) {
     <div className="image-uploader">
       {currentUrl && (
         <div className="image-uploader-preview">
-          <img src={currentUrl} alt="Preview" />
+          <MediaRenderer src={currentUrl} alt="Preview" />
         </div>
       )}
       <button
@@ -571,13 +649,13 @@ function ImageUploader({ currentUrl, onUpload }) {
         {uploading ? (
           <span>Uploading... {progress}%</span>
         ) : (
-          <><HiOutlineUpload size={14} /> {currentUrl ? 'Change Image' : 'Upload Image'}</>
+          <><HiOutlineUpload size={14} /> {currentUrl ? 'Change Media' : 'Upload Video / Photo'}</>
         )}
       </button>
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
@@ -595,7 +673,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <div className="settings-section">
           <span className="label-caps">Cover Background</span>
           <div style={{ marginTop: 8 }}>
-            <ImageUploader
+            <MediaUploader
               currentUrl={data.backgroundImage}
               onUpload={(url) => onChange({ backgroundImage: url })}
             />
@@ -646,6 +724,24 @@ function BlockSettingsPanel({ block, onChange }) {
               <input type="checkbox" checked={data.showScrollIndicator ?? true} onChange={e => onChange({ showScrollIndicator: e.target.checked })} />
               Show Scroll Indicator
             </label>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Vertical Align</label>
+              <select className="settings-select" value={data.coverAlignItems || 'center'} onChange={e => onChange({ coverAlignItems: e.target.value })}>
+                <option value="flex-start">Top</option>
+                <option value="center">Center</option>
+                <option value="flex-end">Bottom</option>
+              </select>
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Text Align</label>
+              <select className="settings-select" value={data.coverTextAlign || 'center'} onChange={e => onChange({ coverTextAlign: e.target.value })}>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
           </div>
         </div>
         <SpacingSection data={data} onChange={onChange} />
@@ -706,9 +802,9 @@ function BlockSettingsPanel({ block, onChange }) {
     return (
       <>
         <div className="settings-section">
-          <span className="label-caps">Image</span>
+          <span className="label-caps">Media (Video / Image)</span>
           <div style={{ marginTop: 8 }}>
-            <ImageUploader
+            <MediaUploader
               currentUrl={data.url}
               onUpload={(url) => onChange({ url })}
             />
@@ -859,10 +955,12 @@ function BlockSettingsPanel({ block, onChange }) {
           </select>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label className="label-caps" style={{ fontSize: 10 }}>Images</label>
+          <label className="label-caps" style={{ fontSize: 10 }}>Media Items</label>
           {(data.images || []).map((img, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <img src={img} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+              <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden' }}>
+                <MediaRenderer src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
                 const newImgs = [...(data.images || [])];
                 newImgs.splice(i, 1);
@@ -870,7 +968,7 @@ function BlockSettingsPanel({ block, onChange }) {
               }} style={{ padding: 4 }}>Remove</button>
             </div>
           ))}
-          <ImageUploader currentUrl="" onUpload={(url) => {
+          <MediaUploader currentUrl="" onUpload={(url) => {
             onChange({ images: [...(data.images || []), url] })
           }} />
         </div>
@@ -1018,8 +1116,8 @@ function BlockSettingsPanel({ block, onChange }) {
             <input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} placeholder="Putra pertama dari Bpk. ... & Ibu ..." />
           </div>
           <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label>
-            <ImageUploader currentUrl={data.photo1} onUpload={url => onChange({ photo1: url })} />
+            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
+            <MediaUploader currentUrl={data.photo1} onUpload={url => onChange({ photo1: url })} />
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Instagram Username</label>
@@ -1038,8 +1136,8 @@ function BlockSettingsPanel({ block, onChange }) {
             <input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} placeholder="Putri kedua dari Bpk. ... & Ibu ..." />
           </div>
           <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label>
-            <ImageUploader currentUrl={data.photo2} onUpload={url => onChange({ photo2: url })} />
+            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
+            <MediaUploader currentUrl={data.photo2} onUpload={url => onChange({ photo2: url })} />
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Instagram Username</label>
@@ -1157,7 +1255,9 @@ function BlockSettingsPanel({ block, onChange }) {
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(data.photos || []).map((photo, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <img src={photo} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden' }}>
+                  <MediaRenderer src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
                   const newPhotos = [...(data.photos || [])];
                   newPhotos.splice(i, 1);
@@ -1165,7 +1265,7 @@ function BlockSettingsPanel({ block, onChange }) {
                 }} style={{ padding: 4 }}>Remove</button>
               </div>
             ))}
-            <ImageUploader currentUrl="" onUpload={(url) => {
+            <MediaUploader currentUrl="" onUpload={(url) => {
               onChange({ photos: [...(data.photos || []), url] })
             }} />
           </div>
@@ -1189,8 +1289,8 @@ function BlockSettingsPanel({ block, onChange }) {
 }
 
 function SpacingSection({ data, onChange }) {
-  const spacingTop = data.spacingTop ?? 16
-  const spacingBottom = data.spacingBottom ?? 16
+  const spacingTop = data.spacingTop ?? 40
+  const spacingBottom = data.spacingBottom ?? 40
   return (
     <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
       <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1229,12 +1329,22 @@ function SpacingSection({ data, onChange }) {
 function BackgroundImageSection({ data, onChange }) {
   const detectAndSetAspectRatio = (url) => {
     if (!url) return
-    const img = new Image()
-    img.onload = () => {
-      const ratio = `${img.naturalWidth}/${img.naturalHeight}`
-      onChange({ backgroundAspectRatio: ratio })
+    
+    if (isMediaVideo(url)) {
+      const video = document.createElement('video')
+      video.onloadedmetadata = () => {
+        const ratio = `${video.videoWidth}/${video.videoHeight}`
+        onChange({ backgroundAspectRatio: ratio })
+      }
+      video.src = url
+    } else {
+      const img = new Image()
+      img.onload = () => {
+        const ratio = `${img.naturalWidth}/${img.naturalHeight}`
+        onChange({ backgroundAspectRatio: ratio })
+      }
+      img.src = url
     }
-    img.src = url
   }
 
   const handleUpload = (url) => {
@@ -1253,7 +1363,7 @@ function BackgroundImageSection({ data, onChange }) {
         🖼 Background Image
       </span>
       <div style={{ marginTop: 12 }}>
-        <ImageUploader
+        <MediaUploader
           currentUrl={data.backgroundImage || ''}
           onUpload={handleUpload}
         />

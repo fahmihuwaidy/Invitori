@@ -166,35 +166,47 @@ export function InvitationProvider({ children }) {
   }
 
   const updateInvitation = async (id, updates) => {
-    // Map frontend keys to DB columns
+    // 1. Map frontend keys to DB columns
     const dbUpdates = {}
     if (updates.title !== undefined) dbUpdates.title = updates.title
     if (updates.slug !== undefined) dbUpdates.slug = updates.slug
     if (updates.category !== undefined) dbUpdates.category = updates.category
     if (updates.guestCount !== undefined) dbUpdates.guest_count = updates.guestCount
     if (updates.status !== undefined) dbUpdates.status = updates.status
+    if (updates.updatedAt !== undefined) dbUpdates.updated_at = updates.updatedAt
     if (updates.theme) {
       if (updates.theme.primaryColor !== undefined) dbUpdates.primary_color = updates.theme.primaryColor
       if (updates.theme.backgroundColor !== undefined) dbUpdates.background_color = updates.theme.backgroundColor
       if (updates.theme.fontFamily !== undefined) dbUpdates.font_family = updates.theme.fontFamily
     }
 
-    const { error } = await supabase
-      .from('invitations')
-      .update(dbUpdates)
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error updating invitation:', error)
-      return
-    }
-
-    // Optimistic update
+    // 2. Local/Optimistic update
+    const updatedAt = updates.updatedAt || new Date().toISOString()
     setInvitations(prev =>
       prev.map(inv =>
-        inv.id === id ? { ...inv, ...updates, updatedAt: new Date().toISOString() } : inv
+        inv.id === id ? { ...inv, ...updates, updatedAt } : inv
       )
     )
+
+    // 3. Skip DB if no DB columns to update
+    if (Object.keys(dbUpdates).length === 0) return
+
+    // 4. Perform DB update
+    try {
+      const { error } = await supabase
+        .from('invitations')
+        .update(dbUpdates)
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error updating invitation in DB:', error)
+        // Optionally refresh to sync with server state if update failed
+        fetchInvitations()
+      }
+    } catch (err) {
+      console.error('Critical error in updateInvitation:', err)
+      fetchInvitations()
+    }
   }
 
   const deleteInvitation = async (id) => {
@@ -250,53 +262,39 @@ export function InvitationProvider({ children }) {
   }
 
   const updateBlock = async (invId, blockId, blockData) => {
-    let finalMergedData = null
+    // compute finalMergedData synchronously based on the current closure state
+    const inv = invitations.find(i => i.id === invId)
+    if (!inv) return
+    const block = inv.blocks.find(b => b.id === blockId)
+    if (!block) return
+    
+    const finalMergedData = { ...block.data, ...blockData }
 
     setInvitations(prev => {
-      const inv = prev.find(i => i.id === invId)
-      if (!inv) return prev
-      
-      const block = inv.blocks.find(b => b.id === blockId)
-      if (!block) return prev
-      
-      // Compute the freshest merged data directly inside the guaranteed state queue
-      finalMergedData = { ...block.data, ...blockData }
-
       return prev.map(inv => {
         if (inv.id !== invId) return inv
         return {
           ...inv,
           blocks: inv.blocks.map(b =>
-            b.id === blockId ? { ...b, data: finalMergedData } : b
+            b.id === blockId ? { ...b, data: { ...b.data, ...blockData } } : b
           ),
           updatedAt: new Date().toISOString(),
         }
       })
     })
 
-    if (finalMergedData) {
-      const { error } = await supabase
-        .from('blocks')
-        .update({ data: finalMergedData })
-        .eq('id', blockId)
+    const { error } = await supabase
+      .from('blocks')
+      .update({ data: finalMergedData })
+      .eq('id', blockId)
 
-      if (error) {
-        console.error('Error updating block:', error)
-      }
+    if (error) {
+      console.error('Error updating block:', error)
     }
   }
 
   const deleteBlock = async (invId, blockId) => {
-    const { error } = await supabase
-      .from('blocks')
-      .delete()
-      .eq('id', blockId)
-
-    if (error) {
-      console.error('Error deleting block:', error)
-      return
-    }
-
+    // 1. Optimistic update (UI reacts immediately)
     setInvitations(prev =>
       prev.map(inv => {
         if (inv.id !== invId) return inv
@@ -307,6 +305,18 @@ export function InvitationProvider({ children }) {
         }
       })
     )
+
+    // 2. Perform DB operation
+    const { error } = await supabase
+      .from('blocks')
+      .delete()
+      .eq('id', blockId)
+
+    if (error) {
+      console.error('Error deleting block:', error)
+      // Rollback on error if necessary
+      fetchInvitations()
+    }
   }
 
   const reorderBlocks = async (invId, newBlocks) => {
