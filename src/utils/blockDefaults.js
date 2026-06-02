@@ -5,8 +5,8 @@ export const BLOCK_TYPES = {
     icon: '🎴',
     defaults: {
       backgroundImage: '',
-      coupleName: 'Aqil & Anty',
-      date: 'Senin, 30 Maret 2026',
+      coupleName: 'Oliver & Sophia',
+      date: 'Monday, March 30, 2026',
       subtitle: 'We Are Getting Married',
       showGuestName: true,
       showScrollIndicator: true,
@@ -63,12 +63,7 @@ export const BLOCK_TYPES = {
     icon: '🔗',
     defaults: { title: 'Gift Registry', items: [], fullWidth: true }
   },
-  music: {
-    label: 'Music',
-    category: 'media',
-    icon: '🎵',
-    defaults: { url: '', autoplay: true, volume: 0.5 }
-  },
+
   countdown: {
     label: 'Countdown',
     category: 'details',
@@ -109,7 +104,7 @@ export const BLOCK_TYPES = {
     label: 'Gallery',
     category: 'media',
     icon: '📸',
-    defaults: { images: [], layout: 'grid', columns: 2, fullWidth: true }
+    defaults: { images: [], fullWidth: true }
   },
   footer: {
     label: 'Footer',
@@ -117,7 +112,7 @@ export const BLOCK_TYPES = {
     icon: '🏁',
     defaults: {
       thankYouText: 'Thank You',
-      coupleName: 'Aqil & Anty',
+      coupleName: 'Oliver & Sophia',
       subtitle: 'For Being Part of Our Special Day',
       photos: [],
       showWatermark: true,

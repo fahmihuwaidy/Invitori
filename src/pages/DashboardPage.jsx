@@ -8,21 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX, HiX, HiSelector, HiOutlineLink, HiOutlineDocumentDuplicate, HiOutlineCog } from 'react-icons/hi'
 import './DashboardPage.css'
 
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diffMs = now - date
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHour = Math.floor(diffMs / 3600000)
-  const diffDay = Math.floor(diffMs / 86400000)
 
-  if (diffMin < 1) return 'Baru saja'
-  if (diffMin < 60) return `${diffMin} menit lalu`
-  if (diffHour < 24) return `${diffHour} jam lalu`
-  if (diffDay < 7) return `${diffDay} hari lalu`
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 /* ---- Preset Selection Modal ---- */
 function PresetModal({ onClose, onSelect }) {
@@ -33,7 +19,7 @@ function PresetModal({ onClose, onSelect }) {
 
   const handlePresetClick = (preset) => {
     setSelectedPreset(preset)
-    setTitle(preset.key === 'wedding' ? 'Undangan Pernikahan' : preset.key === 'birthday' ? 'Undangan Ulang Tahun' : preset.key === 'aqiqah' ? 'Undangan Aqiqah' : 'Undangan Saya')
+    setTitle(preset.key === 'wedding' ? 'Wedding Invitation' : preset.key === 'birthday' ? 'Birthday Invitation' : preset.key === 'aqiqah' ? 'Aqiqah Invitation' : 'My Invitation')
     setStep('title')
   }
 
@@ -44,7 +30,7 @@ function PresetModal({ onClose, onSelect }) {
       await onSelect(selectedPreset.key, title.trim())
     } catch (err) {
       console.error(err)
-      alert('Gagal membuat undangan. Silakan coba lagi.')
+      alert('Failed to create invitation. Please try again.')
       setIsCreating(false)
     }
   }
@@ -57,8 +43,8 @@ function PresetModal({ onClose, onSelect }) {
         {step === 'choose' ? (
           <>
             <div className="preset-modal-header">
-              <h2 className="serif-italic">Pilih Template</h2>
-              <p>Pilih kategori undangan untuk memulai dengan template yang sesuai.</p>
+              <h2 className="serif-italic">Choose Template</h2>
+              <p>Select an invitation category to start with a matching template.</p>
             </div>
             <div className="preset-grid">
               {PRESET_LIST.map(preset => (
@@ -76,9 +62,9 @@ function PresetModal({ onClose, onSelect }) {
                   </div>
                   <div className="preset-card-blocks">
                     {preset.blocks.length > 0 ? (
-                      <span>{preset.blocks.length} blok</span>
+                      <span>{preset.blocks.length} blocks</span>
                     ) : (
-                      <span>Kanvas kosong</span>
+                      <span>Empty canvas</span>
                     )}
                   </div>
                   <div className="preset-card-arrow">→</div>
@@ -89,12 +75,12 @@ function PresetModal({ onClose, onSelect }) {
         ) : (
           <>
             <div className="preset-modal-header">
-              {!isCreating && <button className="preset-back-btn" onClick={() => setStep('choose')}>← Kembali</button>}
+              {!isCreating && <button className="preset-back-btn" onClick={() => setStep('choose')}>← Back</button>}
               <div className="preset-chosen-badge" style={{ background: `${selectedPreset.color}15`, color: selectedPreset.color }}>
                 <span>{selectedPreset.icon}</span> {selectedPreset.label}
               </div>
-              <h2 className="serif-italic" style={{ marginTop: 12 }}>Beri Nama Undangan</h2>
-              <p>Masukkan judul untuk undangan Anda. Bisa diubah nanti.</p>
+              <h2 className="serif-italic" style={{ marginTop: 12 }}>Name Your Invitation</h2>
+              <p>Enter a title for your invitation. You can change this later.</p>
             </div>
             <div className="preset-title-form">
               <input
@@ -103,7 +89,7 @@ function PresetModal({ onClose, onSelect }) {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                placeholder="cth: Undangan Pernikahan Aqil & Anty"
+                placeholder="e.g.: Oliver & Sophia's Wedding"
                 autoFocus
                 disabled={isCreating}
               />
@@ -115,11 +101,11 @@ function PresetModal({ onClose, onSelect }) {
                 {isCreating ? (
                   <>
                     <div className="spinner-sm" style={{ marginRight: 8 }}></div>
-                    Membuat...
+                    Creating...
                   </>
                 ) : (
                   <>
-                    <HiOutlinePlus size={16} /> Buat Undangan
+                    <HiOutlinePlus size={16} /> Create Invitation
                   </>
                 )}
               </button>
@@ -154,14 +140,17 @@ function GuestListTab({ invitation }) {
 
   useEffect(() => {
     if (invitation?.id) {
-      fetchGuests()
+      const timer = setTimeout(() => {
+        fetchGuests()
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [invitation?.id, fetchGuests])
 
   const handleAdd = async () => {
     if (!newName.trim() || !invitation?.id) return
     setAdding(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('guests')
       .insert({ invitation_id: invitation.id, name: newName.trim(), phone: newPhone.trim() || null })
       .select()
@@ -173,7 +162,7 @@ function GuestListTab({ invitation }) {
   }
 
   const handleDelete = async (guestId) => {
-    if (!confirm('Hapus tamu ini?')) return
+    if (!confirm('Delete this guest?')) return
     await supabase.from('guests').delete().eq('id', guestId)
     setGuests(prev => prev.filter(g => g.id !== guestId))
   }
@@ -190,25 +179,25 @@ function GuestListTab({ invitation }) {
     <div className="card animate-fade-in-up" style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, gap: 16 }}>
         <div>
-          <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Daftar Tamu & Link</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Kelola daftar tamu dan dapatkan link undangan personal mereka.</p>
+          <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Guest List & Links</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Manage your guest list and get their personalized invitation links.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <div className="stat-badge" style={{ background: 'rgba(86,95,52,0.1)', color: 'var(--olive)', padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-            {guests.length} Tamu
+            {guests.length} Guests
           </div>
           <button 
             className="btn btn-outline btn-sm"
             onClick={() => {
               const csv = [
-                ['Nama', 'No. HP', 'Link Undangan'].join(','),
+                ['Name', 'Phone', 'Invitation Link'].join(','),
                 ...guests.map(g => [g.name, g.phone || '-', getLink(g.name)].join(','))
               ].join('\n');
               const blob = new Blob([csv], { type: 'text/csv' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `GuestList_${invitation?.title || 'Undangan'}.csv`;
+              a.download = `GuestList_${invitation?.title || 'Invitation'}.csv`;
               a.click();
             }}
             disabled={guests.length === 0}
@@ -219,26 +208,26 @@ function GuestListTab({ invitation }) {
       </div>
 
       <div style={{ padding: '24px', background: 'rgba(86,95,52,0.03)', border: '1px solid rgba(86,95,52,0.1)', borderRadius: 16, marginBottom: 32 }}>
-        <p className="label-caps" style={{ fontSize: 11, color: 'var(--olive)', marginBottom: 16, letterSpacing: 1 }}>Tambah Tamu Baru</p>
+        <p className="label-caps" style={{ fontSize: 11, color: 'var(--olive)', marginBottom: 16, letterSpacing: 1 }}>Add New Guest</p>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ flex: '2 1 240px' }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Nama Lengkap Tamu *</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Guest Full Name *</label>
             <input
               value={newName}
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="cth: Bapak Budi Santoso & Keluarga"
+              placeholder="e.g.: Mr. John Doe & Family"
               className="settings-input"
               style={{ width: '100%', background: 'white' }}
             />
           </div>
           <div style={{ flex: '1 1 180px' }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>No. HP (opsional)</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Phone Number (optional)</label>
             <input
               value={newPhone}
               onChange={e => setNewPhone(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="cth: 08123456..."
+              placeholder="e.g.: 08123456..."
               className="settings-input"
               style={{ width: '100%', background: 'white' }}
             />
@@ -249,25 +238,25 @@ function GuestListTab({ invitation }) {
             className="btn btn-primary"
             style={{ padding: '0 24px', height: 44, marginBottom: 2 }}
           >
-            {adding ? '...' : 'Tambah'}
+            {adding ? '...' : 'Add'}
           </button>
         </div>
       </div>
 
       <div>
         {loading ? (
-          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>Memuat daftar tamu...</p>
+          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>Loading guest list...</p>
         ) : guests.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', background: 'var(--white)', borderRadius: 12, border: '1px dashed var(--border)' }}>
             <HiOutlineUserGroup size={40} color="var(--text-light)" style={{ marginBottom: 16, opacity: 0.5 }} />
-            <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 16 }}>Belum ada tamu yang ditambahkan</p>
-            <p style={{ color: 'var(--text-light)', fontSize: 12, marginTop: 4 }}>Gunakan form di atas untuk mulai menambah tamu.</p>
+            <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 16 }}>No guests added yet</p>
+            <p style={{ color: 'var(--text-light)', fontSize: 12, marginTop: 4 }}>Use the form above to start adding guests.</p>
           </div>
         ) : (
           <div style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'white' }}>
             <div style={{ display: 'flex', padding: '12px 20px', background: '#f8f8f6', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: 1 }}>
-              <div style={{ flex: 1 }}>Informasi Tamu</div>
-              <div style={{ width: 140, textAlign: 'right' }}>Aksi</div>
+              <div style={{ flex: 1 }}>Guest Information</div>
+              <div style={{ width: 140, textAlign: 'right' }}>Actions</div>
             </div>
             {guests.map((g, idx) => (
               <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', borderBottom: idx < guests.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.2s' }} className="guest-row-hover">
@@ -286,13 +275,13 @@ function GuestListTab({ invitation }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => window.open(getLink(g.name), '_blank')} className="btn btn-outline btn-sm" style={{ padding: '8px 14px' }} title="Buka Undangan">
+                  <button onClick={() => window.open(getLink(g.name), '_blank')} className="btn btn-outline btn-sm" style={{ padding: '8px 14px' }} title="Open Invitation">
                     <HiOutlineExternalLink size={16} />
                   </button>
-                  <button onClick={() => copyLink(g)} className="btn btn-outline btn-sm" style={{ padding: '8px 14px', minWidth: 44 }} title="Salin Link">
+                  <button onClick={() => copyLink(g)} className="btn btn-outline btn-sm" style={{ padding: '8px 14px', minWidth: 44 }} title="Copy Link">
                     {copiedId === g.id ? <HiOutlineCheck size={16} color="var(--olive)"/> : <HiOutlineDocumentDuplicate size={16} />}
                   </button>
-                  <button onClick={() => handleDelete(g.id)} className="btn btn-ghost btn-sm" style={{ padding: '8px 14px', color: 'var(--pink-dusty)' }} title="Hapus">
+                  <button onClick={() => handleDelete(g.id)} className="btn btn-ghost btn-sm" style={{ padding: '8px 14px', color: 'var(--pink-dusty)' }} title="Delete">
                     <HiOutlineTrash size={16} />
                   </button>
                 </div>
@@ -307,7 +296,7 @@ function GuestListTab({ invitation }) {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { invitations, recentRsvps, loading, deleteInvitation, addInvitation } = useInvitations()
+  const { invitations, loading, deleteInvitation, addInvitation, deleteRsvp } = useInvitations()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [showPresetModal, setShowPresetModal] = useState(false)
@@ -337,7 +326,6 @@ export default function DashboardPage() {
     return invitations.find(i => i.id === selectedInvId) || invitations[0]
   }, [invitations, selectedInvId])
 
-  const activeInvId = selectedInv?.id
 
   // ---- Fetch ALL RSVPs for selected invitation ----
   const fetchAllRsvps = useCallback(async (invId) => {
@@ -368,7 +356,7 @@ export default function DashboardPage() {
   // ---- Computed Stats from REAL data (filtered by selected invitation) ----
   const totalViews = useMemo(() => selectedInv?.analytics?.totalViews || 0, [selectedInv])
   const totalRsvps = useMemo(() => selectedInv?.analytics?.rsvpCount || 0, [selectedInv])
-  const liveCampaigns = selectedInv?.status === 'published' ? 1 : 0
+
   const responseRate = totalViews > 0 ? ((totalRsvps / totalViews) * 100).toFixed(1) : 0
 
   // Chart data per invitation (Attending vs Not Attending vs Unknown)
@@ -405,10 +393,10 @@ export default function DashboardPage() {
         try {
           const date = new Date(sentAtDate)
           if (!isNaN(date.getTime())) {
-            timeStr = date.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) + ' ' + 
-                      date.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})
+            timeStr = date.toLocaleDateString('en-US', {day: 'numeric', month: 'short'}) + ' ' + 
+                      date.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})
           }
-        } catch (e) {
+        } catch {
           console.warn('Invalid date:', sentAtDate)
         }
       }
@@ -424,8 +412,8 @@ export default function DashboardPage() {
         time: timeStr,
         text: (
           <>
-            <strong>{rsvp.name || 'Tamu'}</strong>{' '}
-            {isAttending ? 'akan hadir' : isDeclined ? 'tidak dapat hadir' : 'mengirim ucapan'}
+            <strong>{rsvp.name || 'Guest'}</strong>{' '}
+            {isAttending ? 'is attending' : isDeclined ? 'is not attending' : 'sent a message'}
             {rsvp.message && <span className="activity-message">— "{rsvp.message}"</span>}
           </>
         ),
@@ -434,7 +422,7 @@ export default function DashboardPage() {
   }, [allRsvps])
 
   const handleDelete = async (id) => {
-    if (confirm('Hapus undangan ini?')) {
+    if (confirm('Delete this invitation?')) {
       await deleteInvitation(id)
     }
   }
@@ -453,7 +441,7 @@ export default function DashboardPage() {
       <div className="dashboard animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p className="serif-italic" style={{ color: 'var(--text-muted)', marginTop: 16 }}>Memuat proyek Anda...</p>
+          <p className="serif-italic" style={{ color: 'var(--olive)', marginTop: 16 }}>Loading your project...</p>
         </div>
       </div>
     )
@@ -464,13 +452,13 @@ export default function DashboardPage() {
       {/* Welcome & Invitation Selector */}
       <div className="dash-header" style={{ alignItems: 'flex-start' }}>
         <div className="dash-header-left">
-          <h1 className="serif-italic dash-welcome">Selamat datang, {user?.name || 'Member'}</h1>
-          <p className="dash-subtitle">Kelola undangan digital Anda dari sini.</p>
+          <h1 className="serif-italic dash-welcome">Welcome, {user?.name || 'Member'}</h1>
+          <p className="dash-subtitle">Manage your digital invitations here.</p>
         </div>
         <div className="dash-profile" style={{ flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
           {invitations.length > 0 && selectedInv && (
             <div className="dash-inv-selector-wrapper" style={{ minWidth: 240 }}>
-              <span className="label-caps" style={{ fontSize: 10, display: 'block', marginBottom: 6, color: 'var(--olive)', fontWeight: 600 }}>Pilih Undangan</span>
+              <span className="label-caps" style={{ fontSize: 10, display: 'block', marginBottom: 6, color: 'var(--olive)', fontWeight: 600 }}>Select Invitation</span>
               <div style={{ position: 'relative' }}>
                 <select 
                   className="settings-input" 
@@ -507,7 +495,7 @@ export default function DashboardPage() {
               gap: 8
             }}
           >
-            <HiOutlinePlus size={18} /> Buat Baru
+            <HiOutlinePlus size={18} /> Create New
           </button>
         </div>
       </div>
@@ -542,9 +530,9 @@ export default function DashboardPage() {
       {invitations.length === 0 ? (
         <div className="empty-state card" style={{ padding: '60px 20px', textAlign: 'center' }}>
           <div className="project-new-icon" style={{ margin: '0 auto 16px auto' }}><HiOutlinePlus size={32} /></div>
-          <h2 className="serif-italic" style={{ fontSize: '1.5rem', marginBottom: 8 }}>Belum Ada Undangan</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>Mulai buat undangan pertama Anda sekarang.</p>
-          <button className="btn btn-primary" onClick={() => setShowPresetModal(true)}>Buat Undangan Baru</button>
+          <h2 className="serif-italic" style={{ fontSize: '1.5rem', marginBottom: 8 }}>No Invitations Yet</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>Start by creating your first invitation now.</p>
+          <button className="btn btn-primary" onClick={() => setShowPresetModal(true)}>Create New Invitation</button>
         </div>
       ) : activeTab === 'overview' ? (
         /* ----- OVERVIEW TAB ----- */
@@ -558,12 +546,12 @@ export default function DashboardPage() {
             <div className="stat-card">
               <span className="label-caps"><HiOutlineMail size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Total RSVP</span>
               <div className="stat-value">{totalRsvps.toLocaleString()}</div>
-              <span className="stat-detail">{responseRate > 0 ? `${responseRate}% response rate` : 'Belum ada respons'}</span>
+              <span className="stat-detail">{responseRate > 0 ? `${responseRate}% response rate` : 'No responses yet'}</span>
             </div>
             <div className="stat-card">
               <span className="label-caps"><HiOutlineCheck size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Status</span>
               <div className="stat-value" style={{ fontSize: '1.5rem' }}>{selectedInv.status === 'published' ? 'Live' : 'Draft'}</div>
-              <span className="stat-badge">{selectedInv.status === 'published' ? 'Siap Disebar' : 'Belum Publish'}</span>
+              <span className="stat-badge">{selectedInv.status === 'published' ? 'Ready to Send' : 'Not Published'}</span>
             </div>
           </div>
 
@@ -591,14 +579,14 @@ export default function DashboardPage() {
                 ) : (
                   <div className="empty-chart">
                     <HiOutlineEye size={32} style={{ color: 'var(--text-light)', marginBottom: 8 }} />
-                    <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 14 }}>Belum ada data</p>
+                    <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 14 }}>No data yet</p>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="card activity-card">
-              <h4 className="serif-italic" style={{ marginBottom: 20 }}>Tamu Terbaru</h4>
+              <h4 className="serif-italic" style={{ marginBottom: 20 }}>Recent Guests</h4>
               <div className="activity-list">
                 {activityItems.length > 0 ? (
                   activityItems.slice(0, 5).map((item) => (
@@ -613,19 +601,19 @@ export default function DashboardPage() {
                 ) : (
                   <div className="empty-activity">
                     <HiOutlineMail size={28} style={{ color: 'var(--text-light)', marginBottom: 8 }} />
-                    <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 13 }}>Belum ada RSVP</p>
+                    <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 13 }}>No RSVPs yet</p>
                   </div>
                 )}
               </div>
               {activityItems.length > 5 && (
-                <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => setTab('rsvps')}>Lihat Semua RSVP</button>
+                <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => setTab('rsvps')}>View All RSVPs</button>
               )}
             </div>
           </div>
 
           <div className="dash-projects" style={{ marginTop: 40 }}>
             <div className="projects-header">
-              <h2 className="serif-italic" style={{ fontSize: '1.4rem' }}>Tindakan pada undangan ini</h2>
+              <h2 className="serif-italic" style={{ fontSize: '1.4rem' }}>Actions for this invitation</h2>
             </div>
             <div className="project-card card" style={{ maxWidth: 400 }}>
               <div className="project-thumb" style={{ background: selectedInv?.theme?.backgroundColor || '#EDE9E7', minHeight: 120 }}>
@@ -643,7 +631,7 @@ export default function DashboardPage() {
                   </button>
                   {selectedInv?.status === 'published' && (
                     <button className="btn btn-ghost btn-sm" onClick={() => window.open(`/undangan/${selectedInv?.slug}`, '_blank')}>
-                      <HiOutlineExternalLink size={14} /> Lihat Web
+                      <HiOutlineExternalLink size={14} /> View Site
                     </button>
                   )}
                   <button className="project-delete" onClick={() => handleDelete(selectedInv?.id)} style={{ marginLeft: 'auto' }}>
@@ -660,21 +648,21 @@ export default function DashboardPage() {
           <div className="card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, gap: 16 }}>
               <div>
-                <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Konfirmasi Kehadiran</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Lihat siapa saja yang akan hadir di acara Anda.</p>
+                <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Attendance Confirmation</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>See who is coming to your event.</p>
               </div>
               <button 
                 className="btn btn-outline btn-sm" 
                 onClick={() => {
                   const csv = [
-                    ['Nama', 'Kehadiran', 'Waktu Pengiriman'].join(','),
-                    ...activityItems.filter(i => i.isAttending || i.isDeclined).map(i => [i.name, i.isAttending ? 'Hadir' : 'Tidak Hadir', i.time].join(','))
+                    ['Name', 'Attendance', 'Sent At'].join(','),
+                    ...activityItems.filter(i => i.isAttending || i.isDeclined).map(i => [i.name, i.isAttending ? 'Attending' : 'Not Attending', i.time].join(','))
                   ].join('\n');
                   const blob = new Blob([csv], { type: 'text/csv' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = `RSVP_${selectedInv?.title || 'Undangan'}.csv`;
+                  a.download = `RSVP_${selectedInv?.title || 'Invitation'}.csv`;
                   a.click();
                 }}
                 disabled={activityItems.filter(i => i.isAttending || i.isDeclined).length === 0}
@@ -689,43 +677,43 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-dark)', marginTop: 4 }}>{activityItems.filter(i => i.isAttending || i.isDeclined).length}</div>
               </div>
               <div className="stat-card" style={{ padding: '16px 20px', background: 'rgba(86,95,52,0.05)', border: '1px solid rgba(86,95,52,0.1)', borderRadius: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: 1 }}>Hadir</span>
+                <span style={{ fontSize: 11, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: 1 }}>Attending</span>
                 <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--olive)', marginTop: 4 }}>{activityItems.filter(i => i.isAttending).length}</div>
               </div>
               <div className="stat-card" style={{ padding: '16px 20px', background: 'rgba(208,156,167,0.05)', border: '1px solid rgba(208,156,167,0.1)', borderRadius: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--pink-dusty)', textTransform: 'uppercase', letterSpacing: 1 }}>Tidak Hadir</span>
+                <span style={{ fontSize: 11, color: 'var(--pink-dusty)', textTransform: 'uppercase', letterSpacing: 1 }}>Not Attending</span>
                 <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--pink-dusty)', marginTop: 4 }}>{activityItems.filter(i => i.isDeclined).length}</div>
               </div>
             </div>
 
             {rsvpsLoading ? (
-              <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>Memuat data RSVP...</p>
+              <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>Loading RSVP data...</p>
             ) : activityItems.length === 0 ? (
               <div className="empty-state" style={{ padding: '40px 0', textAlign: 'center' }}>
-                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>Belum ada tamu yang mengisi RSVP ini.</p>
+                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>No guests have filled out this RSVP yet.</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nama Tamu</th>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Kehadiran</th>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Waktu</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Guest Name</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attendance</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time</th>
                       <th style={{ padding: '12px 16px', width: 40 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {activityItems.filter(item => item.isAttending || item.isDeclined).map((item, idx) => (
                       <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
-                        <td style={{ padding: '16px', fontWeight: 500 }}>{item.name || 'Hamba Allah'}</td>
+                        <td style={{ padding: '16px', fontWeight: 500 }}>{item.name || 'Anonymous'}</td>
                         <td style={{ padding: '16px' }}>
                           <span style={{ 
                             display: 'inline-block', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600,
                             background: item.isAttending ? 'rgba(86,95,52,0.1)' : item.isDeclined ? 'rgba(208,156,167,0.1)' : 'rgba(0,0,0,0.05)',
                             color: item.isAttending ? 'var(--olive)' : item.isDeclined ? 'var(--pink-dusty)' : 'var(--text-muted)'
                           }}>
-                            {item.isAttending ? 'Hadir' : item.isDeclined ? 'Tidak Hadir' : 'Wishes Only'}
+                            {item.isAttending ? 'Attending' : item.isDeclined ? 'Not Attending' : 'Wishes Only'}
                           </span>
                         </td>
                         <td style={{ padding: '16px', fontSize: 12, color: 'var(--text-muted)' }}>{item.time}</td>
@@ -734,12 +722,12 @@ export default function DashboardPage() {
                             className="btn-icon-only" 
                             style={{ color: 'var(--pink-dusty)', opacity: 0.5 }}
                             onClick={async () => { 
-                              if(confirm('Hapus RSVP ini?')) {
+                              if(confirm('Delete this RSVP?')) {
                                 const success = await deleteRsvp(item.id);
                                 if (success) fetchAllRsvps(selectedInv.id);
                               }
                             }}
-                            title="Hapus"
+                            title="Delete"
                           >
                             <HiOutlineTrash size={14} />
                           </button>
@@ -757,15 +745,15 @@ export default function DashboardPage() {
         <div className="wishes-tab animate-fade-in-up">
           <div className="card" style={{ padding: 24 }}>
             <div style={{ marginBottom: 24 }}>
-              <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)', marginBottom: 4 }}>Ucapan & Doa</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Kumpulan pesan manis dari para tamu undangan.</p>
+              <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)', marginBottom: 4 }}>Wishes & Prayers</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>A collection of sweet messages from your guests.</p>
             </div>
 
             {rsvpsLoading ? (
               <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>Memuat ucapan...</p>
             ) : activityItems.filter(item => item.message).length === 0 ? (
               <div className="empty-state" style={{ padding: '40px 0', textAlign: 'center' }}>
-                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>Belum ada ucapan dari tamu.</p>
+                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>No wishes from guests yet.</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
@@ -782,7 +770,7 @@ export default function DashboardPage() {
                           className="btn-icon-only" 
                           style={{ color: 'var(--pink-dusty)', opacity: 0.5 }}
                           onClick={async () => { 
-                            if(confirm('Hapus ucapan ini?')) {
+                            if(confirm('Delete this wish?')) {
                               const success = await deleteRsvp(item.id);
                               if (success) fetchAllRsvps(selectedInv.id);
                             }

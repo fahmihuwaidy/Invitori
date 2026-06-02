@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS invitations (
   primary_color TEXT DEFAULT '#565F34',
   background_color TEXT DEFAULT '#EDE9E7',
   font_family TEXT DEFAULT 'Playfair Display',
+  music_url TEXT DEFAULT 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
   total_views INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

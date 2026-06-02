@@ -260,7 +260,7 @@
 .canvas-zoom {
   position: fixed;
   bottom: 24px;
-  right: 300px;
+  right: 24px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -296,9 +296,10 @@
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  padding: 2px 8px;
-  border-radius: 0 0 4px 4px;
+  padding: 4px 10px;
+  border-radius: 0 0 6px 6px;
   z-index: 5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .block-delete-btn {
@@ -325,8 +326,8 @@
 }
 
 /* Drag handle — visible on block hover */
-[id]:hover > .block-drag-handle,
-[id]:focus-within > .block-drag-handle {
+.sortable-block:hover .block-drag-handle,
+.sortable-block:focus-within .block-drag-handle {
   opacity: 1 !important;
 }
 
@@ -334,6 +335,62 @@
 .block-drag-handle:active {
   opacity: 1 !important;
   cursor: grabbing !important;
+  transform: scale(1.1);
+}
+
+.sortable-block.is-dragging {
+  z-index: 100 !important;
+}
+
+/* Insert Block UI */
+.insert-block-container {
+  overflow: visible;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.insert-block-container:hover:not(.is-drop-target) {
+  height: 48px !important;
+}
+
+.insert-block-container:hover:not(.is-drop-target) .insert-block-btn {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+.insert-block-container:hover:not(.is-drop-target) .insert-block-line {
+  opacity: 0.2 !important;
+}
+
+.insert-block-container.is-first:not(.is-drop-target) {
+  height: 24px;
+}
+
+.insert-block-container.is-first:hover:not(.is-drop-target) {
+  height: 64px !important;
+}
+
+.insert-block-container.is-drop-target {
+  height: 60px !important;
+  pointer-events: none;
+}
+
+.insert-block-container.is-drop-target .insert-block-line {
+  opacity: 1 !important;
+  height: 3px !important;
+  box-shadow: 0 0 15px var(--olive);
+  background: var(--olive) !important;
+  width: 85% !important;
+}
+
+.insert-block-container.is-drop-target .insert-block-btn {
+  opacity: 1 !important;
+  transform: scale(1.1) !important;
+  background: var(--olive) !important;
+}
+
+.insert-block-btn:hover {
+  background: var(--olive-dark, #3d4525) !important;
+  box-shadow: 0 6px 16px rgba(86,95,52,0.4) !important;
 }
 
 /* Countdown block */
@@ -524,9 +581,6 @@
   }
   .editor-settings.open {
     box-shadow: none;
-  }
-  .canvas-zoom {
-    right: 300px;
   }
 }
 

@@ -29,7 +29,7 @@ export function uploadToCloudinary(file, onProgress) {
         try {
           const data = JSON.parse(xhr.responseText)
           resolve({ url: data.secure_url, publicId: data.public_id })
-        } catch (e) {
+        } catch {
           reject(new Error('Invalid response from Cloudinary'))
         }
       } else {

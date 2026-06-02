@@ -16,7 +16,7 @@ if (isConfigured) {
   )
   // Create a mock client that won't crash the app
   const noop = () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
-  const noopObj = new Proxy({}, { get: () => (...args) => {
+  const noopObj = new Proxy({}, { get: () => () => {
     // If called as a function, return noop promise
     // If accessed as property, return another proxy
     const result = noop()

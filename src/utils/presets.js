@@ -10,9 +10,9 @@ export const PRESETS = {
   wedding: {
     key: 'wedding',
     label: 'Wedding',
-    labelId: 'Pernikahan',
+    labelId: 'Wedding',
     icon: '💍',
-    description: 'Undangan pernikahan elegan dengan cover, profil pasangan, countdown, galeri, RSVP, dan lainnya.',
+    description: 'Elegant wedding invitation with cover, couple profile, countdown, gallery, RSVP, and more.',
     color: '#565F34',
     blocks: [
       {
@@ -21,7 +21,7 @@ export const PRESETS = {
           ...BLOCK_TYPES.cover.defaults,
           subtitle: 'We Are Getting Married',
           coupleName: 'Romeo & Juliet',
-          date: 'Sabtu, 30 Agustus 2026',
+          date: 'Saturday, August 30, 2026',
         }
       },
       {
@@ -45,7 +45,7 @@ export const PRESETS = {
         type: 'paragraph',
         data: {
           ...BLOCK_TYPES.paragraph.defaults,
-          content: '"Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang." — QS. Ar-Rum: 21',
+          content: '"And of His signs is that He created for you from yourselves mates that you may find tranquility in them; and He placed between you affection and mercy." — QS. Ar-Rum: 21',
           fontSize: 14,
           color: '#8A8A8A',
         }
@@ -60,8 +60,8 @@ export const PRESETS = {
           ...BLOCK_TYPES.couple.defaults,
           name1: 'Romeo',
           name2: 'Juliet',
-          title1: 'Putra pertama dari Bpk. Montague & Ibu Montague',
-          title2: 'Putri kedua dari Bpk. Capulet & Ibu Capulet',
+          title1: 'First son of Mr. Montague & Mrs. Montague',
+          title2: 'Second daughter of Mr. Capulet & Mrs. Capulet',
           instagram1: '',
           instagram2: '',
         }
@@ -87,9 +87,9 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.location.defaults,
           venue: 'Grand Ballroom Hotel',
-          address: 'Jl. Contoh No. 123, Kota',
-          date: '30 Agustus 2026',
-          time: '10:00 WIB',
+          address: '123 Example St., City',
+          date: 'August 30, 2026',
+          time: '10:00 AM',
           mapUrl: '',
         }
       },
@@ -122,9 +122,9 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.story.defaults,
           items: [
-            { date: '2020', title: 'Pertama Bertemu', description: 'Ceritakan di mana kalian pertama kali bertemu...' },
-            { date: '2022', title: 'Mulai Berpacaran', description: 'Moment memulai hubungan...' },
-            { date: '2026', title: 'Lamaran', description: 'Moment lamaran yang tak terlupakan...' },
+            { date: '2020', title: 'First Meeting', description: 'Tell the story of when you first met...' },
+            { date: '2022', title: 'Start Dating', description: 'The moment your journey began...' },
+            { date: '2026', title: 'Engagement', description: 'A moment that changed everything...' },
           ]
         }
       },
@@ -154,7 +154,7 @@ export const PRESETS = {
         type: 'rsvp',
         data: {
           ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Konfirmasi Kehadiran',
+          title: 'Attendance Confirmation',
         }
       },
       {
@@ -172,9 +172,9 @@ export const PRESETS = {
   birthday: {
     key: 'birthday',
     label: 'Birthday',
-    labelId: 'Ulang Tahun',
+    labelId: 'Birthday',
     icon: '🎂',
-    description: 'Undangan ulang tahun ceria dengan cover, countdown, galeri foto, RSVP, dan info lokasi.',
+    description: 'Cheerful birthday invitation with cover, countdown, photo gallery, RSVP, and location info.',
     color: '#C06C84',
     blocks: [
       {
@@ -183,7 +183,7 @@ export const PRESETS = {
           ...BLOCK_TYPES.cover.defaults,
           subtitle: "You're Invited To",
           coupleName: 'Birthday Party!',
-          date: 'Sabtu, 15 November 2026',
+          date: 'Saturday, November 15, 2026',
           showGuestName: true,
         }
       },
@@ -200,7 +200,7 @@ export const PRESETS = {
         type: 'paragraph',
         data: {
           ...BLOCK_TYPES.paragraph.defaults,
-          content: 'Dengan penuh suka cita, kami mengundang Anda untuk hadir merayakan hari spesial ini bersama kami.',
+          content: 'With great happiness, we invite you to attend and celebrate this special day with us.',
           fontSize: 15,
         }
       },
@@ -222,10 +222,10 @@ export const PRESETS = {
         type: 'location',
         data: {
           ...BLOCK_TYPES.location.defaults,
-          venue: 'Venue Nama',
-          address: 'Alamat lengkap',
-          date: '15 November 2026',
-          time: '16:00 WIB',
+          venue: 'Venue Name',
+          address: 'Complete address',
+          date: 'November 15, 2026',
+          time: '4:00 PM',
         }
       },
       {
@@ -239,7 +239,7 @@ export const PRESETS = {
         type: 'rsvp',
         data: {
           ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Konfirmasi Kehadiran',
+          title: 'Attendance Confirmation',
         }
       },
       {
@@ -264,18 +264,18 @@ export const PRESETS = {
   aqiqah: {
     key: 'aqiqah',
     label: 'Newborn / Aqiqah',
-    labelId: 'Aqiqah / Kelahiran',
+    labelId: 'Aqiqah / Newborn',
     icon: '👶',
-    description: 'Undangan aqiqah atau perayaan kelahiran bayi dengan foto, countdown, dan detail acara.',
+    description: 'Aqiqah or newborn celebration invitation with photos, countdown, and event details.',
     color: '#6B9080',
     blocks: [
       {
         type: 'cover',
         data: {
           ...BLOCK_TYPES.cover.defaults,
-          subtitle: 'Menyambut Kelahiran',
+          subtitle: 'Welcoming the Birth',
           coupleName: 'Baby Name',
-          date: 'Sabtu, 20 Desember 2026',
+          date: 'Saturday, December 20, 2026',
           showGuestName: true,
         }
       },
@@ -292,7 +292,7 @@ export const PRESETS = {
         type: 'paragraph',
         data: {
           ...BLOCK_TYPES.paragraph.defaults,
-          content: 'Dengan rasa syukur kepada Allah SWT, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara Aqiqah putra/putri kami.',
+          content: 'With gratitude to Allah SWT, we invite you to attend the Aqiqah ceremony for our son/daughter.',
           fontSize: 14,
         }
       },
@@ -307,7 +307,7 @@ export const PRESETS = {
         type: 'paragraph',
         data: {
           ...BLOCK_TYPES.paragraph.defaults,
-          content: 'Lahir pada tanggal ...\nBerat: ... kg\nPanjang: ... cm',
+          content: 'Born on ...\nWeight: ... kg\nLength: ... cm',
           fontSize: 14,
         }
       },
@@ -315,17 +315,17 @@ export const PRESETS = {
         type: 'countdown',
         data: {
           ...BLOCK_TYPES.countdown.defaults,
-          label: 'Hari menuju acara',
+          label: 'Days until event',
         }
       },
       {
         type: 'location',
         data: {
           ...BLOCK_TYPES.location.defaults,
-          venue: 'Rumah / Gedung',
-          address: 'Alamat lengkap acara',
-          date: '20 Desember 2026',
-          time: '09:00 WIB',
+          venue: 'Home / Venue',
+          address: 'Complete event address',
+          date: 'December 20, 2026',
+          time: '9:00 AM',
         }
       },
       {
@@ -339,30 +339,30 @@ export const PRESETS = {
         type: 'rsvp',
         data: {
           ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Konfirmasi Kehadiran',
+          title: 'Attendance Confirmation',
         }
       },
       {
         type: 'gift',
         data: {
           ...BLOCK_TYPES.gift.defaults,
-          title: 'Kado untuk Si Kecil 🎁',
+          title: 'Gift for the Little One 🎁',
         }
       },
       {
         type: 'wishes',
         data: {
           ...BLOCK_TYPES.wishes.defaults,
-          title: "Doa & Ucapan 🤲",
+          title: "Prayers & Wishes 🤲",
         }
       },
       {
         type: 'footer',
         data: {
           ...BLOCK_TYPES.footer.defaults,
-          thankYouText: 'Terima Kasih',
-          coupleName: 'Keluarga Besar',
-          subtitle: 'Atas doa dan kehadiran Anda',
+          thankYouText: 'Thank You',
+          coupleName: 'Big Family',
+          subtitle: 'For your prayers and presence',
         }
       },
     ]
@@ -371,9 +371,9 @@ export const PRESETS = {
   custom: {
     key: 'custom',
     label: 'Custom',
-    labelId: 'Kosong',
+    labelId: 'Empty',
     icon: '✨',
-    description: 'Mulai dari kanvas kosong. Pilih dan susun blok sesuka hati Anda.',
+    description: 'Start from an empty canvas. Choose and arrange blocks as you wish.',
     color: '#8A8A8A',
     blocks: []
   }

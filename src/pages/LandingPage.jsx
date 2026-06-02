@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { HiMenu, HiX } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import './LandingPage.css'
 
 export default function LandingPage() {
-  const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 

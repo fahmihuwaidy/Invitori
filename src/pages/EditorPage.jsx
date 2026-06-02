@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useInvitations } from '../contexts/InvitationContext'
-import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
 import { BLOCK_TYPES, BLOCK_CATEGORIES } from '../utils/blockDefaults'
 import { PRESETS } from '../utils/presets'
 import { uploadToCloudinary } from '../lib/cloudinary'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { HiOutlineArrowLeft, HiOutlineMenuAlt2, HiX, HiOutlineEye, HiOutlineTrash, HiPlus,
@@ -16,6 +14,36 @@ import './EditorPage.css'
 import './PublicInvitationPage.css'
 import { renderPublicBlock, isMediaVideo, MediaRenderer } from './PublicInvitationPage'
 
+/* Draggable Palette Block wrapper */
+function DraggablePaletteItem({ type, label, icon, onClick }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `palette-${type}`,
+    data: {
+      type: 'paletteItem',
+      blockType: type,
+    }
+  })
+
+  return (
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`palette-block ${isDragging ? 'is-dragging' : ''}`}
+      onClick={() => {
+        // Prevent click action if it's currently dragging, else act as click-to-add
+        if (!isDragging) {
+           onClick()
+        }
+      }}
+      style={{ opacity: isDragging ? 0.4 : 1, touchAction: 'none' }}
+    >
+      <span className="palette-icon">{icon}</span>
+      <span className="palette-label">{label}</span>
+    </button>
+  )
+}
+
 /* Sortable block wrapper */
 function SortableBlock({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
@@ -24,9 +52,10 @@ function SortableBlock({ id, children }) {
     transition,
     opacity: isDragging ? 0.4 : 1,
     position: 'relative',
+    zIndex: isDragging ? 20 : 1,
   }
   return (
-    <div ref={setNodeRef} id={id} style={style}>
+    <div ref={setNodeRef} id={id} style={style} className={`sortable-block ${isDragging ? 'is-dragging' : ''}`}>
       {/* Drag Handle — only this area triggers drag */}
       <div
         className="block-drag-handle"
@@ -35,24 +64,25 @@ function SortableBlock({ id, children }) {
         title="Drag to reorder"
         style={{
           position: 'absolute',
-          top: 4,
-          right: 4,
+          top: 8,
+          right: 36, // Keep it clear of common UI elements
           zIndex: 10,
-          width: 24,
-          height: 24,
+          width: 32,
+          height: 32,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: isDragging ? 'grabbing' : 'grab',
           opacity: 0,
-          transition: 'opacity 0.15s',
-          borderRadius: 4,
-          background: 'rgba(255,255,255,0.85)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-          fontSize: 13,
-          color: '#888',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRadius: 8,
+          background: 'var(--white)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          fontSize: 16,
+          color: 'var(--olive)',
           userSelect: 'none',
           touchAction: 'none',
+          border: '1px solid var(--border-light)',
         }}
       >
         ⠿
@@ -62,41 +92,88 @@ function SortableBlock({ id, children }) {
   )
 }
 
-function EditorCountdownBlock({ data }) {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 })
-
-  useEffect(() => {
-    if (!data.targetDate) return
-
-    const tick = () => {
-      const target = new Date(data.targetDate)
-      const now = new Date()
-      const diff = Math.max(0, target - now)
-      setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        mins: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        secs: Math.floor((diff % (1000 * 60)) / 1000)
-      })
-    }
-
-    tick()
-    const interval = setInterval(tick, 1000)
-    return () => clearInterval(interval)
-  }, [data.targetDate])
-
+function InsertBlockButton({ onClick, index, visible = false, isDropTarget = false }) {
   return (
-    <div className="countdown-block">
-      <div className="countdown-unit"><span className="countdown-num">{String(timeLeft.days).padStart(2, '0')}</span><span className="countdown-label">Days</span></div>
-      <span className="countdown-sep">:</span>
-      <div className="countdown-unit"><span className="countdown-num">{String(timeLeft.hours).padStart(2, '0')}</span><span className="countdown-label">Hours</span></div>
-      <span className="countdown-sep">:</span>
-      <div className="countdown-unit"><span className="countdown-num">{String(timeLeft.mins).padStart(2, '0')}</span><span className="countdown-label">Mins</span></div>
-      <span className="countdown-sep">:</span>
-      <div className="countdown-unit"><span className="countdown-num">{String(timeLeft.secs).padStart(2, '0')}</span><span className="countdown-label">Secs</span></div>
+    <div 
+      className={`insert-block-container ${visible ? 'is-first' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
+      style={{
+        height: isDropTarget ? '40px' : 0,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 5,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
+      <button
+        className="insert-block-btn"
+        onClick={(e) => { e.stopPropagation(); onClick(index) }}
+        title="Insert block here"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          background: 'var(--olive)',
+          color: 'white',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(86,95,52,0.3)',
+          opacity: isDropTarget ? 1 : 0,
+          transform: isDropTarget ? 'scale(1)' : 'scale(0.8)',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          pointerEvents: 'auto',
+          position: 'absolute',
+        }}
+      >
+        <HiPlus size={16} />
+      </button>
+      <div className="insert-block-line" style={{
+        width: isDropTarget ? '80%' : '60%',
+        height: isDropTarget ? 3 : 1,
+        background: 'var(--olive)',
+        opacity: isDropTarget ? 1 : 0,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: isDropTarget ? '0 0 12px var(--olive)' : 'none',
+      }} />
+      {isDropTarget && (
+        <span style={{ 
+          position: 'absolute', 
+          bottom: -20, 
+          fontSize: 10, 
+          fontWeight: 700, 
+          color: 'var(--olive)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          Drop Here
+        </span>
+      )}
     </div>
   )
 }
+
+function CanvasDroppable({ id, children, style }) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+  return (
+    <div 
+      ref={setNodeRef} 
+      id={id} 
+      style={{ 
+        ...style, 
+        backgroundColor: isOver ? 'rgba(86,95,52,0.05)' : style?.backgroundColor,
+        transition: 'background-color 0.2s ease'
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* EditorCountdownBlock removed — countdown preview is handled by renderPublicBlock */
 
 /* Block renderers */
 function BlockBackgroundLayer({ data }) {
@@ -204,7 +281,14 @@ function renderBlock(block, isSelected, onSelect, theme) {
 
 
 function SettingsModal({ invitation, onSave, onClose }) {
-  const [data, setData] = useState({ title: invitation.title, slug: invitation.slug, theme_fontFamily: invitation.theme?.fontFamily || 'Inter', theme_primaryColor: invitation.theme?.primaryColor || '#565F34', theme_backgroundColor: invitation.theme?.backgroundColor || '#EDE9E7' })
+  const [data, setData] = useState({ 
+    title: invitation.title, 
+    slug: invitation.slug, 
+    musicUrl: invitation.musicUrl || '',
+    theme_fontFamily: invitation.theme?.fontFamily || 'Inter', 
+    theme_primaryColor: invitation.theme?.primaryColor || '#565F34', 
+    theme_backgroundColor: invitation.theme?.backgroundColor || '#EDE9E7' 
+  })
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -218,12 +302,16 @@ function SettingsModal({ invitation, onSave, onClose }) {
           <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Project Title</label>
           <input className="settings-input" value={data.title} onChange={e => setData({...data, title: e.target.value})} style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 6 }} />
         </div>
-        <div className="input-group" style={{ marginBottom: 24 }}>
+        <div className="input-group" style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>URL Slug</label>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
             <span style={{ padding: '0 12px', fontSize: 13, color: 'var(--text-muted)', background: '#f8f8f8', borderRight: '1px solid var(--border)', display: 'flex', alignItems: 'center', height: 42 }}>/undangan/</span>
             <input className="settings-input" style={{ border: 'none', borderRadius: 0, flex: 1, padding: '10px 12px', outline: 'none' }} value={data.slug} onChange={e => setData({...data, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})} />
           </div>
+        </div>
+        <div className="input-group" style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Background Music URL</label>
+          <input className="settings-input" value={data.musicUrl} onChange={e => setData({...data, musicUrl: e.target.value})} placeholder="https://.../song.mp3" style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 6 }} />
         </div>
 
         <span className="label-caps" style={{ marginTop: 24, marginBottom: 12, display: 'block', fontSize: 11, color: 'var(--text-muted)' }}>Global Theme</span>
@@ -250,6 +338,7 @@ function SettingsModal({ invitation, onSave, onClose }) {
           onSave({
             title: data.title,
             slug: data.slug,
+            musicUrl: data.musicUrl,
             theme: {
               ...(invitation.theme || {}),
               fontFamily: data.theme_fontFamily,
@@ -268,13 +357,16 @@ export default function EditorPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { invitations, addInvitation, addBlock: ctxAddBlock, updateBlock: ctxUpdateBlock, deleteBlock: ctxDeleteBlock, reorderBlocks, updateInvitation } = useInvitations()
+  const { invitations, addInvitation, addBlock: ctxAddBlock, addBlocks: ctxAddBlocks, updateBlock: ctxUpdateBlock, deleteBlock: ctxDeleteBlock, reorderBlocks, updateInvitation } = useInvitations()
   const [selectedBlock, setSelectedBlock] = useState(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [activeModal, setActiveModal] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [insertIndex, setInsertIndex] = useState(null)
+  const [activeDragItem, setActiveDragItem] = useState(null)
+  const [overId, setOverId] = useState(null)
+  const [phoneScale, setPhoneScale] = useState(1)
   const hasCreated = useRef(false)
   const hasAppliedPreset = useRef(false)
 
@@ -289,7 +381,7 @@ export default function EditorPage() {
         }
       })
     }
-  }, [])
+  }, [id, searchParams, addInvitation, navigate])
 
   // Apply preset blocks if ?preset= param exists
   useEffect(() => {
@@ -307,24 +399,25 @@ export default function EditorPage() {
     }
 
     hasAppliedPreset.current = true
-    // Add blocks sequentially
-    const addBlocksSequentially = async () => {
-      for (let i = 0; i < preset.blocks.length; i++) {
-        const blockDef = preset.blocks[i]
-        await ctxAddBlock(id, blockDef.type, blockDef.data, i)
-      }
-    }
-    addBlocksSequentially()
-  }, [id, invitations, searchParams])
+    // Add blocks in bulk to ensure correct ordering
+    ctxAddBlocks(id, preset.blocks)
+  }, [id, invitations, searchParams, ctxAddBlocks])
 
   // Find invitation
   const invitation = invitations.find(inv => inv.id === id)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
-  )
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  })
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  })
+  const sensors = useSensors(mouseSensor, touchSensor)
 
   if (id === 'new') {
     return (
@@ -348,15 +441,26 @@ export default function EditorPage() {
   const blocks = invitation.blocks || []
   const selected = blocks.find(b => b.id === selectedBlock)
 
-  const addBlock = (type) => {
+  const addBlock = (type, index = null) => {
+    const targetIdx = index !== null ? index : blocks.length
     const defaults = BLOCK_TYPES[type]?.defaults || {}
-    ctxAddBlock(invitation.id, type, { ...defaults })
+    ctxAddBlock(invitation.id, type, { ...defaults }, targetIdx)
     
-    // Auto-scroll to bottom of the canvas when adding a block
-    setTimeout(() => {
-      const pScreen = document.querySelector('.phone-screen')
-      if (pScreen) pScreen.scrollTo({ top: pScreen.scrollHeight, behavior: 'smooth' })
-    }, 150)
+    setPaletteOpen(false)
+    setInsertIndex(null)
+    
+    // Auto-scroll logic if added at end
+    if (index === null) {
+      setTimeout(() => {
+        const pScreen = document.querySelector('.phone-screen')
+        if (pScreen) pScreen.scrollTo({ top: pScreen.scrollHeight, behavior: 'smooth' })
+      }, 150)
+    }
+  }
+
+  const openPaletteAt = (index) => {
+    setInsertIndex(index)
+    setPaletteOpen(true)
   }
 
   const deleteBlock = async (blockId) => {
@@ -378,8 +482,41 @@ export default function EditorPage() {
     ctxUpdateBlock(invitation.id, blockId, data)
   }
 
+  const handleDragStart = (event) => {
+    setActiveDragItem(event.active)
+    setOverId(event.active.id)
+  }
+
+  const handleDragOver = (event) => {
+    setOverId(event.over?.id)
+  }
+
   const handleDragEnd = (event) => {
+    setActiveDragItem(null)
+    setOverId(null)
     const { active, over } = event
+    if (!over) {
+      return
+    }
+
+    // Handle dragged item from Palette
+    if (active.data.current?.type === 'paletteItem') {
+      const blockType = active.data.current.blockType
+      let dropIndex = blocks.length
+      
+      // Determine what block it was dropped over
+      if (over.id && over.id !== 'canvas') {
+        const overIndex = blocks.findIndex(b => b.id === over.id)
+        if (overIndex !== -1) {
+          dropIndex = overIndex
+        }
+      }
+      
+      addBlock(blockType, dropIndex)
+      return
+    }
+
+    // Existing reorder logic
     if (active.id !== over?.id) {
       const oldIndex = blocks.findIndex(b => b.id === active.id)
       const newIndex = blocks.findIndex(b => b.id === over.id)
@@ -419,8 +556,15 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="editor-page">
-      {/* Sidebar */}
+    <DndContext 
+      sensors={sensors} 
+      collisionDetection={closestCenter} 
+      onDragStart={handleDragStart} 
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="editor-page">
+        {/* Sidebar */}
       <div className="editor-sidebar">
         <div className="sidebar-header">
           <div>
@@ -448,9 +592,11 @@ export default function EditorPage() {
         <div className="palette-header">
           <div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem' }}>Invori Blocks</h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Drag blocks onto the canvas to construct your masterpiece.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {insertIndex !== null ? `Inserting at position ${insertIndex + 1}` : 'Construct your masterpiece with these blocks.'}
+            </p>
           </div>
-          <button className="palette-close" onClick={() => setPaletteOpen(false)}><HiX size={18} /></button>
+          <button className="palette-close" onClick={() => { setPaletteOpen(false); setInsertIndex(null); }}><HiX size={18} /></button>
         </div>
         <div className="palette-blocks">
           {BLOCK_CATEGORIES.map(cat => {
@@ -461,10 +607,13 @@ export default function EditorPage() {
                 <span className="label-caps" style={{ fontSize: 10, marginBottom: 8, display: 'block' }}>{cat.label}</span>
                 <div className="palette-grid">
                   {catBlocks.map(([key, val]) => (
-                    <button key={key} className="palette-block" onClick={() => addBlock(key)}>
-                      <span className="palette-icon">{val.icon}</span>
-                      <span className="palette-label">{val.label}</span>
-                    </button>
+                    <DraggablePaletteItem 
+                      key={key}
+                      type={key}
+                      label={val.label}
+                      icon={val.icon}
+                      onClick={() => addBlock(key, insertIndex)} 
+                    />
                   ))}
                 </div>
               </div>
@@ -509,7 +658,7 @@ export default function EditorPage() {
         </div>
 
         <div className="canvas-area" onClick={() => setSelectedBlock(null)}>
-          <div className="phone-frame">
+          <div className="phone-frame" style={{ transform: `scale(${phoneScale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease' }}>
             {/* Native Status Bar */}
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 48,
@@ -537,32 +686,51 @@ export default function EditorPage() {
             </div>
 
             <div className="phone-screen" style={{ background: invitation.theme?.backgroundColor || '#EDE9E7' }}>
-              {blocks.length === 0 ? (
-                <div className="phone-empty">
-                  <p>Your canvas is empty.</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-light)' }}>Add blocks from the palette to start designing.</p>
-                </div>
-              ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <CanvasDroppable id="canvas" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+                {blocks.length === 0 ? (
+                  <div className="phone-empty" style={{ flex: 1 }}>
+                    <p>Your canvas is empty.</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-light)' }}>Drag and drop blocks here.</p>
+                  </div>
+                ) : (
                   <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                    {blocks.map(block => (
-                      <SortableBlock key={block.id} id={block.id}>
-                        <div style={{ position: 'relative' }}>
-                          {renderBlock(block, selectedBlock === block.id, (id) => {
-                            setSelectedBlock(id)
-                            setSettingsOpen(true)
-                          }, invitation?.theme)}
+                    <div className="blocks-list" style={{ minHeight: '100%', paddingBottom: 100 }}>
+                      <InsertBlockButton 
+                        index={0} 
+                        onClick={openPaletteAt} 
+                        visible={blocks.length > 0} 
+                        isDropTarget={activeDragItem && (overId === blocks[0]?.id || (blocks.length === 0 && overId === 'canvas'))}
+                      />
+                      {blocks.map((block, idx) => (
+                        <div key={block.id}>
+                          <SortableBlock id={block.id}>
+                            <div style={{ position: 'relative' }}>
+                              {renderBlock(block, selectedBlock === block.id, (id) => {
+                                setSelectedBlock(id)
+                                setSettingsOpen(true)
+                              }, invitation?.theme)}
+                            </div>
+                          </SortableBlock>
+                          <InsertBlockButton 
+                            index={idx + 1} 
+                            onClick={openPaletteAt} 
+                            isDropTarget={activeDragItem && (
+                              overId === blocks[idx + 1]?.id || 
+                              (idx === blocks.length - 1 && overId === 'canvas')
+                            )}
+                          />
                         </div>
-                      </SortableBlock>
-                    ))}
+                      ))}
+                    </div>
                   </SortableContext>
-                </DndContext>
-              )}
+                )}
+              </CanvasDroppable>
             </div>
           </div>
           <div className="canvas-zoom">
-            <button onClick={() => {}}>+</button>
-            <button onClick={() => {}}>−</button>
+            <button onClick={() => setPhoneScale(s => Math.min(s + 0.1, 1.3))} title="Zoom In">+</button>
+            <button onClick={() => setPhoneScale(s => Math.max(s - 0.1, 0.5))} title="Zoom Out">−</button>
+            {phoneScale !== 1 && <button onClick={() => setPhoneScale(1)} title="Reset Zoom" style={{ fontSize: 12 }}>↺</button>}
           </div>
         </div>
       </div>
@@ -603,38 +771,73 @@ export default function EditorPage() {
           onSave={(data) => updateInvitation(invitation.id, data)}
         />
       )}
-    </div>
+
+      {/* Drag Overlay positioned contextually at the end of DndContext */}
+      <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+        {activeDragItem?.data.current?.type === 'paletteItem' ? (
+          <div className="palette-block" style={{ width: 100, background: 'var(--white)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', transform: 'scale(1.05)' }}>
+            <span className="palette-icon">{BLOCK_TYPES[activeDragItem.data.current.blockType].icon}</span>
+            <span className="palette-label">{BLOCK_TYPES[activeDragItem.data.current.blockType].label}</span>
+          </div>
+        ) : null}
+      </DragOverlay>
+
+      </div>
+    </DndContext>
   )
 }
 
 /* MediaUploader inline component */
-function MediaUploader({ currentUrl, onUpload }) {
+function MediaUploader({ currentUrl, onUpload, multiple = false }) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [batchInfo, setBatchInfo] = useState({ current: 0, total: 0 })
   const fileInputRef = useRef(null)
 
   const handleFileChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
     setUploading(true)
     setProgress(0)
-
-    try {
-      const result = await uploadToCloudinary(file, (p) => setProgress(p))
-      onUpload(result.url)
-    } catch (err) {
-      console.error('Upload error:', err)
-      alert(`Gagal mengunggah media: ${err.message}`)
-    } finally {
-      setUploading(false)
-      setProgress(0)
+    
+    if (multiple) {
+      setBatchInfo({ current: 0, total: files.length })
+      const uploadedUrls = []
+      
+      for (let i = 0; i < files.length; i++) {
+        setBatchInfo(prev => ({ ...prev, current: i + 1 }))
+        setProgress(0)
+        try {
+          const result = await uploadToCloudinary(files[i], (p) => setProgress(p))
+          uploadedUrls.push(result.url)
+        } catch (err) {
+          console.error(`Upload error for file ${i + 1}:`, err)
+          // Continue with others even if one fails
+        }
+      }
+      
+      if (uploadedUrls.length > 0) {
+        onUpload(uploadedUrls)
+      }
+    } else {
+      try {
+        const result = await uploadToCloudinary(files[0], (p) => setProgress(p))
+        onUpload(result.url)
+      } catch (err) {
+        console.error('Upload error:', err)
+        alert(`Failed to upload media: ${err.message}`)
+      }
     }
+
+    setUploading(false)
+    setProgress(0)
+    setBatchInfo({ current: 0, total: 0 })
   }
 
   return (
     <div className="image-uploader">
-      {currentUrl && (
+      {!multiple && currentUrl && (
         <div className="image-uploader-preview">
           <MediaRenderer src={currentUrl} alt="Preview" />
         </div>
@@ -647,15 +850,18 @@ function MediaUploader({ currentUrl, onUpload }) {
         style={{ width: '100%', marginTop: 8 }}
       >
         {uploading ? (
-          <span>Uploading... {progress}%</span>
+          <span>
+            {multiple ? `Uploading ${batchInfo.current}/${batchInfo.total}...` : 'Uploading...'} {progress}%
+          </span>
         ) : (
-          <><HiOutlineUpload size={14} /> {currentUrl ? 'Change Media' : 'Upload Video / Photo'}</>
+          <><HiOutlineUpload size={14} /> {multiple ? 'Add Multiple Media' : (currentUrl ? 'Change Media' : 'Upload Video / Photo')}</>
         )}
       </button>
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*,video/*"
+        multiple={multiple}
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
@@ -744,6 +950,7 @@ function BlockSettingsPanel({ block, onChange }) {
             </div>
           </div>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
       </>
     )
@@ -790,6 +997,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <span className="label-caps">Content</span>
           <textarea className="settings-textarea" value={data.content || ''} onChange={e => onChange({ content: e.target.value })} rows={4} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -818,6 +1026,7 @@ function BlockSettingsPanel({ block, onChange }) {
             <input className="settings-input" value={data.caption || ''} onChange={e => onChange({ caption: e.target.value })} />
           </div>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -829,9 +1038,15 @@ function BlockSettingsPanel({ block, onChange }) {
   if (type === 'video') {
     return (
       <div className="settings-section">
-        <span className="label-caps">Video</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Video URL (MP4, WebM)</label>
+        <span className="label-caps">Video Content</span>
+        <div style={{ marginTop: 8 }}>
+          <MediaUploader
+            currentUrl={data.url}
+            onUpload={(url) => onChange({ url })}
+          />
+        </div>
+        <div className="input-group" style={{ marginTop: 12 }}>
+          <label>Or Video URL (MP4, WebM)</label>
           <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://.../video.mp4" />
         </div>
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
@@ -845,6 +1060,7 @@ function BlockSettingsPanel({ block, onChange }) {
           </label>
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Autoplay videos are automatically muted by modern browsers.</p>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -865,6 +1081,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Label</label>
           <input className="settings-input" value={data.label || ''} onChange={e => onChange({ label: e.target.value })} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -901,6 +1118,7 @@ function BlockSettingsPanel({ block, onChange }) {
             <input className="settings-input" value={data.mapUrl || ''} onChange={e => onChange({ mapUrl: e.target.value })} placeholder="https://maps.app.goo.gl/..." />
           </div>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -917,6 +1135,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Title</label>
           <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -934,6 +1153,7 @@ function BlockSettingsPanel({ block, onChange }) {
             <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
           ))}
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -945,33 +1165,72 @@ function BlockSettingsPanel({ block, onChange }) {
   if (type === 'gallery') {
     return (
       <div className="settings-section">
-        <span className="label-caps">Gallery</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Columns</label>
-          <select className="settings-select" value={data.columns || 2} onChange={e => onChange({ columns: Number(e.target.value) })}>
-            <option value={1}>1 Column</option>
-            <option value={2}>2 Columns</option>
-            <option value={3}>3 Columns</option>
-          </select>
-        </div>
-        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label className="label-caps" style={{ fontSize: 10 }}>Media Items</label>
+        <span className="label-caps">Gallery Media</span>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Upload multiple photos. The system will automatically arrange them in a neat masonry layout.
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
           {(data.images || []).map((img, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden' }}>
-                <MediaRenderer src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
-                const newImgs = [...(data.images || [])];
-                newImgs.splice(i, 1);
-                onChange({ images: newImgs });
-              }} style={{ padding: 4 }}>Remove</button>
+            <div key={i} style={{ 
+              position: 'relative', 
+              aspectRatio: '1/1', 
+              borderRadius: 6, 
+              overflow: 'hidden',
+              border: '1px solid var(--border)' 
+            }}>
+              <MediaRenderer src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button 
+                type="button" 
+                onClick={() => {
+                  const newImgs = [...(data.images || [])];
+                  newImgs.splice(i, 1);
+                  onChange({ images: newImgs });
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.5)',
+                  color: 'white',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: 10
+                }}
+              >
+                <HiX size={10} />
+              </button>
             </div>
           ))}
-          <MediaUploader currentUrl="" onUpload={(url) => {
-            onChange({ images: [...(data.images || []), url] })
-          }} />
+          <div 
+            style={{ 
+              aspectRatio: '1/1', 
+              borderRadius: 6, 
+              border: '1px dashed var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-muted)'
+            }}
+          >
+            <MediaUploader 
+              multiple={true}
+              currentUrl="" 
+              onUpload={(newUrls) => {
+                onChange({ images: [...(data.images || []), ...newUrls] })
+              }} 
+            />
+          </div>
         </div>
+
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1000,6 +1259,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Account Name</label>
           <input className="settings-input" value={data.accountName || ''} onChange={e => onChange({ accountName: e.target.value })} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1017,6 +1277,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://.../song.mp3" />
         </div>
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Background music requires the user to interact with the page before it can play.</p>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1045,6 +1306,7 @@ function BlockSettingsPanel({ block, onChange }) {
             onChange({ names: newNames });
           }} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1092,6 +1354,7 @@ function BlockSettingsPanel({ block, onChange }) {
             onChange({ items: [...(data.items || []), { label: '', url: '' }] })
           }}>+ Add Registry Link</button>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1113,7 +1376,7 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Title / Gelar</label>
-            <input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} placeholder="Putra pertama dari Bpk. ... & Ibu ..." />
+            <input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} placeholder="First son of Mr. ... & Mrs. ..." />
           </div>
           <div style={{ marginTop: 8 }}>
             <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
@@ -1133,7 +1396,7 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Title / Gelar</label>
-            <input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} placeholder="Putri kedua dari Bpk. ... & Ibu ..." />
+            <input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} placeholder="Second daughter of Mr. ... & Mrs. ..." />
           </div>
           <div style={{ marginTop: 8 }}>
             <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
@@ -1149,6 +1412,7 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Short Description / Bio</label>
           <textarea className="settings-textarea" value={data.description || ''} onChange={e => onChange({ description: e.target.value })} rows={3} />
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1199,6 +1463,7 @@ function BlockSettingsPanel({ block, onChange }) {
             onChange({ items: [...(data.items || []), { date: '', title: '', description: '' }] })
           }}>+ Add Milestone</button>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1218,6 +1483,7 @@ function BlockSettingsPanel({ block, onChange }) {
         <div style={{ marginTop: 16, padding: 12, background: 'rgba(86,95,52,0.05)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
           Wishes and messages will automatically populate here when guests submit their RSVP via the public invitation link.
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
         <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
@@ -1270,6 +1536,7 @@ function BlockSettingsPanel({ block, onChange }) {
             }} />
           </div>
         </div>
+        <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
       </>
     )
@@ -1280,10 +1547,115 @@ function BlockSettingsPanel({ block, onChange }) {
     <div className="settings-section">
       <span className="label-caps">Settings</span>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Settings for {BLOCK_TYPES[type]?.label || type} block.</p>
+      <AnimationSection data={data} onChange={onChange} />
       <SpacingSection data={data} onChange={onChange} />
       <SizeSection data={data} onChange={onChange} />
       <BackgroundImageSection data={data} onChange={onChange} />
       <AdvancedDesignSection data={data} onChange={onChange} />
+    </div>
+  )
+}
+
+function AnimationSection({ data, onChange }) {
+  const animation = data.animation || 'fade-in-up'
+  const [previewKey, setPreviewKey] = useState(0)
+  
+  const ANIMATION_OPTIONS = [
+    { value: 'none', label: 'None', icon: '—' },
+    { value: 'fade-in', label: 'Fade In', icon: '○' },
+    { value: 'fade-in-up', label: 'Fade Up', icon: '↑' },
+    { value: 'fade-in-down', label: 'Fade Down', icon: '↓' },
+    { value: 'slide-in-left', label: 'Slide Left', icon: '←' },
+    { value: 'slide-in-right', label: 'Slide Right', icon: '→' },
+    { value: 'zoom-in', label: 'Zoom In', icon: '⊕' },
+  ]
+
+  const ANIM_CLASS_MAP = {
+    'none': '',
+    'fade-in': 'animate-fade-in',
+    'fade-in-up': 'animate-fade-in-up',
+    'fade-in-down': 'animate-fade-in-down',
+    'slide-in-left': 'animate-slide-in-left',
+    'slide-in-right': 'animate-slide-in-right',
+    'zoom-in': 'animate-zoom-in',
+  }
+
+  const handleSelect = (value) => {
+    onChange({ animation: value })
+    setPreviewKey(prev => prev + 1)
+  }
+
+  return (
+    <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        ✦ Entrance Animation
+      </span>
+
+      {/* Live Preview */}
+      <div style={{
+        marginTop: 12,
+        padding: '20px 16px',
+        background: 'var(--cream)',
+        borderRadius: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        minHeight: 80,
+      }}>
+        <div
+          key={previewKey}
+          className={ANIM_CLASS_MAP[animation] || ''}
+          style={{
+            opacity: animation === 'none' ? 1 : 0,
+            width: '80%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ width: '100%', height: 8, background: 'var(--olive)', borderRadius: 4, opacity: 0.6 }} />
+          <div style={{ width: '60%', height: 6, background: 'var(--border)', borderRadius: 3 }} />
+          <div style={{ width: '75%', height: 6, background: 'var(--border)', borderRadius: 3 }} />
+        </div>
+      </div>
+
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', 
+        gap: 6, 
+        marginTop: 10 
+      }}>
+        {ANIMATION_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => handleSelect(opt.value)}
+            style={{
+              padding: '10px 6px',
+              borderRadius: 8,
+              border: animation === opt.value ? '2px solid var(--olive)' : '1.5px solid var(--border)',
+              background: animation === opt.value ? 'rgba(86,95,52,0.08)' : 'var(--white)',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              transition: 'all 0.15s ease',
+              fontSize: 11,
+              fontWeight: animation === opt.value ? 700 : 500,
+              color: animation === opt.value ? 'var(--olive)' : 'var(--text-muted)',
+            }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>{opt.icon}</span>
+            <span>{opt.label}</span>
+          </button>
+        ))}
+      </div>
+      <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 8, lineHeight: 1.4 }}>
+        Animation plays when the block scrolls into view.
+      </p>
     </div>
   )
 }

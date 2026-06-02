@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react'
 import staticImg from '../assets/Static.png'
 
 const ComingSoon = ({ children }) => {
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(() => !window.location.search.includes('preview=true'))
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    if (window.location.search.includes('preview=true')) {
-      setIsVisible(false)
-      return
-    }
+    if (!isVisible) return
 
     let keySequence = ''
 
@@ -35,9 +32,7 @@ const ComingSoon = ({ children }) => {
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    if (isVisible) {
-      window.addEventListener('mousemove', handleMouseMove)
-    }
+    window.addEventListener('mousemove', handleMouseMove)
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)

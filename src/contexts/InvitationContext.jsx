@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { nanoid } from 'nanoid'
 import { supabase } from '../lib/supabase'
@@ -74,17 +75,24 @@ export function InvitationProvider({ children }) {
         category: inv.category,
         guestCount: inv.guest_count,
         status: inv.status,
+        musicUrl: inv.music_url,
         theme: {
           primaryColor: inv.primary_color,
           backgroundColor: inv.background_color,
           fontFamily: inv.font_family,
         },
-        blocks: (blocksMap[inv.id] || []).map(b => ({
-          id: b.id,
-          type: b.type,
-          data: b.data,
-          sortOrder: b.sort_order,
-        })),
+        blocks: (blocksMap[inv.id] || []).map(b => {
+          let parsedData = b.data;
+          if (typeof b.data === 'string') {
+            try { parsedData = JSON.parse(b.data); } catch { /* ignore parsing errors */ }
+          }
+          return {
+            id: b.id,
+            type: b.type,
+            data: parsedData || {},
+            sortOrder: b.sort_order,
+          }
+        }),
         analytics: {
           totalViews: inv.total_views,
           rsvpCount: rsvpMap[inv.id] || 0,
@@ -174,6 +182,7 @@ export function InvitationProvider({ children }) {
     if (updates.guestCount !== undefined) dbUpdates.guest_count = updates.guestCount
     if (updates.status !== undefined) dbUpdates.status = updates.status
     if (updates.updatedAt !== undefined) dbUpdates.updated_at = updates.updatedAt
+    if (updates.musicUrl !== undefined) dbUpdates.music_url = updates.musicUrl
     if (updates.theme) {
       if (updates.theme.primaryColor !== undefined) dbUpdates.primary_color = updates.theme.primaryColor
       if (updates.theme.backgroundColor !== undefined) dbUpdates.background_color = updates.theme.backgroundColor
@@ -226,12 +235,7 @@ export function InvitationProvider({ children }) {
   // --- Block Operations ---
 
   const addBlock = async (invId, blockType, blockData, explicitOrder) => {
-    // Get current max sort_order if not provided explicitly
-    let finalOrder = explicitOrder
-    if (finalOrder === undefined) {
-      const inv = invitations.find(i => i.id === invId)
-      finalOrder = inv?.blocks?.length || 0
-    }
+    const targetIndex = explicitOrder !== undefined ? explicitOrder : 0
 
     const { data, error } = await supabase
       .from('blocks')
@@ -239,7 +243,7 @@ export function InvitationProvider({ children }) {
         invitation_id: invId,
         type: blockType,
         data: blockData,
-        sort_order: finalOrder,
+        sort_order: targetIndex,
       })
       .select()
       .single()
@@ -249,27 +253,89 @@ export function InvitationProvider({ children }) {
       return null
     }
 
-    setInvitations(prev =>
-      prev.map(inv => {
-        if (inv.id !== invId) return inv
+    const newBlock = { id: data.id, type: data.type, data: data.data, sortOrder: data.sort_order }
+
+    // Use a variable to capture reindexed blocks from the functional update
+    let reindexedBlocks = []
+    
+    setInvitations(prev => {
+      return prev.map(item => {
+        if (item.id !== invId) return item
+        const updatedBlocks = [...item.blocks]
+        const actualIndex = explicitOrder !== undefined ? explicitOrder : updatedBlocks.length
+        updatedBlocks.splice(actualIndex, 0, newBlock)
+        
+        reindexedBlocks = updatedBlocks.map((b, idx) => ({ ...b, sortOrder: idx }))
         return {
-          ...inv,
-          blocks: [...inv.blocks, { id: data.id, type: data.type, data: data.data, sortOrder: data.sort_order }],
+          ...item,
+          blocks: reindexedBlocks,
+          updatedAt: new Date().toISOString(),
+        }
+      })
+    })
+
+    // Sync all sort orders to DB after state update
+    // Use setTimeout(0) to ensure setInvitations callback has executed
+    setTimeout(async () => {
+      if (reindexedBlocks.length > 0) {
+        const syncPromises = reindexedBlocks.map((b, idx) => 
+          supabase.from('blocks').update({ sort_order: idx }).eq('id', b.id)
+        )
+        await Promise.all(syncPromises)
+      }
+    }, 0)
+
+    return newBlock
+  }
+
+  const addBlocks = async (invId, blocksArray) => {
+    const inv = invitations.find(i => i.id === invId)
+    // Even if inv is not found in local state yet (very new), we still want to insert
+    
+    const baseOrder = inv ? inv.blocks.length : 0
+    const blocksToInsert = blocksArray.map((b, index) => ({
+      invitation_id: invId,
+      type: b.type,
+      data: b.data,
+      sort_order: baseOrder + index
+    }))
+
+    const { data, error } = await supabase
+      .from('blocks')
+      .insert(blocksToInsert)
+      .select()
+
+    if (error || !data) {
+      console.error('Error adding bulk blocks:', error)
+      return null
+    }
+
+    const newBlocksSorted = data.sort((a, b) => a.sort_order - b.sort_order).map(d => ({
+      id: d.id,
+      type: d.type,
+      data: d.data,
+      sortOrder: d.sort_order
+    }))
+
+    setInvitations(prev =>
+      prev.map(item => {
+        if (item.id !== invId) return item
+        // Merging and ensuring absolute correct order
+        const combined = [...item.blocks, ...newBlocksSorted]
+        const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
+        
+        return {
+          ...item,
+          blocks: finalBlocks,
           updatedAt: new Date().toISOString(),
         }
       })
     )
+
+    return newBlocksSorted
   }
 
   const updateBlock = async (invId, blockId, blockData) => {
-    // compute finalMergedData synchronously based on the current closure state
-    const inv = invitations.find(i => i.id === invId)
-    if (!inv) return
-    const block = inv.blocks.find(b => b.id === blockId)
-    if (!block) return
-    
-    const finalMergedData = { ...block.data, ...blockData }
-
     setInvitations(prev => {
       return prev.map(inv => {
         if (inv.id !== invId) return inv
@@ -282,6 +348,20 @@ export function InvitationProvider({ children }) {
         }
       })
     })
+
+    // Fetch the absolute latest from DB for merging to prevent race conditions during rapid typing
+    const { data: currentBlock } = await supabase.from('blocks').select('data').eq('id', blockId).single();
+    
+    let parsedCurrentData = currentBlock?.data || {};
+    if (typeof parsedCurrentData === 'string') {
+      try {
+        parsedCurrentData = JSON.parse(parsedCurrentData);
+      } catch {
+        parsedCurrentData = {};
+      }
+    }
+
+    const finalMergedData = { ...parsedCurrentData, ...blockData };
 
     const { error } = await supabase
       .from('blocks')
@@ -347,6 +427,12 @@ export function InvitationProvider({ children }) {
       .from('invitations')
       .select('*')
       .eq('slug', slug)
+      .limit(1);
+
+    // Add a tiny delay or ensure fresh fetch if needed
+    // Supabase caches can sometimes be aggressive on rapid changes
+    const t = isPreview ? Date.now() : 0; 
+    console.log(`Fetching invitation for slug: ${slug}, preview: ${isPreview}, t: ${t}`);
 
     if (!isPreview) {
       query = query.eq('status', 'published')
@@ -376,17 +462,28 @@ export function InvitationProvider({ children }) {
       category: inv.category,
       guestCount: inv.guest_count,
       status: inv.status,
+      musicUrl: inv.music_url,
       theme: {
         primaryColor: inv.primary_color,
         backgroundColor: inv.background_color,
         fontFamily: inv.font_family,
       },
-      blocks: (blockData || []).map(b => ({
-        id: b.id,
-        type: b.type,
-        data: b.data,
-        sortOrder: b.sort_order,
-      })),
+      blocks: (blockData || []).map(b => {
+        let parsedData = b.data;
+        if (typeof b.data === 'string') {
+          try {
+            parsedData = JSON.parse(b.data);
+          } catch (e) {
+            console.error('Error parsing block data:', e);
+          }
+        }
+        return {
+          id: b.id,
+          type: b.type,
+          data: parsedData || {},
+          sortOrder: b.sort_order,
+        };
+      }),
       wishes: (rsvpData || []).filter(r => r.message?.trim().length > 0).map(r => ({
         author: r.name,
         content: r.message,
@@ -438,13 +535,14 @@ export function InvitationProvider({ children }) {
     updateInvitation,
     deleteInvitation,
     addBlock,
+    addBlocks,
     updateBlock,
     deleteBlock,
     reorderBlocks,
     fetchPublicInvitation,
     incrementView,
     addRsvp,
-    deleteRsvp, // Added
+    deleteRsvp,
     refreshInvitations: fetchInvitations,
   }
 
