@@ -873,16 +873,23 @@ function BlockSettingsPanel({ block, onChange }) {
   const type = block.type
   const data = block.data
 
+  // ── COVER ────────────────────────────────────────────────────────────
   if (type === 'cover') {
     return (
       <>
         <div className="settings-section">
+          <span className="label-caps">Layout</span>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {[['classic','Classic'],['minimal','Minimal']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ coverLayout: val })}
+                style={{ flex: 1, padding: '8px', borderRadius: 8, border: `2px solid ${(data.coverLayout || 'classic') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.coverLayout || 'classic') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: (data.coverLayout || 'classic') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-section">
           <span className="label-caps">Cover Background</span>
           <div style={{ marginTop: 8 }}>
-            <MediaUploader
-              currentUrl={data.backgroundImage}
-              onUpload={(url) => onChange({ backgroundImage: url })}
-            />
+            <MediaUploader currentUrl={data.backgroundImage} onUpload={(url) => onChange({ backgroundImage: url })} />
           </div>
           <div className="input-group" style={{ marginTop: 12 }}>
             <label>Or paste URL</label>
@@ -893,9 +900,9 @@ function BlockSettingsPanel({ block, onChange }) {
               <div style={{ marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Overlay Opacity</label>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{Math.round((data.overlayOpacity ?? 0.4) * 100)}%</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{Math.round((data.overlayOpacity ?? 0.4) * 100)}%</span>
                 </div>
-                <input type="range" min={0} max={1} step={0.05} value={data.overlayOpacity ?? 0.4} onChange={e => onChange({ overlayOpacity: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
+                <input type="range" min={0} max={1} step={0.05} value={data.overlayOpacity ?? 0.4} onChange={e => onChange({ overlayOpacity: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
               </div>
               <div className="input-group" style={{ marginTop: 10 }}>
                 <label>Overlay Color</label>
@@ -919,7 +926,7 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Date</label>
-            <input className="settings-input" value={data.date || ''} onChange={e => onChange({ date: e.target.value })} placeholder="Senin, 30 Maret 2026" />
+            <input className="settings-input" value={data.date || ''} onChange={e => onChange({ date: e.target.value })} placeholder="Monday, March 30, 2026" />
           </div>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -956,9 +963,25 @@ function BlockSettingsPanel({ block, onChange }) {
     )
   }
 
-  if (type === 'heading' || type === 'paragraph') {
+  // ── HEADING ───────────────────────────────────────────────────────────
+  if (type === 'heading') {
+    const STYLE_PRESETS = [
+      { label: 'Elegant Serif', fontFamily: 'Gambarino', fontSize: 36, fontStyle: 'italic', fontWeight: 'normal', letterSpacing: 0.02, color: '#2D2D2D' },
+      { label: 'Modern Bold', fontFamily: 'Inter', fontSize: 28, fontStyle: 'normal', fontWeight: 'bold', letterSpacing: -0.02, color: '#2D2D2D' },
+      { label: 'Display Italic', fontFamily: 'Gambarino', fontSize: 42, fontStyle: 'italic', fontWeight: 'normal', letterSpacing: 0, color: '#565F34' },
+      { label: 'Small Caps', fontFamily: 'Inter', fontSize: 14, fontStyle: 'normal', fontWeight: 'bold', letterSpacing: 0.2, color: '#8A8A8A' },
+    ]
     return (
       <>
+        <div className="settings-section">
+          <span className="label-caps">Style Presets</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            {STYLE_PRESETS.map((p, i) => (
+              <button key={i} type="button" onClick={() => onChange(p)}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--white)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{p.label}</button>
+            ))}
+          </div>
+        </div>
         <div className="settings-section">
           <span className="label-caps">Typography</span>
           <div className="input-group" style={{ marginTop: 8 }}>
@@ -967,12 +990,15 @@ function BlockSettingsPanel({ block, onChange }) {
               <option value="Gambarino">Gambarino (Serif)</option>
               <option value="Inter">Inter (Sans Serif)</option>
               <option value="Georgia">Georgia</option>
+              <option value="Cormorant Garamond">Cormorant Garamond</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="DM Serif Display">DM Serif Display</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <div className="input-group" style={{ flex: 1 }}>
-              <label>Size</label>
-              <input type="number" className="settings-input" value={data.fontSize || 16} onChange={e => onChange({ fontSize: Number(e.target.value) })} />
+              <label>Size (px)</label>
+              <input type="number" className="settings-input" value={data.fontSize || 32} onChange={e => onChange({ fontSize: Number(e.target.value) })} />
             </div>
             <div className="input-group" style={{ flex: 1 }}>
               <label>Align</label>
@@ -983,11 +1009,49 @@ function BlockSettingsPanel({ block, onChange }) {
               </select>
             </div>
           </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Style</label>
+              <select className="settings-select" value={data.fontStyle || 'normal'} onChange={e => onChange({ fontStyle: e.target.value })}>
+                <option value="normal">Normal</option>
+                <option value="italic">Italic</option>
+              </select>
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Weight</label>
+              <select className="settings-select" value={data.fontWeight || 'normal'} onChange={e => onChange({ fontWeight: e.target.value })}>
+                <option value="300">Light</option>
+                <option value="normal">Regular</option>
+                <option value="600">SemiBold</option>
+                <option value="bold">Bold</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Letter Spacing</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.letterSpacing || 0}em</span>
+            </div>
+            <input type="range" min={-0.05} max={0.3} step={0.01} value={data.letterSpacing || 0} onChange={e => onChange({ letterSpacing: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Line Height</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.lineHeight || 1.2}</span>
+            </div>
+            <input type="range" min={0.9} max={2.5} step={0.05} value={data.lineHeight || 1.2} onChange={e => onChange({ lineHeight: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={data.textShadow || false} onChange={e => onChange({ textShadow: e.target.checked })} />
+              Text Shadow
+            </label>
+          </div>
         </div>
         <div className="settings-section">
-          <span className="label-caps">Appearance</span>
-          <div className="color-swatches">
-            {['#565F34', '#BE1A32', '#EDE9E7', '#A7BF66', '#8A8A8A', '#2D2D2D'].map(c => (
+          <span className="label-caps">Color</span>
+          <div className="color-swatches" style={{ marginTop: 8 }}>
+            {['#565F34', '#BE1A32', '#EDE9E7', '#A7BF66', '#8A8A8A', '#2D2D2D', '#C4A882'].map(c => (
               <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
             ))}
             <input type="color" value={data.color || '#2D2D2D'} onChange={e => onChange({ color: e.target.value })} className="swatch-picker" />
@@ -995,7 +1059,7 @@ function BlockSettingsPanel({ block, onChange }) {
         </div>
         <div className="settings-section">
           <span className="label-caps">Content</span>
-          <textarea className="settings-textarea" value={data.content || ''} onChange={e => onChange({ content: e.target.value })} rows={4} />
+          <textarea className="settings-textarea" value={data.content || ''} onChange={e => onChange({ content: e.target.value })} rows={3} />
         </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
@@ -1006,50 +1070,228 @@ function BlockSettingsPanel({ block, onChange }) {
     )
   }
 
+  // ── PARAGRAPH ─────────────────────────────────────────────────────────
+  if (type === 'paragraph') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Typography</span>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Size</label>
+              <input type="number" className="settings-input" value={data.fontSize || 15} onChange={e => onChange({ fontSize: Number(e.target.value) })} />
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Align</label>
+              <select className="settings-select" value={data.align || 'center'} onChange={e => onChange({ align: e.target.value })}>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Line Height</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.lineHeight || 1.7}</span>
+            </div>
+            <input type="range" min={1.2} max={2.4} step={0.05} value={data.lineHeight || 1.7} onChange={e => onChange({ lineHeight: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Letter Spacing</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.letterSpacing || 0}em</span>
+            </div>
+            <input type="range" min={-0.05} max={0.2} step={0.01} value={data.letterSpacing || 0} onChange={e => onChange({ letterSpacing: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+          <div className="input-group" style={{ marginTop: 12 }}>
+            <label>Max Width (px)</label>
+            <select className="settings-select" value={data.maxWidth || 600} onChange={e => onChange({ maxWidth: Number(e.target.value) })}>
+              <option value={400}>Narrow (400px)</option>
+              <option value={600}>Medium (600px)</option>
+              <option value={800}>Wide (800px)</option>
+            </select>
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Color</span>
+          <div className="color-swatches" style={{ marginTop: 8 }}>
+            {['#565F34', '#BE1A32', '#EDE9E7', '#A7BF66', '#8A8A8A', '#2D2D2D'].map(c => (
+              <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
+            ))}
+            <input type="color" value={data.color || '#8A8A8A'} onChange={e => onChange({ color: e.target.value })} className="swatch-picker" />
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Content</span>
+          <textarea className="settings-textarea" value={data.content || ''} onChange={e => onChange({ content: e.target.value })} rows={5} placeholder="Use Enter for new lines" />
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <SizeSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── QUOTE ─────────────────────────────────────────────────────────────
+  if (type === 'quote') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Quote Style</span>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {[['minimal','Minimal'],['bordered','Bordered'],['framed','Framed']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ style: val })}
+                style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `2px solid ${(data.style || 'framed') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.style || 'framed') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: (data.style || 'framed') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Content</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Quote Text</label>
+            <textarea className="settings-textarea" value={data.text || ''} onChange={e => onChange({ text: e.target.value })} rows={4} placeholder="Your quote or verse..." />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Source / Attribution</label>
+            <input className="settings-input" value={data.source || ''} onChange={e => onChange({ source: e.target.value })} placeholder="— QS. Ar-Rum: 21" />
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Accent Color</span>
+          <div className="color-swatches" style={{ marginTop: 8 }}>
+            {['#565F34', '#C4A882', '#BE1A32', '#8A8A8A', '#2D2D2D'].map(c => (
+              <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
+            ))}
+            <input type="color" value={data.color || '#565F34'} onChange={e => onChange({ color: e.target.value })} className="swatch-picker" />
+          </div>
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── PHOTO ─────────────────────────────────────────────────────────────
   if (type === 'photo') {
     return (
       <>
         <div className="settings-section">
-          <span className="label-caps">Media (Video / Image)</span>
+          <span className="label-caps">Media</span>
           <div style={{ marginTop: 8 }}>
-            <MediaUploader
-              currentUrl={data.url}
-              onUpload={(url) => onChange({ url })}
-            />
+            <MediaUploader currentUrl={data.url} onUpload={(url) => onChange({ url })} />
           </div>
           <div className="input-group" style={{ marginTop: 12 }}>
             <label>Or paste URL</label>
             <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://..." />
           </div>
-          <div className="input-group">
+          <div className="input-group" style={{ marginTop: 8 }}>
             <label>Caption</label>
             <input className="settings-input" value={data.caption || ''} onChange={e => onChange({ caption: e.target.value })} />
           </div>
         </div>
+        <div className="settings-section">
+          <span className="label-caps">Appearance</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Aspect Ratio</label>
+            <select className="settings-select" value={data.aspectRatio || 'auto'} onChange={e => onChange({ aspectRatio: e.target.value })}>
+              <option value="auto">Auto</option>
+              <option value="1/1">Square (1:1)</option>
+              <option value="4/3">Landscape (4:3)</option>
+              <option value="16/9">Widescreen (16:9)</option>
+              <option value="3/4">Portrait (3:4)</option>
+            </select>
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Border Style</label>
+            <select className="settings-select" value={data.borderStyle || 'none'} onChange={e => onChange({ borderStyle: e.target.value })}>
+              <option value="none">None</option>
+              <option value="shadow">Drop Shadow</option>
+              <option value="solid">Solid Border</option>
+            </select>
+          </div>
+          {data.borderStyle === 'shadow' && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Shadow Intensity</label>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.shadowIntensity || 0}</span>
+              </div>
+              <input type="range" min={0} max={5} step={1} value={data.shadowIntensity || 0} onChange={e => onChange({ shadowIntensity: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+            </div>
+          )}
+        </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </>
     )
   }
 
+  // ── PHOTO FRAME ───────────────────────────────────────────────────────
+  if (type === 'photoFrame') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Frame Style</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+            {[['polaroid','🖼 Polaroid'],['natural','✨ Natural'],['film','🎞 Film'],['oval','🔵 Oval']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ frameStyle: val })}
+                style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${(data.frameStyle || 'polaroid') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.frameStyle || 'polaroid') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: (data.frameStyle || 'polaroid') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Photo</span>
+          <div style={{ marginTop: 8 }}>
+            <MediaUploader currentUrl={data.url} onUpload={(url) => onChange({ url })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 12 }}>
+            <label>Or paste URL</label>
+            <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://..." />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Caption</label>
+            <input className="settings-input" value={data.caption || ''} onChange={e => onChange({ caption: e.target.value })} />
+          </div>
+          {data.caption && (
+            <div className="input-group" style={{ marginTop: 8 }}>
+              <label>Caption Position</label>
+              <select className="settings-select" value={data.captionPosition || 'outside'} onChange={e => onChange({ captionPosition: e.target.value })}>
+                <option value="outside">Below Photo</option>
+                <option value="overlay">Overlay on Photo</option>
+              </select>
+            </div>
+          )}
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── VIDEO ─────────────────────────────────────────────────────────────
   if (type === 'video') {
     return (
       <div className="settings-section">
         <span className="label-caps">Video Content</span>
         <div style={{ marginTop: 8 }}>
-          <MediaUploader
-            currentUrl={data.url}
-            onUpload={(url) => onChange({ url })}
-          />
+          <MediaUploader currentUrl={data.url} onUpload={(url) => onChange({ url })} />
         </div>
         <div className="input-group" style={{ marginTop: 12 }}>
-          <label>Or Video URL (MP4, WebM)</label>
-          <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://.../video.mp4" />
+          <label>Or Video URL (MP4, YouTube, Vimeo)</label>
+          <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://.../video.mp4 or youtube.com/watch..." />
         </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+        <div className="input-group" style={{ marginTop: 8 }}>
+          <label>Thumbnail Override (poster image URL)</label>
+          <input className="settings-input" value={data.thumbnailUrl || ''} onChange={e => onChange({ thumbnailUrl: e.target.value })} placeholder="https://..." />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
           <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" checked={data.autoplay || false} onChange={e => onChange({ autoplay: e.target.checked })} />
             Autoplay (muted)
@@ -1058,75 +1300,249 @@ function BlockSettingsPanel({ block, onChange }) {
             <input type="checkbox" checked={data.loop || false} onChange={e => onChange({ loop: e.target.checked })} />
             Loop
           </label>
+          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={data.showControls !== false} onChange={e => onChange({ showControls: e.target.checked })} />
+            Show Controls
+          </label>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Autoplay videos are automatically muted by modern browsers.</p>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
-  if (type === 'countdown') {
+  // ── GALLERY ───────────────────────────────────────────────────────────
+  if (type === 'gallery') {
     return (
       <div className="settings-section">
-        <span className="label-caps">Countdown</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Target Date</label>
-          <input type="datetime-local" className="settings-input" value={data.targetDate?.slice(0, 16) || ''} onChange={e => onChange({ targetDate: e.target.value })} />
+        <span className="label-caps">Gallery Layout</span>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          {[['masonry','Masonry'],['grid','Grid'],['slideshow','Slideshow']].map(([val, lbl]) => (
+            <button key={val} type="button" onClick={() => onChange({ layoutMode: val })}
+              style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `2px solid ${(data.layoutMode || 'masonry') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.layoutMode || 'masonry') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: (data.layoutMode || 'masonry') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+          ))}
         </div>
-        <div className="input-group">
-          <label>Label</label>
-          <input className="settings-input" value={data.label || ''} onChange={e => onChange({ label: e.target.value })} />
+        <div className="input-group" style={{ marginTop: 12 }}>
+          <label>Columns</label>
+          <select className="settings-select" value={data.columns || 2} onChange={e => onChange({ columns: Number(e.target.value) })}>
+            <option value={2}>2 Columns</option>
+            <option value={3}>3 Columns</option>
+          </select>
         </div>
+        <div style={{ marginTop: 12 }}>
+          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={data.enableLightbox !== false} onChange={e => onChange({ enableLightbox: e.target.checked })} />
+            Enable Lightbox (tap to expand)
+          </label>
+        </div>
+
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '16px 0 8px' }}>
+          Upload multiple photos. Arrange them by order.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+          {(data.images || []).map((img, i) => (
+            <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <MediaRenderer src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button type="button" onClick={() => {
+                const newImgs = [...(data.images || [])]; newImgs.splice(i, 1); onChange({ images: newImgs });
+              }} style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10 }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        <MediaUploader multiple={true} currentUrl="" onUpload={(newUrls) => onChange({ images: [...(data.images || []), ...newUrls] })} />
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
+  // ── LOCATION ──────────────────────────────────────────────────────────
   if (type === 'location') {
+    // Support old single-event format by migrating to events array
+    const events = data.events || (data.venue ? [{ name: 'Event', date: data.date, time: data.time, venue: data.venue, address: data.address, mapUrl: data.mapUrl, mapEmbed: '' }] : [{ name: 'Akad Nikah', date: '', time: '', venue: '', address: '', mapUrl: '', mapEmbed: '' }])
+
     return (
       <>
         <div className="settings-section">
-          <span className="label-caps">Event Details</span>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Venue</label>
-            <input className="settings-input" value={data.venue || ''} onChange={e => onChange({ venue: e.target.value })} />
+          <span className="label-caps">Map Display</span>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {[['button','Link Button'],['iframe','Embed Map']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ mapDisplay: val })}
+                style={{ flex: 1, padding: '8px', borderRadius: 8, border: `2px solid ${(data.mapDisplay || 'button') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.mapDisplay || 'button') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: (data.mapDisplay || 'button') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
           </div>
-          <div className="input-group">
-            <label>Address</label>
-            <input className="settings-input" value={data.address || ''} onChange={e => onChange({ address: e.target.value })} />
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div className="input-group" style={{ flex: 1 }}>
-              <label>Date</label>
-              <input className="settings-input" value={data.date || ''} onChange={e => onChange({ date: e.target.value })} />
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Events</span>
+          {events.map((event, i) => (
+            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8, marginTop: 10 }}>
+              <div className="input-group">
+                <label>Event Name</label>
+                <input className="settings-input" value={event.name || ''} placeholder="Akad Nikah / Resepsi" onChange={e => {
+                  const newEvts = [...events]; newEvts[i] = { ...event, name: e.target.value }; onChange({ events: newEvts });
+                }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Date</label>
+                  <input className="settings-input" value={event.date || ''} onChange={e => {
+                    const newEvts = [...events]; newEvts[i] = { ...event, date: e.target.value }; onChange({ events: newEvts });
+                  }} />
+                </div>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Time</label>
+                  <input className="settings-input" value={event.time || ''} onChange={e => {
+                    const newEvts = [...events]; newEvts[i] = { ...event, time: e.target.value }; onChange({ events: newEvts });
+                  }} />
+                </div>
+              </div>
+              <div className="input-group" style={{ marginTop: 8 }}>
+                <label>Venue</label>
+                <input className="settings-input" value={event.venue || ''} onChange={e => {
+                  const newEvts = [...events]; newEvts[i] = { ...event, venue: e.target.value }; onChange({ events: newEvts });
+                }} />
+              </div>
+              <div className="input-group" style={{ marginTop: 8 }}>
+                <label>Address</label>
+                <input className="settings-input" value={event.address || ''} onChange={e => {
+                  const newEvts = [...events]; newEvts[i] = { ...event, address: e.target.value }; onChange({ events: newEvts });
+                }} />
+              </div>
+              <div className="input-group" style={{ marginTop: 8 }}>
+                <label>Google Maps Link</label>
+                <input className="settings-input" value={event.mapUrl || ''} placeholder="https://maps.app.goo.gl/..." onChange={e => {
+                  const newEvts = [...events]; newEvts[i] = { ...event, mapUrl: e.target.value }; onChange({ events: newEvts });
+                }} />
+              </div>
+              {events.length > 1 && (
+                <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
+                  const newEvts = [...events]; newEvts.splice(i, 1); onChange({ events: newEvts });
+                }}>Remove Event</button>
+              )}
             </div>
-            <div className="input-group" style={{ flex: 1 }}>
-              <label>Time</label>
-              <input className="settings-input" value={data.time || ''} onChange={e => onChange({ time: e.target.value })} />
-            </div>
-          </div>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Google Maps Link URL</label>
-            <input className="settings-input" value={data.mapUrl || ''} onChange={e => onChange({ mapUrl: e.target.value })} placeholder="https://maps.app.goo.gl/..." />
-          </div>
+          ))}
+          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => {
+            onChange({ events: [...events, { name: '', date: '', time: '', venue: '', address: '', mapUrl: '' }] })
+          }}>+ Add Event</button>
         </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </>
     )
   }
 
+  // ── COUNTDOWN ─────────────────────────────────────────────────────────
+  if (type === 'countdown') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Style</span>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {[['minimal','Minimal'],['boxed','Boxed'],['outlined','Outlined']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ style: val })}
+                style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `2px solid ${(data.style || 'boxed') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.style || 'boxed') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: (data.style || 'boxed') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Countdown</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Target Date & Time</label>
+            <input type="datetime-local" className="settings-input" value={data.targetDate?.slice(0, 16) || ''} onChange={e => onChange({ targetDate: e.target.value })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Label</label>
+            <input className="settings-input" value={data.label || ''} onChange={e => onChange({ label: e.target.value })} placeholder="Days until the big day" />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Expired Message</label>
+            <input className="settings-input" value={data.expiredMessage || ''} onChange={e => onChange({ expiredMessage: e.target.value })} placeholder="🎉 The day has come!" />
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={data.showSeconds !== false} onChange={e => onChange({ showSeconds: e.target.checked })} />
+              Show Seconds
+            </label>
+          </div>
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── SCHEDULE ──────────────────────────────────────────────────────────
+  if (type === 'schedule') {
+    const items = data.items || []
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Layout</span>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {[['timeline','Timeline'],['cards','Cards']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ layoutMode: val })}
+                style={{ flex: 1, padding: '8px', borderRadius: 8, border: `2px solid ${(data.layoutMode || 'timeline') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.layoutMode || 'timeline') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: (data.layoutMode || 'timeline') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Schedule Title</span>
+          <input className="settings-input" style={{ marginTop: 8 }} value={data.title || ''} onChange={e => onChange({ title: e.target.value })} placeholder="Wedding Agenda" />
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Events</span>
+          {items.map((item, i) => (
+            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8, marginTop: 10 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div className="input-group" style={{ flex: 0, minWidth: 80 }}>
+                  <label>Time</label>
+                  <input className="settings-input" value={item.time || ''} placeholder="08:00" onChange={e => {
+                    const ni = [...items]; ni[i] = { ...item, time: e.target.value }; onChange({ items: ni });
+                  }} />
+                </div>
+                <div className="input-group" style={{ flex: 0, minWidth: 40 }}>
+                  <label>Icon</label>
+                  <input className="settings-input" value={item.icon || ''} placeholder="💍" onChange={e => {
+                    const ni = [...items]; ni[i] = { ...item, icon: e.target.value }; onChange({ items: ni });
+                  }} />
+                </div>
+              </div>
+              <div className="input-group" style={{ marginTop: 8 }}>
+                <label>Title</label>
+                <input className="settings-input" value={item.title || ''} placeholder="Akad Nikah" onChange={e => {
+                  const ni = [...items]; ni[i] = { ...item, title: e.target.value }; onChange({ items: ni });
+                }} />
+              </div>
+              <div className="input-group" style={{ marginTop: 8 }}>
+                <label>Description</label>
+                <input className="settings-input" value={item.description || ''} onChange={e => {
+                  const ni = [...items]; ni[i] = { ...item, description: e.target.value }; onChange({ items: ni });
+                }} />
+              </div>
+              <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
+                const ni = [...items]; ni.splice(i, 1); onChange({ items: ni });
+              }}>Remove</button>
+            </div>
+          ))}
+          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => onChange({ items: [...items, { time: '', title: '', description: '', icon: '' }] })}>+ Add Event</button>
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── RSVP ──────────────────────────────────────────────────────────────
   if (type === 'rsvp') {
     return (
       <div className="settings-section">
@@ -1135,343 +1551,248 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Title</label>
           <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
         </div>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
-  if (type === 'divider') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Divider</span>
-        <div className="color-swatches" style={{ marginTop: 8 }}>
-          {['#E0DCD8', '#565F34', '#BE1A32', '#A7BF66', '#2D2D2D'].map(c => (
-            <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
-          ))}
-        </div>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
-  if (type === 'gallery') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Gallery Media</span>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-          Upload multiple photos. The system will automatically arrange them in a neat masonry layout.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
-          {(data.images || []).map((img, i) => (
-            <div key={i} style={{ 
-              position: 'relative', 
-              aspectRatio: '1/1', 
-              borderRadius: 6, 
-              overflow: 'hidden',
-              border: '1px solid var(--border)' 
-            }}>
-              <MediaRenderer src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button 
-                type="button" 
-                onClick={() => {
-                  const newImgs = [...(data.images || [])];
-                  newImgs.splice(i, 1);
-                  onChange({ images: newImgs });
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.5)',
-                  color: 'white',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: 10
-                }}
-              >
-                <HiX size={10} />
-              </button>
-            </div>
-          ))}
-          <div 
-            style={{ 
-              aspectRatio: '1/1', 
-              borderRadius: 6, 
-              border: '1px dashed var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'var(--text-muted)'
-            }}
-          >
-            <MediaUploader 
-              multiple={true}
-              currentUrl="" 
-              onUpload={(newUrls) => {
-                onChange({ images: [...(data.images || []), ...newUrls] })
-              }} 
-            />
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <div className="input-group" style={{ flex: 1 }}>
+            <label>Attending Button</label>
+            <input className="settings-input" value={data.attendingLabel || ''} placeholder="Attending ✓" onChange={e => onChange({ attendingLabel: e.target.value })} />
+          </div>
+          <div className="input-group" style={{ flex: 1 }}>
+            <label>Decline Button</label>
+            <input className="settings-input" value={data.declineLabel || ''} placeholder="Decline" onChange={e => onChange({ declineLabel: e.target.value })} />
           </div>
         </div>
-
+        <div className="input-group" style={{ marginTop: 8 }}>
+          <label>Confirmation Message</label>
+          <input className="settings-input" value={data.confirmationMessage || ''} placeholder="Thank you! We look forward..." onChange={e => onChange({ confirmationMessage: e.target.value })} />
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={data.showGuestCount !== false} onChange={e => onChange({ showGuestCount: e.target.checked })} />
+            Show Number of Guests field
+          </label>
+        </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
-  if (type === 'gift') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Gift Details</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Title</label>
-          <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
-        </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Bank Name</label>
-          <input className="settings-input" value={data.bankName || ''} onChange={e => onChange({ bankName: e.target.value })} placeholder="BCA / Mandiri" />
-        </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Account Number</label>
-          <input className="settings-input" value={data.accountNumber || ''} onChange={e => onChange({ accountNumber: e.target.value })} />
-        </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Account Name</label>
-          <input className="settings-input" value={data.accountName || ''} onChange={e => onChange({ accountName: e.target.value })} />
-        </div>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
-  if (type === 'music') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Background Music</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Audio URL (MP3)</label>
-          <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://.../song.mp3" />
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Background music requires the user to interact with the page before it can play.</p>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
-  if (type === 'signature') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Signature Names</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Name 1</label>
-          <input className="settings-input" value={data.names?.[0] || ''} onChange={e => {
-            const newNames = [...(data.names || [])];
-            newNames[0] = e.target.value;
-            onChange({ names: newNames });
-          }} />
-        </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Name 2</label>
-          <input className="settings-input" value={data.names?.[1] || ''} onChange={e => {
-            const newNames = [...(data.names || [])];
-            newNames[1] = e.target.value;
-            onChange({ names: newNames });
-          }} />
-        </div>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
-  if (type === 'registry') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Gift Registry</span>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label>Title</label>
-          <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <span className="label-caps" style={{ fontSize: 10 }}>Registry Links</span>
-          {(data.items || []).map((item, i) => (
-            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 6, marginTop: 8 }}>
-              <div className="input-group">
-                <label>Store Name</label>
-                <input className="settings-input" value={item.label || ''} onChange={e => {
-                  const newItems = [...(data.items || [])];
-                  newItems[i] = { ...item, label: e.target.value };
-                  onChange({ items: newItems });
-                }} />
-              </div>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label>URL Link</label>
-                <input className="settings-input" value={item.url || ''} onChange={e => {
-                  const newItems = [...(data.items || [])];
-                  newItems[i] = { ...item, url: e.target.value };
-                  onChange({ items: newItems });
-                }} placeholder="https://..." />
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
-                const newItems = [...(data.items || [])];
-                newItems.splice(i, 1);
-                onChange({ items: newItems });
-              }}>Remove Link</button>
-            </div>
-          ))}
-          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-            onChange({ items: [...(data.items || []), { label: '', url: '' }] })
-          }}>+ Add Registry Link</button>
-        </div>
-        <AnimationSection data={data} onChange={onChange} />
-        <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
-        <BackgroundImageSection data={data} onChange={onChange} />
-        <AdvancedDesignSection data={data} onChange={onChange} />
-      </div>
-    )
-  }
-
+  // ── COUPLE ────────────────────────────────────────────────────────────
   if (type === 'couple') {
     return (
       <div className="settings-section">
-        <span className="label-caps">Couple Profiles</span>
-        
-        <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 6, marginTop: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 1 (Bride/Groom)</label>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Name</label>
-            <input className="settings-input" value={data.name1 || ''} onChange={e => onChange({ name1: e.target.value })} />
-          </div>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Title / Gelar</label>
-            <input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} placeholder="First son of Mr. ... & Mrs. ..." />
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
-            <MediaUploader currentUrl={data.photo1} onUpload={url => onChange({ photo1: url })} />
-          </div>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Instagram Username</label>
-            <input className="settings-input" value={data.instagram1 || ''} onChange={e => onChange({ instagram1: e.target.value })} placeholder="username" />
-          </div>
+        <span className="label-caps">Layout & Style</span>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          {[['staggered','Staggered'],['side-by-side','Side by Side'],['stacked','Stacked']].map(([val, lbl]) => (
+            <button key={val} type="button" onClick={() => onChange({ layout: val })}
+              style={{ flex: 1, padding: '7px 4px', borderRadius: 8, border: `2px solid ${(data.layout || 'staggered') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.layout || 'staggered') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 10, fontWeight: 600, color: (data.layout || 'staggered') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+          ))}
+        </div>
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <label>Photo Shape</label>
+          <select className="settings-select" value={data.photoShape || 'portrait'} onChange={e => onChange({ photoShape: e.target.value })}>
+            <option value="portrait">Arch Portrait</option>
+            <option value="circle">Circle</option>
+            <option value="rounded">Rounded Square</option>
+          </select>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={data.showAmpersand !== false} onChange={e => onChange({ showAmpersand: e.target.checked })} />
+            Show "&" connector
+          </label>
         </div>
 
-        <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 6, marginTop: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>Person 2 (Bride/Groom)</label>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Name</label>
-            <input className="settings-input" value={data.name2 || ''} onChange={e => onChange({ name2: e.target.value })} />
-          </div>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Title / Gelar</label>
-            <input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} placeholder="Second daughter of Mr. ... & Mrs. ..." />
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Media</label>
-            <MediaUploader currentUrl={data.photo2} onUpload={url => onChange({ photo2: url })} />
-          </div>
-          <div className="input-group" style={{ marginTop: 8 }}>
-            <label>Instagram Username</label>
-            <input className="settings-input" value={data.instagram2 || ''} onChange={e => onChange({ instagram2: e.target.value })} placeholder="username" />
-          </div>
+        <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginTop: 16 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Person 1</label>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Name</label><input className="settings-input" value={data.name1 || ''} onChange={e => onChange({ name1: e.target.value })} /></div>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Title / Description</label><input className="settings-input" value={data.title1 || ''} onChange={e => onChange({ title1: e.target.value })} /></div>
+          <div style={{ marginTop: 8 }}><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label><MediaUploader currentUrl={data.photo1} onUpload={url => onChange({ photo1: url })} /></div>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Instagram</label><input className="settings-input" value={data.instagram1 || ''} onChange={e => onChange({ instagram1: e.target.value })} placeholder="username" /></div>
         </div>
 
-        <div className="input-group" style={{ marginTop: 12 }}>
-          <label>Short Description / Bio</label>
-          <textarea className="settings-textarea" value={data.description || ''} onChange={e => onChange({ description: e.target.value })} rows={3} />
+        <div style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginTop: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Person 2</label>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Name</label><input className="settings-input" value={data.name2 || ''} onChange={e => onChange({ name2: e.target.value })} /></div>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Title / Description</label><input className="settings-input" value={data.title2 || ''} onChange={e => onChange({ title2: e.target.value })} /></div>
+          <div style={{ marginTop: 8 }}><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo</label><MediaUploader currentUrl={data.photo2} onUpload={url => onChange({ photo2: url })} /></div>
+          <div className="input-group" style={{ marginTop: 8 }}><label>Instagram</label><input className="settings-input" value={data.instagram2 || ''} onChange={e => onChange({ instagram2: e.target.value })} placeholder="username" /></div>
         </div>
+
+        <div className="input-group" style={{ marginTop: 12 }}><label>Bio / Description</label><textarea className="settings-textarea" value={data.description || ''} onChange={e => onChange({ description: e.target.value })} rows={3} /></div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
+  // ── STORY ─────────────────────────────────────────────────────────────
   if (type === 'story') {
     return (
       <div className="settings-section">
         <span className="label-caps">Our Story Timeline</span>
         <div style={{ marginTop: 16 }}>
           {(data.items || []).map((item, i) => (
-            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 6, marginTop: 8 }}>
-              <div className="input-group">
-                <label>Date / Year</label>
-                <input className="settings-input" value={item.date || ''} onChange={e => {
-                  const newItems = [...(data.items || [])];
-                  newItems[i] = { ...item, date: e.target.value };
-                  onChange({ items: newItems });
-                }} placeholder="e.g. 2018 or Dec 2020" />
+            <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Date / Year</label>
+                  <input className="settings-input" value={item.date || ''} placeholder="e.g. 2020" onChange={e => {
+                    const ni = [...(data.items || [])]; ni[i] = { ...item, date: e.target.value }; onChange({ items: ni });
+                  }} />
+                </div>
               </div>
               <div className="input-group" style={{ marginTop: 8 }}>
                 <label>Title</label>
-                <input className="settings-input" value={item.title || ''} onChange={e => {
-                  const newItems = [...(data.items || [])];
-                  newItems[i] = { ...item, title: e.target.value };
-                  onChange({ items: newItems });
-                }} placeholder="First Met" />
+                <input className="settings-input" value={item.title || ''} placeholder="First Met" onChange={e => {
+                  const ni = [...(data.items || [])]; ni[i] = { ...item, title: e.target.value }; onChange({ items: ni });
+                }} />
               </div>
               <div className="input-group" style={{ marginTop: 8 }}>
                 <label>Description</label>
                 <textarea className="settings-textarea" value={item.description || ''} onChange={e => {
-                  const newItems = [...(data.items || [])];
-                  newItems[i] = { ...item, description: e.target.value };
-                  onChange({ items: newItems });
+                  const ni = [...(data.items || [])]; ni[i] = { ...item, description: e.target.value }; onChange({ items: ni });
                 }} rows={2} />
               </div>
+              <div style={{ marginTop: 8 }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Photo (optional)</label>
+                <MediaUploader currentUrl={item.photo} onUpload={url => {
+                  const ni = [...(data.items || [])]; ni[i] = { ...item, photo: url }; onChange({ items: ni });
+                }} />
+              </div>
               <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
-                const newItems = [...(data.items || [])];
-                newItems.splice(i, 1);
-                onChange({ items: newItems });
-              }}>Remove Milestone</button>
+                const ni = [...(data.items || [])]; ni.splice(i, 1); onChange({ items: ni });
+              }}>Remove</button>
             </div>
           ))}
-          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => {
-            onChange({ items: [...(data.items || []), { date: '', title: '', description: '' }] })
-          }}>+ Add Milestone</button>
+          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => onChange({ items: [...(data.items || []), { date: '', title: '', description: '', photo: '' }] })}>+ Add Milestone</button>
         </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
+  // ── DRESS CODE ────────────────────────────────────────────────────────
+  if (type === 'dressCode') {
+    const swatches = data.swatches || []
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Content</span>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Title</label>
+            <input className="settings-input" value={data.title || ''} placeholder="Dress Code" onChange={e => onChange({ title: e.target.value })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Description</label>
+            <textarea className="settings-textarea" value={data.description || ''} onChange={e => onChange({ description: e.target.value })} rows={3} />
+          </div>
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <label>Note (optional)</label>
+            <input className="settings-input" value={data.note || ''} placeholder="Please avoid white..." onChange={e => onChange({ note: e.target.value })} />
+          </div>
+        </div>
+        <div className="settings-section">
+          <span className="label-caps">Color Swatches</span>
+          {swatches.map((swatch, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
+              <input type="color" value={swatch.color || '#ffffff'} onChange={e => {
+                const ns = [...swatches]; ns[i] = { ...swatch, color: e.target.value }; onChange({ swatches: ns });
+              }} style={{ width: 36, height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }} />
+              <input className="settings-input" value={swatch.label || ''} placeholder="Color name" onChange={e => {
+                const ns = [...swatches]; ns[i] = { ...swatch, label: e.target.value }; onChange({ swatches: ns });
+              }} style={{ flex: 1 }} />
+              <button type="button" onClick={() => {
+                const ns = [...swatches]; ns.splice(i, 1); onChange({ swatches: ns });
+              }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>×</button>
+            </div>
+          ))}
+          <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => onChange({ swatches: [...swatches, { color: '#EDE9E7', label: 'Color' }] })}>+ Add Color</button>
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </>
+    )
+  }
+
+  // ── GIFT ──────────────────────────────────────────────────────────────
+  if (type === 'gift') {
+    // Handle migration from old format
+    const accounts = data.accounts?.length > 0
+      ? data.accounts
+      : (data.bankName ? [{ bankName: data.bankName, accountNumber: data.accountNumber, accountName: data.accountName, logo: '' }] : [])
+
+    return (
+      <div className="settings-section">
+        <span className="label-caps">Gift Section</span>
+        <div className="input-group" style={{ marginTop: 8 }}>
+          <label>Title</label>
+          <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
+        </div>
+        <div className="input-group" style={{ marginTop: 8 }}>
+          <label>Subtitle</label>
+          <textarea className="settings-textarea" value={data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })} rows={2} />
+        </div>
+
+        <span className="label-caps" style={{ fontSize: 10, display: 'block', marginTop: 20, marginBottom: 8 }}>Bank Accounts / E-Wallets</span>
+        {accounts.map((acc, i) => (
+          <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8, marginTop: 8 }}>
+            <div className="input-group"><label>Bank / E-Wallet Name</label><input className="settings-input" value={acc.bankName || ''} placeholder="BCA / GoPay" onChange={e => {
+              const na = [...accounts]; na[i] = { ...acc, bankName: e.target.value }; onChange({ accounts: na });
+            }} /></div>
+            <div className="input-group" style={{ marginTop: 8 }}><label>Account Number</label><input className="settings-input" value={acc.accountNumber || ''} onChange={e => {
+              const na = [...accounts]; na[i] = { ...acc, accountNumber: e.target.value }; onChange({ accounts: na });
+            }} /></div>
+            <div className="input-group" style={{ marginTop: 8 }}><label>Account Name</label><input className="settings-input" value={acc.accountName || ''} onChange={e => {
+              const na = [...accounts]; na[i] = { ...acc, accountName: e.target.value }; onChange({ accounts: na });
+            }} /></div>
+            <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
+              const na = [...accounts]; na.splice(i, 1); onChange({ accounts: na });
+            }}>Remove</button>
+          </div>
+        ))}
+        <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => onChange({ accounts: [...accounts, { bankName: '', accountNumber: '', accountName: '' }] })}>+ Add Account</button>
+
+        <span className="label-caps" style={{ fontSize: 10, display: 'block', marginTop: 20, marginBottom: 8 }}>QRIS Code</span>
+        <MediaUploader currentUrl={data.qrisImage} onUpload={url => onChange({ qrisImage: url })} />
+        {data.qrisImage && (
+          <button className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => onChange({ qrisImage: '' })}>Remove QRIS</button>
+        )}
+
+        <span className="label-caps" style={{ fontSize: 10, display: 'block', marginTop: 20, marginBottom: 8 }}>Registry Links</span>
+        {(data.registryLinks || []).map((link, i) => (
+          <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8, marginTop: 8 }}>
+            <div className="input-group"><label>Store Name</label><input className="settings-input" value={link.label || ''} onChange={e => {
+              const nl = [...(data.registryLinks || [])]; nl[i] = { ...link, label: e.target.value }; onChange({ registryLinks: nl });
+            }} /></div>
+            <div className="input-group" style={{ marginTop: 8 }}><label>URL</label><input className="settings-input" value={link.url || ''} placeholder="https://..." onChange={e => {
+              const nl = [...(data.registryLinks || [])]; nl[i] = { ...link, url: e.target.value }; onChange({ registryLinks: nl });
+            }} /></div>
+            <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: 'var(--error)' }} onClick={() => {
+              const nl = [...(data.registryLinks || [])]; nl.splice(i, 1); onChange({ registryLinks: nl });
+            }}>Remove</button>
+          </div>
+        ))}
+        <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => onChange({ registryLinks: [...(data.registryLinks || []), { label: '', url: '' }] })}>+ Add Registry Link</button>
+
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+        <BackgroundImageSection data={data} onChange={onChange} />
+        <AdvancedDesignSection data={data} onChange={onChange} />
+      </div>
+    )
+  }
+
+  // ── WISHES ────────────────────────────────────────────────────────────
   if (type === 'wishes') {
     return (
       <div className="settings-section">
@@ -1480,21 +1801,82 @@ function BlockSettingsPanel({ block, onChange }) {
           <label>Title</label>
           <input className="settings-input" value={data.title || ''} onChange={e => onChange({ title: e.target.value })} />
         </div>
+        <div className="input-group" style={{ marginTop: 8 }}>
+          <label>Display Mode</label>
+          <select className="settings-select" value={data.displayMode || 'masonry'} onChange={e => onChange({ displayMode: e.target.value })}>
+            <option value="masonry">Masonry</option>
+            <option value="list">List</option>
+          </select>
+        </div>
         <div style={{ marginTop: 16, padding: 12, background: 'rgba(86,95,52,0.05)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-          Wishes and messages will automatically populate here when guests submit their RSVP via the public invitation link.
+          Wishes submitted by guests will appear here automatically.
         </div>
         <AnimationSection data={data} onChange={onChange} />
         <SpacingSection data={data} onChange={onChange} />
-        <SizeSection data={data} onChange={onChange} />
         <BackgroundImageSection data={data} onChange={onChange} />
         <AdvancedDesignSection data={data} onChange={onChange} />
       </div>
     )
   }
 
+  // ── ORNAMENT (was divider) ────────────────────────────────────────────
+  if (type === 'ornament' || type === 'divider') {
+    return (
+      <div className="settings-section">
+        <span className="label-caps">Ornament Style</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+          {[['floral','✿ Floral'],['line','— Line'],['double-line','= Double'],['dots','··· Dots'],['wave','〜 Wave']].map(([val, lbl]) => (
+            <button key={val} type="button" onClick={() => onChange({ style: val })}
+              style={{ padding: '10px 8px', borderRadius: 8, border: `2px solid ${(data.style || 'floral') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.style || 'floral') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: (data.style || 'floral') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+          ))}
+        </div>
+        <div className="input-group" style={{ marginTop: 12 }}>
+          <label>Color</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {['#C4A882', '#565F34', '#BE1A32', '#E0DCD8', '#2D2D2D'].map(c => (
+              <button key={c} className={`swatch ${data.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => onChange({ color: c })} />
+            ))}
+            <input type="color" value={data.color || '#C4A882'} onChange={e => onChange({ color: e.target.value })} className="swatch-picker" />
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Width</label>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.width || 60}%</span>
+          </div>
+          <input type="range" min={20} max={100} step={5} value={data.width || 60} onChange={e => onChange({ width: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+        </div>
+        <AnimationSection data={data} onChange={onChange} />
+        <SpacingSection data={data} onChange={onChange} />
+      </div>
+    )
+  }
+
+  // ── FOOTER ────────────────────────────────────────────────────────────
   if (type === 'footer') {
     return (
       <>
+        <div className="settings-section">
+          <span className="label-caps">Background Style</span>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {[['dark','Dark'],['gradient','Gradient'],['slideshow','Slideshow']].map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => onChange({ bgStyle: val })}
+                style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `2px solid ${(data.bgStyle || 'dark') === val ? 'var(--olive)' : 'var(--border)'}`, background: (data.bgStyle || 'dark') === val ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: (data.bgStyle || 'dark') === val ? 'var(--olive)' : 'var(--text-muted)' }}>{lbl}</button>
+            ))}
+          </div>
+          {(data.bgStyle === 'gradient') && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <div className="input-group" style={{ flex: 1 }}>
+                <label>From</label>
+                <input type="color" value={data.gradientFrom || '#2D2D2D'} onChange={e => onChange({ gradientFrom: e.target.value })} style={{ width: '100%', height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }} />
+              </div>
+              <div className="input-group" style={{ flex: 1 }}>
+                <label>To</label>
+                <input type="color" value={data.gradientTo || '#1a1a1a'} onChange={e => onChange({ gradientTo: e.target.value })} style={{ width: '100%', height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }} />
+              </div>
+            </div>
+          )}
+        </div>
         <div className="settings-section">
           <span className="label-caps">Footer Content</span>
           <div className="input-group" style={{ marginTop: 8 }}>
@@ -1503,11 +1885,11 @@ function BlockSettingsPanel({ block, onChange }) {
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Couple Name</label>
-            <input className="settings-input" value={data.coupleName || ''} onChange={e => onChange({ coupleName: e.target.value })} placeholder="Aqil & Anty" />
+            <input className="settings-input" value={data.coupleName || ''} onChange={e => onChange({ coupleName: e.target.value })} />
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <label>Subtitle</label>
-            <input className="settings-input" value={data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })} placeholder="For Being Part of Our Special Day" />
+            <input className="settings-input" value={data.subtitle || ''} onChange={e => onChange({ subtitle: e.target.value })} />
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1516,27 +1898,24 @@ function BlockSettingsPanel({ block, onChange }) {
             </label>
           </div>
         </div>
-        <div className="settings-section">
-          <span className="label-caps">Photo Slideshow</span>
-          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {(data.photos || []).map((photo, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden' }}>
-                  <MediaRenderer src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {(data.bgStyle === 'slideshow' || !data.bgStyle) && (
+          <div className="settings-section">
+            <span className="label-caps">Photo Slideshow</span>
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(data.photos || []).map((photo, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden' }}>
+                    <MediaRenderer src={photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                    const np = [...(data.photos || [])]; np.splice(i, 1); onChange({ photos: np });
+                  }} style={{ padding: 4 }}>Remove</button>
                 </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
-                  const newPhotos = [...(data.photos || [])];
-                  newPhotos.splice(i, 1);
-                  onChange({ photos: newPhotos });
-                }} style={{ padding: 4 }}>Remove</button>
-              </div>
-            ))}
-            <MediaUploader currentUrl="" onUpload={(url) => {
-              onChange({ photos: [...(data.photos || []), url] })
-            }} />
+              ))}
+              <MediaUploader currentUrl="" onUpload={(url) => onChange({ photos: [...(data.photos || []), url] })} />
+            </div>
           </div>
-        </div>
-        <AnimationSection data={data} onChange={onChange} />
+        )}
         <SpacingSection data={data} onChange={onChange} />
       </>
     )
@@ -1549,7 +1928,6 @@ function BlockSettingsPanel({ block, onChange }) {
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Settings for {BLOCK_TYPES[type]?.label || type} block.</p>
       <AnimationSection data={data} onChange={onChange} />
       <SpacingSection data={data} onChange={onChange} />
-      <SizeSection data={data} onChange={onChange} />
       <BackgroundImageSection data={data} onChange={onChange} />
       <AdvancedDesignSection data={data} onChange={onChange} />
     </div>
@@ -1559,7 +1937,7 @@ function BlockSettingsPanel({ block, onChange }) {
 function AnimationSection({ data, onChange }) {
   const animation = data.animation || 'fade-in-up'
   const [previewKey, setPreviewKey] = useState(0)
-  
+
   const ANIMATION_OPTIONS = [
     { value: 'none', label: 'None', icon: '—' },
     { value: 'fade-in', label: 'Fade In', icon: '○' },
@@ -1591,71 +1969,24 @@ function AnimationSection({ data, onChange }) {
         ✦ Entrance Animation
       </span>
 
-      {/* Live Preview */}
-      <div style={{
-        marginTop: 12,
-        padding: '20px 16px',
-        background: 'var(--cream)',
-        borderRadius: 10,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        minHeight: 80,
-      }}>
-        <div
-          key={previewKey}
-          className={ANIM_CLASS_MAP[animation] || ''}
-          style={{
-            opacity: animation === 'none' ? 1 : 0,
-            width: '80%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            alignItems: 'center',
-          }}
-        >
+      <div style={{ marginTop: 12, padding: '20px 16px', background: 'var(--cream)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', minHeight: 80 }}>
+        <div key={previewKey} className={ANIM_CLASS_MAP[animation] || ''} style={{ opacity: animation === 'none' ? 1 : 0, width: '80%', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
           <div style={{ width: '100%', height: 8, background: 'var(--olive)', borderRadius: 4, opacity: 0.6 }} />
           <div style={{ width: '60%', height: 6, background: 'var(--border)', borderRadius: 3 }} />
           <div style={{ width: '75%', height: 6, background: 'var(--border)', borderRadius: 3 }} />
         </div>
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', 
-        gap: 6, 
-        marginTop: 10 
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6, marginTop: 10 }}>
         {ANIMATION_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => handleSelect(opt.value)}
-            style={{
-              padding: '10px 6px',
-              borderRadius: 8,
-              border: animation === opt.value ? '2px solid var(--olive)' : '1.5px solid var(--border)',
-              background: animation === opt.value ? 'rgba(86,95,52,0.08)' : 'var(--white)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 4,
-              transition: 'all 0.15s ease',
-              fontSize: 11,
-              fontWeight: animation === opt.value ? 700 : 500,
-              color: animation === opt.value ? 'var(--olive)' : 'var(--text-muted)',
-            }}
-          >
+          <button key={opt.value} type="button" onClick={() => handleSelect(opt.value)}
+            style={{ padding: '10px 6px', borderRadius: 8, border: animation === opt.value ? '2px solid var(--olive)' : '1.5px solid var(--border)', background: animation === opt.value ? 'rgba(86,95,52,0.08)' : 'var(--white)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, transition: 'all 0.15s ease', fontSize: 11, fontWeight: animation === opt.value ? 700 : 500, color: animation === opt.value ? 'var(--olive)' : 'var(--text-muted)' }}>
             <span style={{ fontSize: 16, lineHeight: 1 }}>{opt.icon}</span>
             <span>{opt.label}</span>
           </button>
         ))}
       </div>
-      <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 8, lineHeight: 1.4 }}>
-        Animation plays when the block scrolls into view.
-      </p>
+      <p style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 8, lineHeight: 1.4 }}>Animation plays when the block scrolls into view.</p>
     </div>
   )
 }
@@ -1665,34 +1996,20 @@ function SpacingSection({ data, onChange }) {
   const spacingBottom = data.spacingBottom ?? 40
   return (
     <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
-      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        ↕ Spacing
-      </span>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>↕ Spacing</span>
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Space Above</label>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{spacingTop}px</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{spacingTop}px</span>
         </div>
-        <input
-          type="range"
-          min={0} max={120} step={4}
-          value={spacingTop}
-          onChange={e => onChange({ spacingTop: Number(e.target.value) })}
-          style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
-        />
+        <input type="range" min={0} max={200} step={4} value={spacingTop} onChange={e => onChange({ spacingTop: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
       </div>
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Space Below</label>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{spacingBottom}px</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{spacingBottom}px</span>
         </div>
-        <input
-          type="range"
-          min={0} max={120} step={4}
-          value={spacingBottom}
-          onChange={e => onChange({ spacingBottom: Number(e.target.value) })}
-          style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
-        />
+        <input type="range" min={0} max={200} step={4} value={spacingBottom} onChange={e => onChange({ spacingBottom: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
       </div>
     </div>
   )
@@ -1701,73 +2018,34 @@ function SpacingSection({ data, onChange }) {
 function BackgroundImageSection({ data, onChange }) {
   const detectAndSetAspectRatio = (url) => {
     if (!url) return
-    
     if (isMediaVideo(url)) {
       const video = document.createElement('video')
-      video.onloadedmetadata = () => {
-        const ratio = `${video.videoWidth}/${video.videoHeight}`
-        onChange({ backgroundAspectRatio: ratio })
-      }
+      video.onloadedmetadata = () => onChange({ backgroundAspectRatio: `${video.videoWidth}/${video.videoHeight}` })
       video.src = url
     } else {
       const img = new Image()
-      img.onload = () => {
-        const ratio = `${img.naturalWidth}/${img.naturalHeight}`
-        onChange({ backgroundAspectRatio: ratio })
-      }
+      img.onload = () => onChange({ backgroundAspectRatio: `${img.naturalWidth}/${img.naturalHeight}` })
       img.src = url
     }
   }
 
-  const handleUpload = (url) => {
-    onChange({ backgroundImage: url })
-    detectAndSetAspectRatio(url)
-  }
-
-  const handlePasteUrl = (url) => {
-    onChange({ backgroundImage: url })
-    if (url) detectAndSetAspectRatio(url)
-  }
+  const handleUpload = (url) => { onChange({ backgroundImage: url }); detectAndSetAspectRatio(url) }
+  const handlePasteUrl = (url) => { onChange({ backgroundImage: url }); if (url) detectAndSetAspectRatio(url) }
 
   return (
     <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
-      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        🖼 Background Image
-      </span>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>🖼 Background Image</span>
       <div style={{ marginTop: 12 }}>
-        <MediaUploader
-          currentUrl={data.backgroundImage || ''}
-          onUpload={handleUpload}
-        />
+        <MediaUploader currentUrl={data.backgroundImage || ''} onUpload={handleUpload} />
         <div className="input-group" style={{ marginTop: 10 }}>
           <label>Or paste URL</label>
-          <input
-            className="settings-input"
-            value={data.backgroundImage || ''}
-            onChange={e => handlePasteUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          <input className="settings-input" value={data.backgroundImage || ''} onChange={e => handlePasteUrl(e.target.value)} placeholder="https://..." />
         </div>
         {data.backgroundImage && (
           <>
-            {data.backgroundAspectRatio && (
-              <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(86,95,52,0.06)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📐 Aspect Ratio: <strong style={{ color: 'var(--olive)' }}>{data.backgroundAspectRatio}</strong></span>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  style={{ padding: '2px 8px', fontSize: 10 }}
-                  onClick={() => onChange({ backgroundAspectRatio: '' })}
-                >Reset</button>
-              </div>
-            )}
             <div className="input-group" style={{ marginTop: 10 }}>
               <label>Fit Mode</label>
-              <select
-                className="settings-select"
-                value={data.backgroundFit || 'cover'}
-                onChange={e => onChange({ backgroundFit: e.target.value })}
-              >
+              <select className="settings-select" value={data.backgroundFit || 'cover'} onChange={e => onChange({ backgroundFit: e.target.value })}>
                 <option value="cover">Cover (fill)</option>
                 <option value="contain">Contain (fit)</option>
                 <option value="fill">Stretch</option>
@@ -1776,34 +2054,19 @@ function BackgroundImageSection({ data, onChange }) {
             <div style={{ marginTop: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Overlay Opacity</label>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 32, textAlign: 'right' }}>{Math.round((data.backgroundOverlay ?? 0.3) * 100)}%</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{Math.round((data.backgroundOverlay ?? 0.3) * 100)}%</span>
               </div>
-              <input
-                type="range"
-                min={0} max={1} step={0.05}
-                value={data.backgroundOverlay ?? 0.3}
-                onChange={e => onChange({ backgroundOverlay: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
-              />
+              <input type="range" min={0} max={1} step={0.05} value={data.backgroundOverlay ?? 0.3} onChange={e => onChange({ backgroundOverlay: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
             </div>
             <div className="input-group" style={{ marginTop: 10 }}>
               <label>Overlay Color</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={data.backgroundOverlayColor || '#000000'}
-                  onChange={e => onChange({ backgroundOverlayColor: e.target.value })}
-                  style={{ width: 36, height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}
-                />
+                <input type="color" value={data.backgroundOverlayColor || '#000000'} onChange={e => onChange({ backgroundOverlayColor: e.target.value })} style={{ width: 36, height: 36, padding: 2, border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }} />
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{data.backgroundOverlayColor || '#000000'}</span>
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ marginTop: 12, color: 'var(--error)', width: '100%' }}
-              onClick={() => onChange({ backgroundImage: '', backgroundOverlay: 0.3, backgroundFit: 'cover', backgroundOverlayColor: '#000000', backgroundAspectRatio: '' })}
-            >
+            <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 12, color: 'var(--error)', width: '100%' }}
+              onClick={() => onChange({ backgroundImage: '', backgroundOverlay: 0.3, backgroundFit: 'cover', backgroundOverlayColor: '#000000', backgroundAspectRatio: '' })}>
               ✕ Remove Background
             </button>
           </>
@@ -1817,22 +2080,14 @@ function SizeSection({ data, onChange }) {
   const minHeight = data.blockMinHeight ?? 0
   return (
     <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
-      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        📏 Block Size
-      </span>
+      <span className="label-caps" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>📏 Block Size</span>
       <div style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Min Height</label>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)', minWidth: 40, textAlign: 'right' }}>{minHeight === 0 ? 'Auto' : `${minHeight}px`}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{minHeight === 0 ? 'Auto' : `${minHeight}px`}</span>
         </div>
-        <input
-          type="range"
-          min={0} max={600} step={10}
-          value={minHeight}
-          onChange={e => onChange({ blockMinHeight: Number(e.target.value) })}
-          style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }}
-        />
-        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, margin: '0' }}>Set to 0 for auto height.</p>
+        <input type="range" min={0} max={600} step={10} value={minHeight} onChange={e => onChange({ blockMinHeight: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer' }} />
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '4px 0 0' }}>Set to 0 for auto height.</p>
       </div>
     </div>
   )
@@ -1840,59 +2095,46 @@ function SizeSection({ data, onChange }) {
 
 function AdvancedDesignSection({ data, onChange }) {
   const [isOpen, setIsOpen] = useState(false)
-
   return (
     <div className="settings-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 16 }}>
-      <button 
-        type="button" 
-        onClick={() => setIsOpen(!isOpen)}
-        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="label-caps">✨ Advanced Design</span>
-        </div>
+      <button type="button" onClick={() => setIsOpen(!isOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+        <span className="label-caps">✨ Advanced Design</span>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{isOpen ? '▲' : '▼'}</span>
       </button>
-      
       {isOpen && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="input-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dark)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <input type="checkbox" checked={data.fullWidth !== false} onChange={e => onChange({ fullWidth: e.target.checked })} />
               Full Width (Edge-to-Edge)
             </label>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '4px 0 0 20px', lineHeight: 1.4 }}>Removes padding/margins so this block spans the entire screen width.</p>
           </div>
-
           <div className="input-group">
             <label>Background Color Override</label>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <input type="color" value={data.customBgColor || '#ffffff'} onChange={e => onChange({ customBgColor: e.target.value })} style={{ width: 40, height: 32, padding: 0, cursor: 'pointer', borderRadius: 4, border: '1px solid var(--border)' }} />
               <input type="text" className="settings-input" value={data.customBgColor || ''} onChange={e => onChange({ customBgColor: e.target.value })} placeholder="HEX or transparent" style={{ flex: 1 }} />
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customBgColor: '' })}>Clear Override</button>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customBgColor: '' })}>Clear</button>
           </div>
-          
           <div className="input-group">
             <label>Text Color Override</label>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <input type="color" value={data.customTextColor || '#000000'} onChange={e => onChange({ customTextColor: e.target.value })} style={{ width: 40, height: 32, padding: 0, cursor: 'pointer', borderRadius: 4, border: '1px solid var(--border)' }} />
-              <input type="text" className="settings-input" value={data.customTextColor || ''} onChange={e => onChange({ customTextColor: e.target.value })} placeholder="HEX e.g. #2a3125" style={{ flex: 1 }} />
+              <input type="text" className="settings-input" value={data.customTextColor || ''} onChange={e => onChange({ customTextColor: e.target.value })} placeholder="#2a3125" style={{ flex: 1 }} />
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customTextColor: '' })}>Clear Override</button>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => onChange({ customTextColor: '' })}>Clear</button>
           </div>
-
           <div className="input-group">
             <label>Text Alignment</label>
             <select className="settings-input" value={data.customTextAlign || ''} onChange={e => onChange({ customTextAlign: e.target.value })} style={{ marginTop: 8 }}>
               <option value="">Default Center</option>
-              <option value="left">Left Align</option>
-              <option value="center">Center Align</option>
-              <option value="right">Right Align</option>
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
               <option value="justify">Justify</option>
             </select>
           </div>
-
           <div className="input-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <label>Corner Radius</label>

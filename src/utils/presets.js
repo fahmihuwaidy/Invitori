@@ -12,7 +12,7 @@ export const PRESETS = {
     label: 'Wedding',
     labelId: 'Wedding',
     icon: '💍',
-    description: 'Elegant wedding invitation with cover, couple profile, countdown, gallery, RSVP, and more.',
+    description: 'Elegant wedding invitation with cover, couple profile, schedule, countdown, gallery, RSVP, and more.',
     color: '#565F34',
     blocks: [
       {
@@ -22,15 +22,12 @@ export const PRESETS = {
           subtitle: 'We Are Getting Married',
           coupleName: 'Romeo & Juliet',
           date: 'Saturday, August 30, 2026',
+          coverLayout: 'classic',
         }
       },
       {
-        type: 'photo',
-        data: {
-          ...BLOCK_TYPES.photo.defaults,
-          caption: '',
-          borderRadius: 0,
-        }
+        type: 'ornament',
+        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
       },
       {
         type: 'heading',
@@ -42,17 +39,18 @@ export const PRESETS = {
         }
       },
       {
-        type: 'paragraph',
+        type: 'quote',
         data: {
-          ...BLOCK_TYPES.paragraph.defaults,
-          content: '"And of His signs is that He created for you from yourselves mates that you may find tranquility in them; and He placed between you affection and mercy." — QS. Ar-Rum: 21',
-          fontSize: 14,
-          color: '#8A8A8A',
+          ...BLOCK_TYPES.quote.defaults,
+          text: '"And of His signs is that He created for you from yourselves mates that you may find tranquility in them."',
+          source: '— QS. Ar-Rum: 21',
+          style: 'framed',
+          color: '#565F34',
         }
       },
       {
-        type: 'divider',
-        data: { ...BLOCK_TYPES.divider.defaults }
+        type: 'ornament',
+        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
       },
       {
         type: 'couple',
@@ -62,35 +60,55 @@ export const PRESETS = {
           name2: 'Juliet',
           title1: 'First son of Mr. Montague & Mrs. Montague',
           title2: 'Second daughter of Mr. Capulet & Mrs. Capulet',
-          instagram1: '',
-          instagram2: '',
+          layout: 'staggered',
+          photoShape: 'portrait',
         }
+      },
+      {
+        type: 'ornament',
+        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
       },
       {
         type: 'heading',
         data: {
           ...BLOCK_TYPES.heading.defaults,
           content: 'Wedding Event',
-          fontSize: 28,
+          fontSize: 32,
+          fontStyle: 'italic',
+          fontFamily: 'Gambarino',
         }
       },
       {
         type: 'countdown',
         data: {
           ...BLOCK_TYPES.countdown.defaults,
-          targetDate: '',
           label: 'Counting down to the big day',
+          style: 'boxed',
         }
       },
       {
         type: 'location',
         data: {
           ...BLOCK_TYPES.location.defaults,
-          venue: 'Grand Ballroom Hotel',
-          address: '123 Example St., City',
-          date: 'August 30, 2026',
-          time: '10:00 AM',
-          mapUrl: '',
+          events: [
+            { name: 'Akad Nikah', date: 'August 30, 2026', time: '08:00 AM', venue: 'Grand Mosque', address: 'Jl. Example No. 1, City', mapUrl: '' },
+            { name: 'Resepsi', date: 'August 30, 2026', time: '11:00 AM', venue: 'Grand Ballroom Hotel', address: 'Jl. Example No. 10, City', mapUrl: '' },
+          ],
+          mapDisplay: 'button',
+        }
+      },
+      {
+        type: 'schedule',
+        data: {
+          ...BLOCK_TYPES.schedule.defaults,
+          title: 'Wedding Agenda',
+          layoutMode: 'timeline',
+        }
+      },
+      {
+        type: 'dressCode',
+        data: {
+          ...BLOCK_TYPES.dressCode.defaults,
         }
       },
       {
@@ -98,7 +116,9 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.heading.defaults,
           content: 'Our Moments',
-          fontSize: 26,
+          fontSize: 30,
+          fontStyle: 'italic',
+          fontFamily: 'Gambarino',
         }
       },
       {
@@ -106,6 +126,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.gallery.defaults,
           columns: 2,
+          layoutMode: 'masonry',
           images: [],
         }
       },
@@ -114,7 +135,9 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.heading.defaults,
           content: 'Love Story',
-          fontSize: 26,
+          fontSize: 30,
+          fontStyle: 'italic',
+          fontFamily: 'Gambarino',
         }
       },
       {
@@ -122,9 +145,9 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.story.defaults,
           items: [
-            { date: '2020', title: 'First Meeting', description: 'Tell the story of when you first met...' },
-            { date: '2022', title: 'Start Dating', description: 'The moment your journey began...' },
-            { date: '2026', title: 'Engagement', description: 'A moment that changed everything...' },
+            { date: '2020', title: 'First Meeting', description: 'Tell the story of when you first met...', photo: '' },
+            { date: '2022', title: 'Start Dating', description: 'The moment your journey began...', photo: '' },
+            { date: '2026', title: 'Engagement', description: 'A moment that changed everything...', photo: '' },
           ]
         }
       },
@@ -132,8 +155,8 @@ export const PRESETS = {
         type: 'video',
         data: {
           ...BLOCK_TYPES.video.defaults,
-          autoplay: true,
-          loop: true,
+          autoplay: false,
+          loop: false,
         }
       },
       {
@@ -141,6 +164,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.wishes.defaults,
           title: 'Send Your Wishes',
+          displayMode: 'masonry',
         }
       },
       {
@@ -148,6 +172,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.gift.defaults,
           title: 'Wedding Gift',
+          accounts: [],
         }
       },
       {
@@ -164,6 +189,7 @@ export const PRESETS = {
           thankYouText: 'Thank You',
           coupleName: 'Romeo & Juliet',
           subtitle: 'For Being Part of Our Special Day',
+          bgStyle: 'dark',
         }
       },
     ]
@@ -192,7 +218,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.heading.defaults,
           content: "🎉 Let's Celebrate!",
-          fontSize: 28,
+          fontSize: 30,
           color: '#C06C84',
         }
       },
@@ -216,16 +242,16 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.countdown.defaults,
           label: 'Counting down to the party!',
+          style: 'boxed',
         }
       },
       {
         type: 'location',
         data: {
           ...BLOCK_TYPES.location.defaults,
-          venue: 'Venue Name',
-          address: 'Complete address',
-          date: 'November 15, 2026',
-          time: '4:00 PM',
+          events: [
+            { name: 'Birthday Party', date: 'November 15, 2026', time: '4:00 PM', venue: 'Venue Name', address: 'Complete address', mapUrl: '' }
+          ],
         }
       },
       {
@@ -233,6 +259,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.gallery.defaults,
           columns: 3,
+          layoutMode: 'grid',
         }
       },
       {
@@ -289,25 +316,28 @@ export const PRESETS = {
         }
       },
       {
-        type: 'paragraph',
+        type: 'quote',
         data: {
-          ...BLOCK_TYPES.paragraph.defaults,
-          content: 'With gratitude to Allah SWT, we invite you to attend the Aqiqah ceremony for our son/daughter.',
-          fontSize: 14,
+          ...BLOCK_TYPES.quote.defaults,
+          text: '"With gratitude to Allah SWT, we are blessed with a child."',
+          source: '',
+          style: 'minimal',
+          color: '#6B9080',
         }
       },
       {
-        type: 'photo',
+        type: 'photoFrame',
         data: {
-          ...BLOCK_TYPES.photo.defaults,
+          ...BLOCK_TYPES.photoFrame.defaults,
           caption: 'Our Little One 💕',
+          frameStyle: 'polaroid',
         }
       },
       {
         type: 'paragraph',
         data: {
           ...BLOCK_TYPES.paragraph.defaults,
-          content: 'Born on ...\nWeight: ... kg\nLength: ... cm',
+          content: 'Born on ...\nWeight: ... kg | Length: ... cm',
           fontSize: 14,
         }
       },
@@ -316,16 +346,16 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.countdown.defaults,
           label: 'Days until event',
+          style: 'boxed',
         }
       },
       {
         type: 'location',
         data: {
           ...BLOCK_TYPES.location.defaults,
-          venue: 'Home / Venue',
-          address: 'Complete event address',
-          date: 'December 20, 2026',
-          time: '9:00 AM',
+          events: [
+            { name: 'Aqiqah Ceremony', date: 'December 20, 2026', time: '9:00 AM', venue: 'Home / Venue', address: 'Complete event address', mapUrl: '' }
+          ],
         }
       },
       {
@@ -333,6 +363,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.gallery.defaults,
           columns: 2,
+          layoutMode: 'masonry',
         }
       },
       {
@@ -347,6 +378,7 @@ export const PRESETS = {
         data: {
           ...BLOCK_TYPES.gift.defaults,
           title: 'Gift for the Little One 🎁',
+          accounts: [],
         }
       },
       {
