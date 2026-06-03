@@ -117,54 +117,169 @@ function PresetModal({ onClose, onSelect }) {
   )
 }
 
-function GuestListTab({ invitation }) {
-  const [guests, setGuests] = useState([])
-  const [loading, setLoading] = useState(true)
+function GuestListTab({ invitation, guests, setGuests, loading }) {
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [adding, setAdding] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+  
+  // Google Spreadsheet Import states
+  const [addMethod, setAddMethod] = useState('manual') // 'manual' or 'sheet'
+  const [sheetUrl, setSheetUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [importSuccess, setImportSuccess] = useState('')
 
-  const baseUrl = `${window.location.origin}/undangan/${invitation?.slug}`
-
-  const fetchGuests = useCallback(async () => {
-    setLoading(true)
-    const { data } = await supabase
-      .from('guests')
-      .select('*')
-      .eq('invitation_id', invitation.id)
-      .order('created_at', { ascending: true })
-    if (data) setGuests(data)
-    setLoading(false)
-  }, [invitation.id])
-
-  useEffect(() => {
-    if (invitation?.id) {
-      const timer = setTimeout(() => {
-        fetchGuests()
-      }, 0)
-      return () => clearTimeout(timer)
-    }
-  }, [invitation?.id, fetchGuests])
+  const baseUrl = `${window.location.origin}/undangan/${invitation?.slug || ''}`
 
   const handleAdd = async () => {
     if (!newName.trim() || !invitation?.id) return
     setAdding(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('guests')
       .insert({ invitation_id: invitation.id, name: newName.trim(), phone: newPhone.trim() || null })
       .select()
       .single()
-    if (data) setGuests(prev => [...prev, data])
-    setNewName('')
-    setNewPhone('')
+    if (error) {
+      console.error('Error adding guest:', error)
+      alert('Gagal menambahkan tamu: ' + error.message)
+    } else if (data) {
+      setGuests(prev => [...prev, data])
+      setNewName('')
+      setNewPhone('')
+    }
     setAdding(false)
+  }
+
+  // Parse CSV format supporting quoted fields with newlines/commas
+  const parseCSV = (text) => {
+    const lines = []
+    let row = ['']
+    let inQuotes = false
+
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      const next = text[i + 1]
+      if (c === '"') {
+        if (inQuotes && next === '"') {
+          row[row.length - 1] += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (c === ',' && !inQuotes) {
+        row.push('')
+      } else if ((c === '\r' || c === '\n') && !inQuotes) {
+        if (c === '\r' && next === '\n') {
+          i++
+        }
+        lines.push(row)
+        row = ['']
+      } else {
+        row[row.length - 1] += c
+      }
+    }
+    if (row.length > 1 || row[0] !== '') {
+      lines.push(row)
+    }
+    return lines
+  }
+
+  const handleImportSheet = async () => {
+    if (!sheetUrl.trim() || !invitation?.id) return
+    setImporting(true)
+    setImportError('')
+    setImportSuccess('')
+
+    try {
+      const idMatch = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/)
+      if (!idMatch) {
+        throw new Error('Link Google Spreadsheet tidak valid. Pastikan link berisi ID spreadsheet.')
+      }
+      const spreadsheetId = idMatch[1]
+      const gidMatch = sheetUrl.match(/gid=([0-9]+)/)
+      const gid = gidMatch ? gidMatch[1] : '0'
+
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`
+      const response = await fetch(csvUrl)
+      
+      if (!response.ok) {
+        throw new Error('Gagal mengakses Spreadsheet. Pastikan akses diatur ke "Siapa saja yang memiliki link dapat melihat" (Anyone with link can view).')
+      }
+
+      const text = await response.text()
+      if (!text.trim()) {
+        throw new Error('Spreadsheet kosong atau tidak dapat dibaca.')
+      }
+
+      const rows = parseCSV(text)
+      if (rows.length < 2) {
+        throw new Error('Data tidak cukup. Butuh minimal baris header dan satu baris data.')
+      }
+
+      const headerRow = rows[0].map(h => h.toLowerCase().trim())
+      
+      let nameIdx = headerRow.findIndex(h => h.includes('nama') || h.includes('name') || h.includes('tamu') || h.includes('guest') || h.includes('lengkap'))
+      let phoneIdx = headerRow.findIndex(h => h.includes('phone') || h.includes('hp') || h.includes('telp') || h.includes('telepon') || h.includes('wa') || h.includes('whatsapp') || h.includes('kontak') || h.includes('contact'))
+
+      if (nameIdx === -1) {
+        nameIdx = 0
+      }
+      if (phoneIdx === -1 && headerRow.length > 1) {
+        phoneIdx = nameIdx === 0 ? 1 : 0
+      }
+
+      const guestsToInsert = []
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i]
+        const nameVal = row[nameIdx] ? row[nameIdx].trim() : ''
+        let phoneVal = ''
+        if (phoneIdx !== -1 && phoneIdx < row.length && row[phoneIdx]) {
+          phoneVal = row[phoneIdx].trim()
+        }
+
+        if (nameVal) {
+          guestsToInsert.push({
+            invitation_id: invitation.id,
+            name: nameVal,
+            phone: phoneVal || null
+          })
+        }
+      }
+
+      if (guestsToInsert.length === 0) {
+        throw new Error('Tidak ditemukan nama tamu untuk diimpor.')
+      }
+
+      const { data, error } = await supabase
+        .from('guests')
+        .insert(guestsToInsert)
+        .select()
+
+      if (error) throw error
+
+      if (data) {
+        setGuests(prev => [...prev, ...data])
+        setImportSuccess(`Berhasil mengimpor ${data.length} tamu!`)
+        setSheetUrl('')
+      }
+    } catch (err) {
+      console.error(err)
+      setImportError(err.message || 'Terjadi kesalahan saat mengimpor data.')
+    } finally {
+      setImporting(false)
+    }
   }
 
   const handleDelete = async (guestId) => {
     if (!confirm('Delete this guest?')) return
-    await supabase.from('guests').delete().eq('id', guestId)
-    setGuests(prev => prev.filter(g => g.id !== guestId))
+    const { error } = await supabase.from('guests').delete().eq('id', guestId)
+    if (error) {
+      console.error('Error deleting guest:', error)
+      alert('Gagal menghapus tamu: ' + error.message)
+    } else {
+      setGuests(prev => prev.filter(g => g.id !== guestId))
+    }
   }
 
   const getLink = (name) => `${baseUrl}?to=${encodeURIComponent(name)}`
@@ -208,39 +323,102 @@ function GuestListTab({ invitation }) {
       </div>
 
       <div style={{ padding: '24px', background: 'rgba(86,95,52,0.03)', border: '1px solid rgba(86,95,52,0.1)', borderRadius: 16, marginBottom: 32 }}>
-        <p className="label-caps" style={{ fontSize: 11, color: 'var(--olive)', marginBottom: 16, letterSpacing: 1 }}>Add New Guest</p>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: '2 1 240px' }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Guest Full Name *</label>
-            <input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="e.g.: Mr. John Doe & Family"
-              className="settings-input"
-              style={{ width: '100%', background: 'white' }}
-            />
-          </div>
-          <div style={{ flex: '1 1 180px' }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Phone Number (optional)</label>
-            <input
-              value={newPhone}
-              onChange={e => setNewPhone(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="e.g.: 08123456..."
-              className="settings-input"
-              style={{ width: '100%', background: 'white' }}
-            />
-          </div>
-          <button
-            onClick={handleAdd}
-            disabled={adding || !newName.trim()}
-            className="btn btn-primary"
-            style={{ padding: '0 24px', height: 44, marginBottom: 2 }}
+        <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid rgba(86,95,52,0.1)', marginBottom: 20, paddingBottom: 8 }}>
+          <button 
+            onClick={() => setAddMethod('manual')} 
+            style={{ 
+              background: 'none', border: 'none', padding: '0 0 4px 0', fontSize: 12, 
+              fontWeight: 600, 
+              color: addMethod === 'manual' ? 'var(--olive)' : 'var(--text-muted)', 
+              borderBottom: addMethod === 'manual' ? '2.5px solid var(--olive)' : '2.5px solid transparent', 
+              cursor: 'pointer', letterSpacing: 0.5 
+            }}
           >
-            {adding ? '...' : 'Add'}
+            INPUT MANUAL
+          </button>
+          <button 
+            onClick={() => setAddMethod('sheet')} 
+            style={{ 
+              background: 'none', border: 'none', padding: '0 0 4px 0', fontSize: 12, 
+              fontWeight: 600, 
+              color: addMethod === 'sheet' ? 'var(--olive)' : 'var(--text-muted)', 
+              borderBottom: addMethod === 'sheet' ? '2.5px solid var(--olive)' : '2.5px solid transparent', 
+              cursor: 'pointer', letterSpacing: 0.5 
+            }}
+          >
+            GOOGLE SPREADSHEET
           </button>
         </div>
+
+        {addMethod === 'manual' ? (
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ flex: '2 1 240px' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Guest Full Name *</label>
+              <input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                placeholder="e.g.: Mr. John Doe & Family"
+                className="settings-input"
+                style={{ width: '100%', background: 'white' }}
+              />
+            </div>
+            <div style={{ flex: '1 1 180px' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Phone Number (optional)</label>
+              <input
+                value={newPhone}
+                onChange={e => setNewPhone(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                placeholder="e.g.: 08123456..."
+                className="settings-input"
+                style={{ width: '100%', background: 'white' }}
+              />
+            </div>
+            <button
+              onClick={handleAdd}
+              disabled={adding || !newName.trim()}
+              className="btn btn-primary"
+              style={{ padding: '0 24px', height: 44, marginBottom: 2 }}
+            >
+              {adding ? '...' : 'Add'}
+            </button>
+          </div>
+        ) : (
+          <div style={{ width: '100%' }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: 6 }}>Link Google Spreadsheet</label>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <input
+                value={sheetUrl}
+                onChange={e => setSheetUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleImportSheet()}
+                placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing"
+                className="settings-input"
+                style={{ flex: 1, minWidth: 280, background: 'white' }}
+              />
+              <button
+                onClick={handleImportSheet}
+                disabled={importing || !sheetUrl.trim()}
+                className="btn btn-primary"
+                style={{ padding: '0 24px', height: 44 }}
+              >
+                {importing ? 'Importing...' : 'Import'}
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+              💡 <strong>Penting:</strong> Pastikan spreadsheet Anda diatur agar <strong>"Siapa saja yang memiliki link dapat melihat"</strong> (Anyone with link can view). Kolom pertama akan dideteksi sebagai Nama Tamu, dan kolom nomor telepon (jika ada) akan otomatis terdeteksi jika memiliki header "HP", "Phone", atau sejenisnya.
+            </p>
+            {importError && (
+              <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(208,156,167,0.1)', color: 'var(--pink-dusty)', borderRadius: 8, fontSize: 12, border: '1px solid rgba(208,156,167,0.2)' }}>
+                ⚠️ {importError}
+              </div>
+            )}
+            {importSuccess && (
+              <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(86,95,52,0.1)', color: 'var(--olive)', borderRadius: 8, fontSize: 12, border: '1px solid rgba(86,95,52,0.2)' }}>
+                ✅ {importSuccess}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div>
@@ -303,9 +481,32 @@ export default function DashboardPage() {
   const [selectedInvId, setSelectedInvId] = useState(searchParams.get('inv') || '')
   const [allRsvps, setAllRsvps] = useState([])
   const [rsvpsLoading, setRsvpsLoading] = useState(false)
+  const [allGuests, setAllGuests] = useState([])
+  const [guestsLoading, setGuestsLoading] = useState(false)
 
   const rawTab = searchParams.get('tab') || 'overview'
   const activeTab = rawTab
+
+  // Keep selectedInvId in sync with the search params and invitation list changes (e.g. deletions)
+  useEffect(() => {
+    if (invitations.length === 0) {
+      if (selectedInvId !== '') setSelectedInvId('')
+      return
+    }
+    const paramInvId = searchParams.get('inv')
+    const isValidId = invitations.some(i => i.id === paramInvId)
+    if (paramInvId && isValidId) {
+      if (paramInvId !== selectedInvId) {
+        setSelectedInvId(paramInvId)
+      }
+    } else {
+      const defaultId = invitations[0].id
+      setSelectedInvId(defaultId)
+      const params = new URLSearchParams(searchParams)
+      params.set('inv', defaultId)
+      setSearchParams(params, { replace: true })
+    }
+  }, [invitations, searchParams, selectedInvId, setSearchParams])
 
   const setTab = (tabId) => {
     const params = new URLSearchParams(searchParams)
@@ -326,11 +527,11 @@ export default function DashboardPage() {
     return invitations.find(i => i.id === selectedInvId) || invitations[0]
   }, [invitations, selectedInvId])
 
-
   // ---- Fetch ALL RSVPs for selected invitation ----
   const fetchAllRsvps = useCallback(async (invId) => {
     if (!invId) return
     setRsvpsLoading(true)
+    setAllRsvps([]) // Clear previous RSVPs to avoid showing stale data
     try {
       const { data, error } = await supabase
         .from('rsvps')
@@ -347,11 +548,32 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const fetchAllGuests = useCallback(async (invId) => {
+    if (!invId) return
+    setGuestsLoading(true)
+    setAllGuests([]) // Clear previous guests
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('invitation_id', invId)
+        .order('created_at', { ascending: true })
+      
+      if (error) throw error
+      setAllGuests(data || [])
+    } catch (err) {
+      console.error('Error fetching guests:', err)
+    } finally {
+      setGuestsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (selectedInv?.id) {
       fetchAllRsvps(selectedInv.id)
+      fetchAllGuests(selectedInv.id)
     }
-  }, [selectedInv?.id, fetchAllRsvps])
+  }, [selectedInv?.id, fetchAllRsvps, fetchAllGuests])
 
   // ---- Computed Stats from REAL data (filtered by selected invitation) ----
   const totalViews = useMemo(() => selectedInv?.analytics?.totalViews || 0, [selectedInv])
@@ -423,7 +645,22 @@ export default function DashboardPage() {
 
   const handleDelete = async (id) => {
     if (confirm('Delete this invitation?')) {
-      await deleteInvitation(id)
+      const success = await deleteInvitation(id)
+      if (success) {
+        // If we deleted the currently selected invitation, reset or select the first remaining one
+        if (selectedInvId === id) {
+          const remaining = invitations.filter(inv => inv.id !== id)
+          const nextId = remaining.length > 0 ? remaining[0].id : ''
+          setSelectedInvId(nextId)
+          const params = new URLSearchParams(searchParams)
+          if (nextId) {
+            params.set('inv', nextId)
+          } else {
+            params.delete('inv')
+          }
+          setSearchParams(params, { replace: true })
+        }
+      }
     }
   }
 
@@ -436,7 +673,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
+  if (loading && invitations.length === 0) {
     return (
       <div className="dashboard animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <div className="loading-spinner">
@@ -724,7 +961,9 @@ export default function DashboardPage() {
                             onClick={async () => { 
                               if(confirm('Delete this RSVP?')) {
                                 const success = await deleteRsvp(item.id);
-                                if (success) fetchAllRsvps(selectedInv.id);
+                                if (success) {
+                                  setAllRsvps(prev => prev.filter(r => r.id !== item.id));
+                                }
                               }
                             }}
                             title="Delete"
@@ -772,7 +1011,9 @@ export default function DashboardPage() {
                           onClick={async () => { 
                             if(confirm('Delete this wish?')) {
                               const success = await deleteRsvp(item.id);
-                              if (success) fetchAllRsvps(selectedInv.id);
+                              if (success) {
+                                setAllRsvps(prev => prev.filter(r => r.id !== item.id));
+                              }
                             }
                           }} 
                         >
@@ -791,7 +1032,12 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : activeTab === 'guests' ? (
-        <GuestListTab invitation={selectedInv} />
+        <GuestListTab 
+          invitation={selectedInv} 
+          guests={allGuests} 
+          setGuests={setAllGuests} 
+          loading={guestsLoading} 
+        />
       ) : null}
 
       {/* Preset Modal */}

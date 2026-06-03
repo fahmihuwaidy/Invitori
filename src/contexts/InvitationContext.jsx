@@ -13,14 +13,16 @@ export function InvitationProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   // Fetch all invitations for the current user
-  const fetchInvitations = useCallback(async () => {
+  const fetchInvitations = useCallback(async (isSilent = false) => {
     if (!user) {
       setInvitations([])
       setLoading(false)
       return
     }
 
-    setLoading(true)
+    if (!isSilent) {
+      setLoading(true)
+    }
     try {
       // Fetch invitations
       const { data: invData, error: invError } = await supabase
@@ -210,11 +212,11 @@ export function InvitationProvider({ children }) {
       if (error) {
         console.error('Error updating invitation in DB:', error)
         // Optionally refresh to sync with server state if update failed
-        fetchInvitations()
+        fetchInvitations(true)
       }
     } catch (err) {
       console.error('Critical error in updateInvitation:', err)
-      fetchInvitations()
+      fetchInvitations(true)
     }
   }
 
@@ -226,10 +228,12 @@ export function InvitationProvider({ children }) {
 
     if (error) {
       console.error('Error deleting invitation:', error)
-      return
+      alert('Gagal menghapus undangan: ' + error.message)
+      return false
     }
 
     setInvitations(prev => prev.filter(inv => inv.id !== id))
+    return true
   }
 
   // --- Block Operations ---
@@ -395,7 +399,7 @@ export function InvitationProvider({ children }) {
     if (error) {
       console.error('Error deleting block:', error)
       // Rollback on error if necessary
-      fetchInvitations()
+      fetchInvitations(true)
     }
   }
 
@@ -522,8 +526,8 @@ export function InvitationProvider({ children }) {
       console.error('Error deleting RSVP:', error)
       return false
     }
-    // Refresh to update UI
-    fetchInvitations()
+    // Refresh to update UI silently
+    fetchInvitations(true)
     return true
   }
 
