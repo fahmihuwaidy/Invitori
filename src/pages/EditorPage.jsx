@@ -386,18 +386,25 @@ export default function EditorPage() {
   // Apply preset blocks if ?preset= param exists
   useEffect(() => {
     const presetKey = searchParams.get('preset')
+    console.log('[DEBUG] presetKey:', presetKey, 'hasAppliedPreset:', hasAppliedPreset.current)
     if (!presetKey || hasAppliedPreset.current) return
     const invitation = invitations.find(inv => inv.id === id)
+    console.log('[DEBUG] invitation:', invitation)
     if (!invitation) return
     // Only apply if invitation has no blocks yet
-    if (invitation.blocks && invitation.blocks.length > 0) return
+    if (invitation.blocks && invitation.blocks.length > 0) {
+      console.log('[DEBUG] invitation already has blocks:', invitation.blocks)
+      return
+    }
 
     const preset = PRESETS[presetKey]
+    console.log('[DEBUG] preset:', preset)
     if (!preset || preset.blocks.length === 0) {
       hasAppliedPreset.current = true
       return
     }
 
+    console.log('[DEBUG] calling ctxAddBlocks with blocks:', preset.blocks)
     hasAppliedPreset.current = true
     // Add blocks in bulk to ensure correct ordering
     ctxAddBlocks(id, preset.blocks)

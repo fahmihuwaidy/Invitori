@@ -293,50 +293,64 @@ export function InvitationProvider({ children }) {
   }
 
   const addBlocks = async (invId, blocksArray) => {
+    console.log('[DEBUG] addBlocks called with:', invId, blocksArray)
     const inv = invitations.find(i => i.id === invId)
-    // Even if inv is not found in local state yet (very new), we still want to insert
-    
     const baseOrder = inv ? inv.blocks.length : 0
-    const blocksToInsert = blocksArray.map((b, index) => ({
-      invitation_id: invId,
-      type: b.type,
-      data: b.data,
-      sort_order: baseOrder + index
-    }))
 
-    const { data, error } = await supabase
-      .from('blocks')
-      .insert(blocksToInsert)
-      .select()
+    console.log('[DEBUG] Inserting blocks in parallel...')
+    
+    try {
+      const insertPromises = blocksArray.map((b, index) => 
+        supabase
+          .from('blocks')
+          .insert({
+            invitation_id: invId,
+            type: b.type,
+            data: b.data,
+            sort_order: baseOrder + index
+          })
+          .select()
+          .single()
+      )
 
-    if (error || !data) {
-      console.error('Error adding bulk blocks:', error)
+      const results = await Promise.all(insertPromises)
+      
+      const failed = results.filter(r => r.error)
+      if (failed.length > 0) {
+        console.error('[DEBUG] Failed to insert some blocks:', failed.map(f => f.error))
+        return null
+      }
+
+      const insertedData = results.map(r => r.data)
+      console.log('[DEBUG] Successfully inserted blocks:', insertedData)
+
+      const newBlocksSorted = insertedData.sort((a, b) => a.sort_order - b.sort_order).map(d => ({
+        id: d.id,
+        type: d.type,
+        data: d.data,
+        sortOrder: d.sort_order
+      }))
+
+      setInvitations(prev =>
+        prev.map(item => {
+          if (item.id !== invId) return item
+          // Merging and ensuring absolute correct order
+          const combined = [...item.blocks, ...newBlocksSorted]
+          const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
+          
+          return {
+            ...item,
+            blocks: finalBlocks,
+            updatedAt: new Date().toISOString(),
+          }
+        })
+      )
+
+      return newBlocksSorted
+    } catch (err) {
+      console.error('[DEBUG] Exception in addBlocks:', err)
       return null
     }
-
-    const newBlocksSorted = data.sort((a, b) => a.sort_order - b.sort_order).map(d => ({
-      id: d.id,
-      type: d.type,
-      data: d.data,
-      sortOrder: d.sort_order
-    }))
-
-    setInvitations(prev =>
-      prev.map(item => {
-        if (item.id !== invId) return item
-        // Merging and ensuring absolute correct order
-        const combined = [...item.blocks, ...newBlocksSorted]
-        const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
-        
-        return {
-          ...item,
-          blocks: finalBlocks,
-          updatedAt: new Date().toISOString(),
-        }
-      })
-    )
-
-    return newBlocksSorted
   }
 
   const updateBlock = async (invId, blockId, blockData) => {

@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockDefaults'
+import { BLOCK_TYPES } from './blockDefaults.js'
 
 /**
  * Preset templates for different invitation categories.
