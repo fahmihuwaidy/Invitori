@@ -905,6 +905,44 @@ export function renderPublicBlock(
         </div>
       )
     }
+    case 'floatingOrnament': {
+      const mediaUrl = block.data.url
+      const width = block.data.width || 120
+      const height = block.data.height || 120
+      const xPosition = block.data.xPosition ?? 50
+      const yPosition = block.data.yPosition ?? 0
+      const zIndex = block.data.zIndex ?? 10
+      const rotation = block.data.rotation ?? 0
+      const opacity = (block.data.opacity ?? 100) / 100
+
+      const floatStyle = {
+        left: `${xPosition}%`,
+        top: `${yPosition}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        zIndex: zIndex,
+        opacity: opacity,
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      }
+
+      return (
+        <div className="public-floating-ornament-container">
+          {mediaUrl && (
+            <MediaRenderer
+              src={mediaUrl}
+              className="public-floating-ornament-media"
+              style={floatStyle}
+              alt="Floating Ornament"
+            />
+          )}
+          {isPreviewUrl && (
+            <div className="editor-floating-ornament-anchor">
+              <span>🔮</span> Floating Ornament Anchor ({xPosition}%, {yPosition}px)
+            </div>
+          )}
+        </div>
+      )
+    }
 
     default:
       return null

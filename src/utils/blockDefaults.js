@@ -296,6 +296,22 @@ export const BLOCK_TYPES = {
       fullWidth: true,
     }
   },
+  floatingOrnament: {
+    label: 'Floating Ornament',
+    category: 'media',
+    icon: '🔮',
+    defaults: {
+      url: '',
+      width: 120,
+      height: 120,
+      xPosition: 50,
+      yPosition: 0,
+      zIndex: 10,
+      rotation: 0,
+      opacity: 100,
+      fullWidth: true,
+    }
+  },
 }
 
 export const BLOCK_CATEGORIES = [

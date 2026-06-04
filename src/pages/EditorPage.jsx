@@ -1928,6 +1928,89 @@ function BlockSettingsPanel({ block, onChange }) {
     )
   }
 
+  // ── FLOATING ORNAMENT ──────────────────────────────────────────────────
+  if (type === 'floatingOrnament') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Media</span>
+          <div style={{ marginTop: 8 }}>
+            <MediaUploader currentUrl={data.url} onUpload={(url) => onChange({ url })} />
+          </div>
+          <div className="input-group" style={{ marginTop: 12 }}>
+            <label>Or paste URL</label>
+            <input className="settings-input" value={data.url || ''} onChange={e => onChange({ url: e.target.value })} placeholder="https://..." />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="label-caps">Size & Scale</span>
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Width</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.width ?? 120}px</span>
+            </div>
+            <input type="range" min={20} max={600} step={5} value={data.width ?? 120} onChange={e => onChange({ width: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Height</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.height ?? 120}px</span>
+            </div>
+            <input type="range" min={20} max={600} step={5} value={data.height ?? 120} onChange={e => onChange({ height: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="label-caps">Positioning</span>
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Horizontal Position (X Offset)</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.xPosition ?? 50}%</span>
+            </div>
+            <input type="range" min={-100} max={200} step={1} value={data.xPosition ?? 50} onChange={e => onChange({ xPosition: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Vertical Position (Y Offset)</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.yPosition ?? 0}px</span>
+            </div>
+            <input type="range" min={-1000} max={1000} step={5} value={data.yPosition ?? 0} onChange={e => onChange({ yPosition: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Layer Stack (Z-Index)</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.zIndex ?? 10}</span>
+            </div>
+            <input type="range" min={-10} max={100} step={1} value={data.zIndex ?? 10} onChange={e => onChange({ zIndex: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="label-caps">Effects</span>
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Rotation</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.rotation ?? 0}°</span>
+            </div>
+            <input type="range" min={0} max={360} step={5} value={data.rotation ?? 0} onChange={e => onChange({ rotation: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Opacity</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{data.opacity ?? 100}%</span>
+            </div>
+            <input type="range" min={0} max={100} step={5} value={data.opacity ?? 100} onChange={e => onChange({ opacity: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--olive)' }} />
+          </div>
+        </div>
+      </>
+    )
+  }
+
   // Generic fallback
   return (
     <div className="settings-section">
