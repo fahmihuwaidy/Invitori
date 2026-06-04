@@ -255,7 +255,8 @@ export function renderPublicBlock(
   guestName, isPreviewUrl,
   wishes = [],
   isRsvpLoading = false,
-  isWishLoading = false
+  isWishLoading = false,
+  isEditorCanvas = false
 ) {
   const primaryColor = theme?.primaryColor || '#565F34'
 
@@ -935,7 +936,7 @@ export function renderPublicBlock(
               alt="Floating Ornament"
             />
           )}
-          {isPreviewUrl && (
+          {isEditorCanvas && (
             <div className="editor-floating-ornament-anchor">
               <span>🔮</span> Floating Ornament Anchor ({xPosition}%, {yPosition}px)
             </div>

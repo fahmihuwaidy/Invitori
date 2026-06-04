@@ -270,7 +270,10 @@ function renderBlock(block, isSelected, onSelect, theme) {
              false,    // wishSent
              'Tamu Undangan', // guestName (for editor preview)
              true,            // isPreviewUrl
-             []               // wishes (Empty by default)
+             [],              // wishes (Empty by default)
+             false,           // isRsvpLoading
+             false,           // isWishLoading
+             true             // isEditorCanvas
            )}
         </div>
       </div>
