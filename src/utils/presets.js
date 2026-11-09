@@ -1,414 +1,1291 @@
 import { BLOCK_TYPES } from './blockDefaults.js'
 
 /**
- * Preset templates for different invitation categories.
- * Each preset defines a sequence of blocks with pre-filled data
- * that matches the reference layout.
+ * Curated Design World Palettes for 1-click theme switching in Editor & Creation Modal.
  */
+export const THEME_PALETTES = [
+  {
+    key: 'atelier',
+    name: 'Atelier Botanical',
+    subtitle: 'Olive & Warm Paper',
+    primaryColor: '#3d4d33',
+    backgroundColor: '#f6f2ec',
+    accentColor: '#c4a882',
+    fontFamily: 'Plus Jakarta Sans',
+    headingFont: 'Cormorant Garamond',
+    gateStyle: 'arch-gate',
+    envelopeColor: '#283620',
+    paperColor: '#fcfaf7',
+  },
+  {
+    key: 'vogue',
+    name: 'Vogue Monochrome',
+    subtitle: 'Editorial Noir & Ivory',
+    primaryColor: '#1a1918',
+    backgroundColor: '#faf8f5',
+    accentColor: '#968c7e',
+    fontFamily: 'Inter',
+    headingFont: 'Bodoni Moda',
+    gateStyle: 'editorial',
+    envelopeColor: '#141413',
+    paperColor: '#faf8f5',
+  },
+  {
+    key: 'royal',
+    name: 'Royal Heritage Nusantara',
+    subtitle: 'Espresso & Champagne Gold',
+    primaryColor: '#6e4f20',
+    backgroundColor: '#f7f2e8',
+    accentColor: '#c5a059',
+    fontFamily: 'Lora',
+    headingFont: 'Cormorant Garamond',
+    gateStyle: 'arch-gate',
+    envelopeColor: '#241a14',
+    paperColor: '#fcf8f0',
+  },
+  {
+    key: 'islamic',
+    name: 'Celestial Islamic',
+    subtitle: 'Deep Emerald & Pearl',
+    primaryColor: '#1b4332',
+    backgroundColor: '#f2f6f4',
+    accentColor: '#bfa46d',
+    fontFamily: 'Plus Jakarta Sans',
+    headingFont: 'Amiri',
+    gateStyle: 'arch-gate',
+    envelopeColor: '#132f23',
+    paperColor: '#fbfdfb',
+  },
+  {
+    key: 'terracotta',
+    name: 'Tuscan Terracotta',
+    subtitle: 'Warm Earth & Sunlit Sand',
+    primaryColor: '#8a4831',
+    backgroundColor: '#f8f2ec',
+    accentColor: '#c88d70',
+    fontFamily: 'DM Sans',
+    headingFont: 'Fraunces',
+    gateStyle: 'wax-seal',
+    envelopeColor: '#6b3622',
+    paperColor: '#fdf9f5',
+  },
+  {
+    key: 'blush',
+    name: 'Blush Romance',
+    subtitle: 'Dusty Rose & Alabaster',
+    primaryColor: '#8a4f5b',
+    backgroundColor: '#fbf6f6',
+    accentColor: '#d09ca7',
+    fontFamily: 'Plus Jakarta Sans',
+    headingFont: 'Playfair Display',
+    gateStyle: 'wax-seal',
+    envelopeColor: '#6b3a43',
+    paperColor: '#fffcfc',
+  },
+]
 
-export const PRESETS = {
-  wedding: {
-    key: 'wedding',
-    label: 'Wedding',
-    labelId: 'Wedding',
-    icon: '💍',
-    description: 'Elegant wedding invitation with cover, couple profile, schedule, countdown, gallery, RSVP, and more.',
-    color: '#565F34',
-    blocks: [
-      {
-        type: 'cover',
-        data: {
-          ...BLOCK_TYPES.cover.defaults,
-          subtitle: 'We Are Getting Married',
-          coupleName: 'Romeo & Juliet',
-          date: 'Saturday, August 30, 2026',
-          coverLayout: 'classic',
-        }
+const SAMPLE_PHOTOS = {
+  coverAtelier: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80',
+  coverVogue: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=1000&q=80',
+  coverRoyal: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1000&q=80',
+  coverIslamic: 'https://images.unsplash.com/photo-1542042161784-26ab9e041e89?auto=format&fit=crop&w=1000&q=80',
+  coverTerracotta: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1000&q=80',
+  coverBlush: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1000&q=80',
+  groom1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+  bride1: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+  gallery: [
+    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80',
+  ],
+}
+
+function buildWeddingBlocks({
+  primaryColor,
+  accentColor,
+  envelopeColor,
+  paperColor,
+  gateStyle = 'arch-gate',
+  coverLayout = 'arch',
+  coverPhoto = SAMPLE_PHOTOS.coverAtelier,
+  subtitle = 'The Wedding Celebration Of',
+  coupleName = 'Sarah & Dimas',
+  date = 'Sabtu, 24 Oktober 2026',
+  targetDate = '2026-10-24T08:30:00',
+  name1 = 'Dimas Wicaksono, M.Arch.',
+  name2 = 'Sarah Amalia, S.Ds.',
+  title1 = 'Putra Pertama dari Bpk. Bambang Wicaksono & Ibu Rini Astuti',
+  title2 = 'Putri Bungsu dari Bpk. Ir. Farhan Syahputra & Ibu Ratna Kirana',
+  coupleDescription = 'Dengan memohon rahmat dan ridho Tuhan Yang Maha Esa, kami bermaksud menyelenggarakan acara pernikahan putra-putri kami.',
+  headingFont = 'Cormorant Garamond',
+  displayFont = headingFont,
+  ornamentStyle = 'line',
+  showIntroOrnament = true,
+  quoteText = '"Dua jiwa yang berjalan di jalan yang sama, bertumbuh seperti rerimbunan pohon yang akarnya saling bertaut erat."',
+  quoteSource = 'Kahlil Gibran',
+  quoteStyle = 'framed',
+  showBismillah = false,
+  countdownStyle = 'boxed',
+  coupleLayout = 'staggered',
+  photoShape = 'portrait',
+  includeCouplePhotos = true,
+  songTitle = 'Eternal Vows (Instrumental)',
+  events = [
+    {
+      name: 'Akad Nikah',
+      date: 'Sabtu, 24 Oktober 2026',
+      time: '08:30 - 10:30 WIB',
+      venue: 'The Conservatory Glasshouse',
+      address: 'Jl. Brawijaya Raya No. 28, Kebayoran Baru, Jakarta Selatan',
+      mapUrl: 'https://maps.google.com/?q=The+Conservatory+Jakarta',
+    },
+    {
+      name: 'Garden Soirée & Lunch',
+      date: 'Sabtu, 24 Oktober 2026',
+      time: '11:30 - 15:00 WIB',
+      venue: 'Pine Pavilion Courtyard',
+      address: 'Jl. Brawijaya Raya No. 28, Kebayoran Baru, Jakarta Selatan',
+      mapUrl: 'https://maps.google.com/?q=The+Conservatory+Jakarta',
+    },
+  ],
+  scheduleItems = [
+    { time: '08:30', title: 'Akad Nikah & Ijab Qabul', description: 'Pengucapan janji suci pernikahan di hadapan keluarga.' },
+    { time: '10:00', title: 'Sungkeman & Doa Restu', description: 'Permohonan doa restu kepada kedua orang tua tercinta.' },
+    { time: '11:30', title: 'Garden Soirée & Acoustic Lunch', description: 'Jamuan makan siang santai diiringi musik akustik.' },
+    { time: '14:00', title: 'Toast & Photos with Friends', description: 'Momen kebersamaan dan sesi foto hangat bersama sahabat.' },
+  ],
+  scheduleMode = 'timeline',
+  swatches = [
+    { label: 'Olive Leaf', color: '#3d4d33' },
+    { label: 'Warm Sage', color: '#889a7a' },
+    { label: 'Champagne Linen', color: '#e8dfd5' },
+  ],
+  dressCodeNote = 'Busana Semi-Formal atau Casual Chic dalam palet bernuansa earth tones / sage.',
+  includeStory = true,
+  storyItems = [
+    {
+      date: 'September 2021',
+      title: 'Pertemuan Pertama',
+      description: 'Sebuah ketidaksengajaan di pameran desain Bandung yang berlanjut menjadi obrolan kopi tanpa henti.',
+      photo: SAMPLE_PHOTOS.gallery[0],
+    },
+    {
+      date: 'Juli 2024',
+      title: 'Lamaran di Bromo',
+      description: 'Di bawah langit senja Bromo yang magis, kami berjanji untuk melangkah bersama seumur hidup.',
+      photo: SAMPLE_PHOTOS.gallery[2],
+    },
+    {
+      date: 'Oktober 2026',
+      title: 'Hari Bahagia Kami',
+      description: 'Hari ketika doa-doa kami berlabuh dalam ikatan pernikahan yang suci.',
+      photo: SAMPLE_PHOTOS.gallery[1],
+    },
+  ],
+  includeGallery = true,
+  galleryMode = 'masonry',
+  galleryImages = SAMPLE_PHOTOS.gallery,
+  accounts = [
+    { bankName: 'BCA', accountNumber: '5220918273', accountName: 'Dimas Wicaksono' },
+    { bankName: 'Bank Mandiri', accountNumber: '1370019283741', accountName: 'Sarah Amalia' },
+  ],
+  physicalRecipient = 'Sarah & Dimas',
+  physicalPhone = '0812-3456-7890',
+  physicalAddress = 'Jl. Senopati Dalam II No. 14, Kebayoran Baru, Jakarta Selatan 12190',
+  thankYouTitle = 'Merupakan Suatu Kehormatan',
+  thankYouDesc = 'Tiada kesan yang lebih mendalam selain kehadiran dan doa restu Bapak/Ibu/Saudara/i untuk mengiringi langkah awal rumah tangga kami.',
+  signature1 = 'Kel. Bpk. Bambang Wicaksono & Ibu Rini Astuti',
+  signature2 = 'Kel. Bpk. Ir. Farhan Syahputra & Ibu Ratna Kirana',
+  coupleSignature = coupleName,
+  coverTextAlign = 'center',
+  coverAlignItems = 'center',
+  overlayOpacity = 0.42,
+  rsvpConfirmation = 'Terima kasih atas konfirmasi kehadiran Anda. Simpan tiket QR ini untuk ditunjukkan kepada penerima tamu.',
+}) {
+  const blocks = [
+    {
+      type: 'envelopeAnimation',
+      data: {
+        ...(BLOCK_TYPES.envelopeAnimation?.defaults || {}),
+        gateStyle,
+        openButtonText: 'Buka Undangan',
+        envelopeColor,
+        paperColor,
       },
-      {
-        type: 'ornament',
-        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
+    },
+    {
+      type: 'backgroundMusic',
+      data: {
+        ...(BLOCK_TYPES.backgroundMusic?.defaults || {}),
+        songTitle,
+        volume: 75,
       },
+    },
+    {
+      type: 'navigationMenu',
+      data: {
+        ...(BLOCK_TYPES.navigationMenu?.defaults || {}),
+      },
+    },
+    {
+      type: 'cover',
+      data: {
+        ...(BLOCK_TYPES.cover?.defaults || {}),
+        backgroundImage: coverPhoto,
+        subtitle,
+        coupleName,
+        date,
+        coverLayout,
+        displayFont,
+        coverTextAlign,
+        coverAlignItems,
+        overlayOpacity,
+        overlayColor: '#141413',
+        showGuestName: true,
+        showScrollIndicator: false,
+      },
+    },
+  ]
+
+  if (showIntroOrnament && ornamentStyle) {
+    blocks.push({
+      type: 'ornament',
+      data: { ...(BLOCK_TYPES.ornament?.defaults || {}), style: ornamentStyle, color: accentColor },
+    })
+  }
+
+  if (showBismillah) {
+    blocks.push({
+      type: 'heading',
+      data: {
+        ...(BLOCK_TYPES.heading?.defaults || {}),
+        content: '﷽',
+        fontSize: 30,
+        color: primaryColor,
+        spacingTop: 16,
+        spacingBottom: 8,
+      },
+    })
+  }
+
+  blocks.push(
+    {
+      type: 'quote',
+      data: {
+        ...(BLOCK_TYPES.quote?.defaults || {}),
+        text: quoteText,
+        source: quoteSource,
+        style: quoteStyle,
+        color: primaryColor,
+      },
+    },
+    {
+      type: 'couple',
+      data: {
+        ...(BLOCK_TYPES.couple?.defaults || {}),
+        name1,
+        name2,
+        title1,
+        title2,
+        photo1: includeCouplePhotos ? SAMPLE_PHOTOS.groom1 : '',
+        photo2: includeCouplePhotos ? SAMPLE_PHOTOS.bride1 : '',
+        instagram1: name1.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        instagram2: name2.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        layout: coupleLayout,
+        photoShape,
+        description: coupleDescription,
+      },
+    },
+    {
+      type: 'heading',
+      data: {
+        ...(BLOCK_TYPES.heading?.defaults || {}),
+        content: 'Save The Date',
+        fontSize: 34,
+        fontStyle: 'italic',
+        fontFamily: displayFont,
+        color: primaryColor,
+        spacingBottom: 12,
+      },
+    },
+    {
+      type: 'countdown',
+      data: {
+        ...(BLOCK_TYPES.countdown?.defaults || {}),
+        targetDate,
+        label: 'Menuju Hari Bahagia',
+        style: countdownStyle,
+      },
+    },
+    {
+      type: 'location',
+      data: {
+        ...(BLOCK_TYPES.location?.defaults || {}),
+        events,
+        mapDisplay: 'button',
+      },
+    },
+    {
+      type: 'schedule',
+      data: {
+        ...(BLOCK_TYPES.schedule?.defaults || {}),
+        title: 'Rangkaian Acara',
+        layoutMode: scheduleMode,
+        items: scheduleItems,
+      },
+    },
+    {
+      type: 'dressCode',
+      data: {
+        ...(BLOCK_TYPES.dressCode?.defaults || {}),
+        title: 'Dress Code',
+        description: 'Kami mengundang Anda mengenakan busana dalam palet warna berikut.',
+        note: dressCodeNote,
+        swatches,
+      },
+    },
+  )
+
+  if (includeStory && storyItems && storyItems.length > 0) {
+    blocks.push(
       {
         type: 'heading',
         data: {
-          ...BLOCK_TYPES.heading.defaults,
-          content: '﷽',
-          fontSize: 28,
-          color: '#2D2D2D',
-        }
-      },
-      {
-        type: 'quote',
-        data: {
-          ...BLOCK_TYPES.quote.defaults,
-          text: '"And of His signs is that He created for you from yourselves mates that you may find tranquility in them."',
-          source: '— QS. Ar-Rum: 21',
-          style: 'framed',
-          color: '#565F34',
-        }
-      },
-      {
-        type: 'ornament',
-        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
-      },
-      {
-        type: 'couple',
-        data: {
-          ...BLOCK_TYPES.couple.defaults,
-          name1: 'Romeo',
-          name2: 'Juliet',
-          title1: 'First son of Mr. Montague & Mrs. Montague',
-          title2: 'Second daughter of Mr. Capulet & Mrs. Capulet',
-          layout: 'staggered',
-          photoShape: 'portrait',
-        }
-      },
-      {
-        type: 'ornament',
-        data: { ...BLOCK_TYPES.ornament.defaults, style: 'floral' }
-      },
-      {
-        type: 'heading',
-        data: {
-          ...BLOCK_TYPES.heading.defaults,
-          content: 'Wedding Event',
+          ...(BLOCK_TYPES.heading?.defaults || {}),
+          content: 'Kisah Kami',
           fontSize: 32,
           fontStyle: 'italic',
-          fontFamily: 'Gambarino',
-        }
-      },
-      {
-        type: 'countdown',
-        data: {
-          ...BLOCK_TYPES.countdown.defaults,
-          label: 'Counting down to the big day',
-          style: 'boxed',
-        }
-      },
-      {
-        type: 'location',
-        data: {
-          ...BLOCK_TYPES.location.defaults,
-          events: [
-            { name: 'Akad Nikah', date: 'August 30, 2026', time: '08:00 AM', venue: 'Grand Mosque', address: 'Jl. Example No. 1, City', mapUrl: '' },
-            { name: 'Resepsi', date: 'August 30, 2026', time: '11:00 AM', venue: 'Grand Ballroom Hotel', address: 'Jl. Example No. 10, City', mapUrl: '' },
-          ],
-          mapDisplay: 'button',
-        }
-      },
-      {
-        type: 'schedule',
-        data: {
-          ...BLOCK_TYPES.schedule.defaults,
-          title: 'Wedding Agenda',
-          layoutMode: 'timeline',
-        }
-      },
-      {
-        type: 'dressCode',
-        data: {
-          ...BLOCK_TYPES.dressCode.defaults,
-        }
-      },
-      {
-        type: 'heading',
-        data: {
-          ...BLOCK_TYPES.heading.defaults,
-          content: 'Our Moments',
-          fontSize: 30,
-          fontStyle: 'italic',
-          fontFamily: 'Gambarino',
-        }
-      },
-      {
-        type: 'gallery',
-        data: {
-          ...BLOCK_TYPES.gallery.defaults,
-          columns: 2,
-          layoutMode: 'masonry',
-          images: [],
-        }
-      },
-      {
-        type: 'heading',
-        data: {
-          ...BLOCK_TYPES.heading.defaults,
-          content: 'Love Story',
-          fontSize: 30,
-          fontStyle: 'italic',
-          fontFamily: 'Gambarino',
-        }
+          fontFamily: displayFont,
+          color: primaryColor,
+          spacingBottom: 12,
+        },
       },
       {
         type: 'story',
         data: {
-          ...BLOCK_TYPES.story.defaults,
-          items: [
-            { date: '2020', title: 'First Meeting', description: 'Tell the story of when you first met...', photo: '' },
-            { date: '2022', title: 'Start Dating', description: 'The moment your journey began...', photo: '' },
-            { date: '2026', title: 'Engagement', description: 'A moment that changed everything...', photo: '' },
-          ]
-        }
+          ...(BLOCK_TYPES.story?.defaults || {}),
+          items: storyItems,
+        },
+      },
+    )
+  }
+
+  if (includeGallery) {
+    blocks.push(
+      {
+        type: 'heading',
+        data: {
+          ...(BLOCK_TYPES.heading?.defaults || {}),
+          content: 'Galeri Momen',
+          fontSize: 32,
+          fontStyle: 'italic',
+          fontFamily: displayFont,
+          color: primaryColor,
+          spacingBottom: 12,
+        },
       },
       {
-        type: 'video',
+        type: 'gallery',
         data: {
-          ...BLOCK_TYPES.video.defaults,
-          autoplay: false,
-          loop: false,
-        }
+          ...(BLOCK_TYPES.gallery?.defaults || {}),
+          columns: 2,
+          layoutMode: galleryMode,
+          images: galleryImages,
+        },
       },
-      {
-        type: 'wishes',
-        data: {
-          ...BLOCK_TYPES.wishes.defaults,
-          title: 'Send Your Wishes',
-          displayMode: 'masonry',
-        }
+    )
+  }
+
+  blocks.push(
+    {
+      type: 'rsvp',
+      data: {
+        ...(BLOCK_TYPES.rsvp?.defaults || {}),
+        title: 'Konfirmasi Kehadiran',
+        attendingLabel: 'Saya akan hadir',
+        declineLabel: 'Mohon maaf, berhalangan',
+        showGuestCount: true,
+        showSessionChoice: true,
+        showQrTicket: true,
+        confirmationMessage: rsvpConfirmation,
       },
-      {
-        type: 'gift',
-        data: {
-          ...BLOCK_TYPES.gift.defaults,
-          title: 'Wedding Gift',
-          accounts: [],
-        }
+    },
+    {
+      type: 'wishes',
+      data: {
+        ...(BLOCK_TYPES.wishes?.defaults || {}),
+        title: 'Ucapan & Doa Restu',
+        displayMode: 'masonry',
       },
-      {
-        type: 'rsvp',
-        data: {
-          ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Attendance Confirmation',
-        }
+    },
+    {
+      type: 'gift',
+      data: {
+        ...(BLOCK_TYPES.gift?.defaults || {}),
+        title: 'Tanda Kasih Digital',
+        subtitle: 'Kehadiran dan doa restu Anda merupakan hadiah terindah bagi kami. Namun apabila Anda ingin memberikan tanda kasih secara digital maupun fisik, dapat melalui informasi berikut:',
+        accounts,
+        physicalRecipient,
+        physicalPhone,
+        physicalAddress,
       },
-      {
-        type: 'footer',
-        data: {
-          ...BLOCK_TYPES.footer.defaults,
-          thankYouText: 'Thank You',
-          coupleName: 'Romeo & Juliet',
-          subtitle: 'For Being Part of Our Special Day',
-          bgStyle: 'dark',
-        }
+    },
+    {
+      type: 'thankYou',
+      data: {
+        ...(BLOCK_TYPES.thankYou?.defaults || {}),
+        title: thankYouTitle,
+        description: thankYouDesc,
+        signature1,
+        signature2,
+        coupleSignature,
       },
-    ]
+    },
+    {
+      type: 'footer',
+      data: {
+        ...(BLOCK_TYPES.footer?.defaults || {}),
+        thankYouText: 'Terima Kasih',
+        coupleName,
+        subtitle: 'Sampai Jumpa di Hari Bahagia Kami',
+        bgStyle: 'dark',
+        photos: galleryImages,
+      },
+    }
+  )
+
+  return blocks
+}
+
+export const PRESETS = {
+  wedding: {
+    key: 'wedding',
+    label: 'Atelier Botanical',
+    labelId: 'Wedding',
+    badge: 'Populer',
+    icon: 'At',
+    description: 'Estetika kertas hangat dengan warna Olive khas Invori, bingkai foto Arch lengkung, dan gerbang pembuka Split Arch Gate.',
+    color: '#344c2d',
+    bgColor: '#f4efea',
+    accentColor: '#c4a882',
+    theme: {
+      primaryColor: '#344c2d',
+      backgroundColor: '#f4efea',
+      fontFamily: 'Plus Jakarta Sans',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#344c2d',
+      accentColor: '#c4a882',
+      envelopeColor: '#24351f',
+      paperColor: '#fbf9f6',
+      gateStyle: 'arch-gate',
+      coverLayout: 'arch',
+      coverPhoto: SAMPLE_PHOTOS.coverAtelier,
+      coupleName: 'Sarah & Dimas',
+      subtitle: 'The Wedding Celebration Of',
+      date: 'Sabtu, 24 Oktober 2026',
+      targetDate: '2026-10-24T08:30:00',
+      name1: 'Dimas Wicaksono, M.Arch.',
+      name2: 'Sarah Amalia, S.Ds.',
+      title1: 'Putra Pertama dari Bpk. Bambang Wicaksono & Ibu Rini Astuti',
+      title2: 'Putri Bungsu dari Bpk. Ir. Farhan Syahputra & Ibu Ratna Kirana',
+      showBismillah: true,
+      displayFont: 'Cormorant Garamond',
+      ornamentStyle: 'floral',
+      quoteStyle: 'bordered',
+      quoteText: '"Dua jiwa yang berjalan di jalan yang sama, bertumbuh seperti rerimbunan pohon yang akarnya saling bertaut erat."',
+      quoteSource: 'Kahlil Gibran',
+      countdownStyle: 'minimal',
+      coupleLayout: 'staggered',
+      photoShape: 'portrait',
+      scheduleMode: 'timeline',
+      galleryMode: 'masonry',
+      songTitle: 'Bloom & Vines — Acoustic Folk Guitar',
+      events: [
+        {
+          name: 'Akad Nikah',
+          date: 'Sabtu, 24 Oktober 2026',
+          time: '08:30 - 10:30 WIB',
+          venue: 'The Conservatory Glasshouse',
+          address: 'Jl. Brawijaya Raya No. 28, Kebayoran Baru, Jakarta Selatan',
+          mapUrl: 'https://maps.google.com/?q=The+Conservatory+Jakarta',
+        },
+        {
+          name: 'Garden Soirée & Lunch',
+          date: 'Sabtu, 24 Oktober 2026',
+          time: '11:30 - 15:00 WIB',
+          venue: 'Pine Pavilion Courtyard',
+          address: 'Jl. Brawijaya Raya No. 28, Kebayoran Baru, Jakarta Selatan',
+          mapUrl: 'https://maps.google.com/?q=The+Conservatory+Jakarta',
+        },
+      ],
+      scheduleItems: [
+        { time: '08:30', title: 'Akad Nikah & Ijab Qabul', description: 'Pengucapan janji suci pernikahan di hadapan keluarga.' },
+        { time: '10:00', title: 'Sungkeman & Doa Restu', description: 'Permohonan doa restu kepada kedua orang tua tercinta.' },
+        { time: '11:30', title: 'Garden Soirée & Acoustic Lunch', description: 'Jamuan makan siang santai diiringi musik akustik.' },
+        { time: '14:00', title: 'Toast & Photos with Friends', description: 'Momen kebersamaan dan sesi foto hangat bersama sahabat.' },
+      ],
+      swatches: [
+        { label: 'Olive Leaf', color: '#3d4d33' },
+        { label: 'Warm Sage', color: '#889a7a' },
+        { label: 'Champagne Linen', color: '#e8dfd5' },
+      ],
+      dressCodeNote: 'Busana Semi-Formal atau Casual Chic dalam palet bernuansa earth tones / sage.',
+      accounts: [
+        { bankName: 'BCA', accountNumber: '5220918273', accountName: 'Dimas Wicaksono' },
+        { bankName: 'Bank Mandiri', accountNumber: '1370019283741', accountName: 'Sarah Amalia' },
+      ],
+      physicalRecipient: 'Sarah & Dimas',
+      physicalPhone: '0812-3456-7890',
+      physicalAddress: 'Jl. Senopati Dalam II No. 14, Kebayoran Baru, Jakarta Selatan 12190',
+      signature1: 'Kel. Bpk. Bambang Wicaksono & Ibu Rini Astuti',
+      signature2: 'Kel. Bpk. Ir. Farhan Syahputra & Ibu Ratna Kirana',
+    }),
+  },
+
+  vogue: {
+    key: 'vogue',
+    label: 'Vogue Monochrome',
+    labelId: 'Wedding',
+    badge: 'Editorial',
+    icon: 'Vg',
+    description: 'Gaya majalah mode internasional hitam-putih dengan tipografi serif kontras tinggi, palet Noir & Ivory, dan sampul Editorial.',
+    color: '#181816',
+    bgColor: '#faf8f5',
+    accentColor: '#8c857b',
+    theme: {
+      primaryColor: '#181816',
+      backgroundColor: '#faf8f5',
+      fontFamily: 'Inter',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#181816',
+      accentColor: '#8c857b',
+      envelopeColor: '#141413',
+      paperColor: '#faf8f5',
+      gateStyle: 'editorial',
+      coverLayout: 'editorial',
+      coverPhoto: SAMPLE_PHOTOS.coverVogue,
+      subtitle: 'THE EDITORIAL WEDDING OF',
+      coupleName: 'Audrey & Nicholas',
+      date: 'Saturday, 12 December 2026',
+      targetDate: '2026-12-12T16:00:00',
+      name1: 'Nicholas Sterling, B.Fin.',
+      name2: 'Audrey Valerie Tan, B.A.',
+      title1: 'Son of Mr. Robert Sterling & Mrs. Evelyn Sterling',
+      title2: 'Daughter of Mr. Jonathan Tan & Mrs. Cynthia Tan',
+      coupleDescription: 'Together with their families, Nicholas and Audrey invite you to celebrate their wedding soirée.',
+      headingFont: 'Playfair Display',
+      displayFont: 'Bodoni Moda',
+      ornamentStyle: 'line',
+      quoteStyle: 'bordered',
+      quoteText: '"To love is nothing. To be loved is something. But to love and be loved by you, that is my everything."',
+      quoteSource: 'Pablo Neruda',
+      countdownStyle: 'minimal',
+      coupleLayout: 'side-by-side',
+      photoShape: 'rounded',
+      scheduleMode: 'cards',
+      galleryMode: 'grid',
+      includeStory: false,
+      songTitle: 'Nocturne Noir — Solo Grand Piano',
+      events: [
+        {
+          name: 'Holy Matrimony',
+          date: 'Saturday, 12 December 2026',
+          time: '16:00 - 17:30 WIB',
+          venue: 'The Glass Chapel, The Langham Jakarta',
+          address: 'District 8 SCBD, Jl. Jend. Sudirman Kav. 52-53, Jakarta Selatan',
+          mapUrl: 'https://maps.google.com/?q=The+Langham+Jakarta',
+        },
+        {
+          name: 'Black-Tie Gala Reception',
+          date: 'Saturday, 12 December 2026',
+          time: '19:00 - 22:30 WIB',
+          venue: 'The Grand Ballroom, The Langham Jakarta',
+          address: 'District 8 SCBD, Jl. Jend. Sudirman Kav. 52-53, Jakarta Selatan',
+          mapUrl: 'https://maps.google.com/?q=The+Langham+Jakarta',
+        },
+      ],
+      scheduleItems: [
+        { time: '16:00', title: 'Holy Matrimony & Exchange of Vows', description: 'Sacred ceremony surrounded by immediate family and cherished friends.' },
+        { time: '17:30', title: 'Sunset Cocktails & Jazz Trio', description: 'Hors d’oeuvres and celebratory drinks overlooking the Jakarta skyline.' },
+        { time: '19:00', title: 'Grand Entrance & Welcome Toast', description: 'Ballroom doors open for a four-course curated dinner.' },
+        { time: '20:45', title: 'First Dance & Midnight Celebration', description: 'Live jazz and celebratory dancing late into the night.' },
+      ],
+      swatches: [
+        { label: 'Obsidian Black', color: '#141413' },
+        { label: 'Slate Charcoal', color: '#4a4845' },
+        { label: 'Silk Ivory', color: '#faf8f5' },
+      ],
+      dressCodeNote: 'Strict Black-Tie: Tuxedo / Dark Suit for gentlemen, Floor-length Evening Gown for ladies.',
+      accounts: [
+        { bankName: 'BCA', accountNumber: '0841928471', accountName: 'Nicholas Sterling' },
+        { bankName: 'Bank Permata', accountNumber: '7028192831', accountName: 'Audrey Valerie Tan' },
+      ],
+      physicalRecipient: 'Nicholas & Audrey',
+      physicalPhone: '0811-9876-5432',
+      physicalAddress: 'Langham Executive Residence Tower 1, District 8 SCBD, Jakarta Selatan 12190',
+      thankYouTitle: 'With Our Deepest Gratitude',
+      thankYouDesc: 'Your presence and blessings on our wedding day complete our happiness and celebrate the beginning of our life together.',
+      signature1: 'The Sterling Family',
+      signature2: 'The Tan Family',
+      coupleSignature: 'Nicholas & Audrey',
+    }),
+  },
+
+  royal: {
+    key: 'royal',
+    label: 'Royal Heritage Nusantara',
+    labelId: 'Wedding',
+    badge: 'Adat & Klasik',
+    icon: 'Rh',
+    description: 'Kemewahan klasik upacara adat Nusantara dengan perpaduan Deep Espresso, Prada Emas, ukiran luhur, dan musik gamelan ageng.',
+    color: '#7a5a26',
+    bgColor: '#f6f1e7',
+    accentColor: '#c5a059',
+    theme: {
+      primaryColor: '#7a5a26',
+      backgroundColor: '#f6f1e7',
+      fontFamily: 'Lora',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#7a5a26',
+      accentColor: '#c5a059',
+      envelopeColor: '#211813',
+      paperColor: '#fbf7ef',
+      gateStyle: 'arch-gate',
+      coverLayout: 'arch',
+      coverPhoto: SAMPLE_PHOTOS.coverRoyal,
+      subtitle: 'Pawiwahan Ageng Adat Jawa',
+      coupleName: 'Sekar & Danang',
+      date: 'Minggu Kliwon, 8 November 2026',
+      targetDate: '2026-11-08T08:00:00',
+      name1: 'R.M. Danang Priyambodo, S.T.',
+      name2: 'R.A. Sekar Ayu Kinanthi, S.S.',
+      title1: 'Putra Kakung pambayun saking Bpk. K.R.T. Hardjodipuro & Ibu R.Ay. Sulastri',
+      title2: 'Putri Pembayun saking Bpk. K.R.T. Sasongkopuro & Ibu R.Ay. Endang Sri Lestari',
+      coupleDescription: 'Nyuwun lumunturing sih katresnan Gusti Ingkang Maha Agung, kula sakulawarga ngaturaken serat ulem pawiwahan ageng pinanganten kekalih.',
+      headingFont: 'Playfair Display',
+      displayFont: 'Cormorant Garamond',
+      ornamentStyle: 'double-line',
+      quoteStyle: 'framed',
+      quoteText: '"Memayu Hayuning Bawana, Mangasah Mingising Budi, Memasuh Malaning Bumi. Mugi tansah pinaringan sih katresnan, tentrem, lan karaharjan ing gesang bebrayan."',
+      quoteSource: 'Serat Wulangreh — Sri Susuhunan Pakubuwana IV',
+      showBismillah: true,
+      countdownStyle: 'outlined',
+      coupleLayout: 'side-by-side',
+      photoShape: 'portrait',
+      scheduleMode: 'timeline',
+      galleryMode: 'slideshow',
+      songTitle: 'Gamelan Kebo Giro & Ketawang Kodok Ngorek — Kraton Solo',
+      events: [
+        {
+          name: 'Ijab Qobul & Upacara Panggih',
+          date: 'Minggu Kliwon, 8 November 2026',
+          time: '08:00 - 11:00 WIB',
+          venue: 'Pendopo Ageng Sasana Handrawina',
+          address: 'Kompleks Kraton Kasunanan Surakarta Hadiningrat, Baluwarti, Pasar Kliwon, Surakarta',
+          mapUrl: 'https://maps.google.com/?q=Keraton+Surakarta+Hadiningrat',
+        },
+        {
+          name: 'Resepsi Pahargyan Ageng',
+          date: 'Minggu Kliwon, 8 November 2026',
+          time: '18:30 - 21:30 WIB',
+          venue: 'Bale Mangunjiwan Grand Ballroom',
+          address: 'Jl. Slamet Riyadi No. 128, Sriwedari, Laweyan, Surakarta',
+          mapUrl: 'https://maps.google.com/?q=Surakarta+Jawa+Tengah',
+        },
+      ],
+      scheduleItems: [
+        { time: '07:30', title: 'Pasrah Tinampi & Upacara Ijab Qobul', description: 'Akad nikah kanthi khidmat dipun seksenani para sesepuh lan kulawarga ageng.' },
+        { time: '09:30', title: 'Prosesi Adat Panggih Ageng', description: 'Balangan gantal, wijidadi, sinduran, kacar-kucur, dulang-dulangan, dumugi sungkeman kasepuhan.' },
+        { time: '11:00', title: 'Beksan Gambyong & Dhahar Klimah', description: 'Tari penghormatan kagem penganten lan para tamu rawuh.' },
+        { time: '18:30', title: 'Pahargyan Temu Penganten & Ramah Tamah', description: 'Giyaran pahargyan ageng ngempalaken kulawarga miwah sanak kadang.' },
+      ],
+      swatches: [
+        { label: 'Sogan Kraton', color: '#3d2516' },
+        { label: 'Prada Emas', color: '#c5a059' },
+        { label: 'Parang Ivory', color: '#f3ece0' },
+      ],
+      dressCodeNote: 'Busana Adat Tradisional / Kebaya & Beskap Batik Motif Klasik (Truntum, Sidomukti, Parang).',
+      storyItems: [
+        {
+          date: 'Surakarta, 2022',
+          title: 'Wiwitaning Tepang',
+          description: 'Tepang ing adicara pameran serat kuna kraton Solo, nuwuhaken raos tresna ingkang tulus.',
+          photo: SAMPLE_PHOTOS.gallery[0],
+        },
+        {
+          date: 'Yogyakarta, 2025',
+          title: 'Lamaran Nyantana',
+          description: 'Kula sakulawarga sowan nglamar kanthi upacara adat pinanganten jangkep.',
+          photo: SAMPLE_PHOTOS.gallery[2],
+        },
+        {
+          date: 'Surakarta, 2026',
+          title: 'Dhaup Suci',
+          description: 'Nyawiji ing ikatan suci pawiwahan hangayahi darmaning gesang bebrayan.',
+          photo: SAMPLE_PHOTOS.gallery[1],
+        },
+      ],
+      accounts: [
+        { bankName: 'BNI', accountNumber: '0382910283', accountName: 'Danang Priyambodo' },
+        { bankName: 'BCA', accountNumber: '1730291823', accountName: 'Sekar Ayu Kinanthi' },
+      ],
+      physicalRecipient: 'Danang & Sekar',
+      physicalPhone: '0813-2948-1920',
+      physicalAddress: 'NdAppState Bale Sasana, Jl. Ronggowarsito No. 42, Timuran, Banjarsari, Surakarta 57131',
+      thankYouTitle: 'Matur Nuwun Sanget',
+      thankYouDesc: 'Rawuh panjenengan sedaya dados tambahing suka bagya saha donga pangestu ingkang tanpa pepindhan tumrap kaluwarga kula kekalih.',
+      signature1: 'Kel. Bpk. K.R.T. Hardjodipuro & Ibu R.Ay. Sulastri',
+      signature2: 'Kel. Bpk. K.R.T. Sasongkopuro & Ibu R.Ay. Endang Sri Lestari',
+      coupleSignature: 'Danang & Sekar',
+    }),
+  },
+
+  islamic: {
+    key: 'islamic',
+    label: 'Celestial Islamic',
+    labelId: 'Wedding',
+    badge: 'Syar’i Friendly',
+    icon: 'Ce',
+    description: 'Nuansa Walimatul Ursy yang teduh dengan palet Deep Emerald & Pearl, pemisahan area Ikhwan & Akhwat, dan adab walimah islami.',
+    color: '#1b4332',
+    bgColor: '#f2f5f3',
+    accentColor: '#b69b68',
+    theme: {
+      primaryColor: '#1b4332',
+      backgroundColor: '#f2f5f3',
+      fontFamily: 'Inter',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#1b4332',
+      accentColor: '#b69b68',
+      envelopeColor: '#132f23',
+      paperColor: '#f9fbf9',
+      gateStyle: 'arch-gate',
+      coverLayout: 'arch',
+      coverPhoto: SAMPLE_PHOTOS.coverIslamic,
+      subtitle: "Undangan Walimatul 'Ursy",
+      coupleName: 'Fatimah & Zaky',
+      date: 'Ahad, 15 November 2026',
+      targetDate: '2026-11-15T08:00:00',
+      name1: 'Muhammad Zaky Al-Ghifari, Lc.',
+      name2: 'Fatimah Az-Zahra, S.Farm., Apt.',
+      title1: 'Putra kedua dari Ustadz H. Abdullah Mansyur & Hj. Maryam Sholehah',
+      title2: 'Putri pertama dari Bpk. Dr. H. Ahmad Fauzi & Dra. Hj. Siti Khadijah',
+      coupleDescription: 'Dengan mengharap ridho dan rahmat Allah SWT, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara syukuran akad nikah dan walimah putra-putri kami.',
+      includeCouplePhotos: false,
+      showBismillah: true,
+      displayFont: 'Amiri',
+      ornamentStyle: 'dots',
+      quoteStyle: 'bordered',
+      quoteText: `"Barakallahu laka wa baraka 'alaika wa jama'a bainakuma fii khair. Semoga Allah memberkahi engkau dalam kebahagiaan dan memberkahimu dalam kesulitan, serta menghimpun kalian berdua senantiasa dalam kebaikan."`,
+      quoteSource: 'HR. Abu Dawud & At-Tirmidzi',
+      countdownStyle: 'minimal',
+      coupleLayout: 'side-by-side',
+      scheduleMode: 'cards',
+      includeStory: false,
+      includeGallery: false,
+      songTitle: 'Baraka Allahu Lakuma — Instrumental Oud & Acoustic Strings',
+      events: [
+        {
+          name: 'Akad Nikah',
+          date: 'Ahad, 15 November 2026',
+          time: '08:00 - 10:00 WIB',
+          venue: 'Masjid Agung At-Tin',
+          address: 'Jl. Taman Mini I No. 3, Pinang Ranti, Makasar, Jakarta Timur',
+          mapUrl: 'https://maps.google.com/?q=Masjid+Agung+At-Tin+Jakarta',
+        },
+        {
+          name: "Walimatul 'Ursy (Area Ikhwan & Akhwat Terpisah)",
+          date: 'Ahad, 15 November 2026',
+          time: '11:00 - 14:30 WIB',
+          venue: 'Ballroom Sasana Kriya Mandira, TMII',
+          address: 'Kawasan Taman Mini Indonesia Indah, Cipayung, Jakarta Timur',
+          mapUrl: 'https://maps.google.com/?q=Sasana+Kriya+TMII',
+        },
+      ],
+      scheduleItems: [
+        { time: '08:00', title: 'Khutbah Nikah & Ijab Qabul', description: 'Pelaksanaan akad nikah syar’i disaksikan wali dan keluarga dekat.' },
+        { time: '09:30', title: 'Nasehat Pernikahan & Penyerahan Mahar', description: 'Tausiyah pengantin baru dan doa keberkahan baitul muslim.' },
+        { time: '11:00', title: "Walimatul 'Ursy (Area Terpisah)", description: 'Jamuan makan dan ramah tamah dengan tempat duduk Ikhwan & Akhwat terpisah.' },
+        { time: '14:00', title: 'Doa Penutup & Kafaratul Majlis', description: 'Mendoakan kedua mempelai agar senantiasa istiqamah mengarungi bahtera rumah tangga.' },
+      ],
+      swatches: [
+        { label: 'Zamrud Hijau', color: '#1b4332' },
+        { label: 'Madinah Gold', color: '#bfa46d' },
+        { label: 'Pearl Mutiara', color: '#f0f5f2' },
+      ],
+      dressCodeNote: "Busana Muslim & Muslimah Syar'i (Sopan, Longgar, dan Menutup Aurat).",
+      accounts: [
+        { bankName: 'Bank Syariah Indonesia (BSI)', accountNumber: '7182910283', accountName: 'Muhammad Zaky Al-Ghifari' },
+        { bankName: 'Bank Syariah Indonesia (BSI)', accountNumber: '7291038472', accountName: 'Fatimah Az-Zahra' },
+      ],
+      physicalRecipient: 'Zaky & Fatimah',
+      physicalPhone: '0812-8976-1234',
+      physicalAddress: "Kompleks Pesantren Daarul Mu’minin No. 12, Cipayung, Jakarta Timur 13840",
+      thankYouTitle: 'Jazakumullahu Khairan Katsiran',
+      thankYouDesc: 'Kehadiran serta doa restu Bapak/Ibu/Saudara/i sekalian merupakan kehormatan dan kebahagiaan yang tak terhingga bagi kami.',
+      signature1: 'Kel. Bpk. Ustadz H. Abdullah Mansyur & Hj. Maryam Sholehah',
+      signature2: 'Kel. Bpk. Dr. H. Ahmad Fauzi & Dra. Hj. Siti Khadijah',
+      coupleSignature: 'Zaky & Fatimah',
+      rsvpConfirmation: 'Jazakallahu khair atas konfirmasi kehadiran Anda. Mohon simpan tiket ini untuk verifikasi di meja registrasi.',
+    }),
+  },
+
+  terracotta: {
+    key: 'terracotta',
+    label: 'Tuscan Terracotta',
+    labelId: 'Wedding',
+    badge: 'Garden & Intimate',
+    icon: 'Tt',
+    description: 'Kehangatan warna terakota dan pasir senja dengan segel lilin Wax Seal Envelope untuk pesta kebun atau tebing pantai Bali.',
+    color: '#8c4a32',
+    bgColor: '#f7f1eb',
+    accentColor: '#c88d70',
+    theme: {
+      primaryColor: '#8c4a32',
+      backgroundColor: '#f7f1eb',
+      fontFamily: 'DM Sans',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#8c4a32',
+      accentColor: '#c88d70',
+      envelopeColor: '#6e3723',
+      paperColor: '#fcf8f4',
+      gateStyle: 'wax-seal',
+      coverLayout: 'classic',
+      coverPhoto: SAMPLE_PHOTOS.coverTerracotta,
+      displayFont: 'Fraunces',
+      coverTextAlign: 'left',
+      coverAlignItems: 'flex-end',
+      overlayOpacity: 0.5,
+      ornamentStyle: 'wave',
+      quoteStyle: 'bordered',
+      quoteText: '"Whatever our souls are made of, his and mine are the same. We fell in love under the sunset sky, and today we make it forever."',
+      quoteSource: 'Emily Brontë',
+      countdownStyle: 'boxed',
+      coupleLayout: 'side-by-side',
+      photoShape: 'circle',
+      scheduleMode: 'cards',
+      galleryMode: 'grid',
+      subtitle: 'Coastal Sunset Vows',
+      coupleName: 'Bianca & Julian',
+      date: 'Sabtu, 5 September 2026',
+      targetDate: '2026-09-05T16:30:00',
+      name1: 'Julian Ardian, B.A.',
+      name2: 'Bianca Maheswari, S.I.Kom.',
+      title1: 'Son of Mr. Wisnu Ardian & Mrs. Maya Ardian',
+      title2: 'Daughter of Mr. Indra Maheswara & Mrs. Shanti Dewi',
+      coupleDescription: 'Under the open sky and ocean breeze, we invite you to join us as we exchange our vows and celebrate love.',
+      songTitle: 'Sunset Horizon — Indie Acoustic Guitar & Ocean Ambience',
+      events: [
+        {
+          name: 'Sunset Vows Ceremony',
+          date: 'Sabtu, 5 September 2026',
+          time: '16:30 - 17:45 WITA',
+          venue: 'The Cliff Lawn, Uluwatu',
+          address: 'Jl. Pantai Suluban, Pecatu, Kuta Selatan, Kabupaten Badung, Bali',
+          mapUrl: 'https://maps.google.com/?q=Uluwatu+Bali',
+        },
+        {
+          name: 'Starlight Long-Table Dinner',
+          date: 'Sabtu, 5 September 2026',
+          time: '18:30 - 22:00 WITA',
+          venue: 'The Shore Pavilion, Uluwatu',
+          address: 'Jl. Pantai Suluban, Pecatu, Kuta Selatan, Kabupaten Badung, Bali',
+          mapUrl: 'https://maps.google.com/?q=Uluwatu+Bali',
+        },
+      ],
+      scheduleItems: [
+        { time: '16:00', title: 'Welcome Drinks & Ocean Breeze', description: 'Chilled tropical drinks and acoustic music as guests take their seats.' },
+        { time: '16:45', title: 'Sunset Vows & Exchange of Rings', description: 'Exchange of vows under the golden hour sun at the cliff’s edge.' },
+        { time: '18:00', title: 'Golden Hour Champagne Toast', description: 'Sunset toast, family group portraits, and canapés.' },
+        { time: '19:00', title: 'Candlelit Coastal Dinner & Live Acoustic', description: 'Communal family-style feast, speeches, and dancing under the stars.' },
+      ],
+      swatches: [
+        { label: 'Tuscan Terracotta', color: '#8c4a32' },
+        { label: 'Burnt Ochre', color: '#c88d70' },
+        { label: 'Sun-Bleached Linen', color: '#f2e8dc' },
+      ],
+      dressCodeNote: 'Sunset Resort Chic / Linen: Earth tones, rust, terracotta, sand, warm amber. (Please avoid black and crisp white).',
+      storyItems: [
+        {
+          date: 'Bali, 2020',
+          title: 'Sunset Surf in Canggu',
+          description: 'Our paths crossed at a beachfront shack waiting for the sunset swell.',
+          photo: SAMPLE_PHOTOS.gallery[2],
+        },
+        {
+          date: 'Tuscany, 2023',
+          title: 'Roadtrip Across the Hills',
+          description: 'Getting lost along winding terracotta hills made us realize we want to get lost together forever.',
+          photo: SAMPLE_PHOTOS.gallery[0],
+        },
+        {
+          date: 'Uluwatu, 2026',
+          title: 'Our Forever Vows',
+          description: 'Returning to where the ocean first brought us together to say our "I dos".',
+          photo: SAMPLE_PHOTOS.gallery[3],
+        },
+      ],
+      accounts: [
+        { bankName: 'BCA', accountNumber: '6820192831', accountName: 'Julian Ardian' },
+        { bankName: 'Bank Mandiri', accountNumber: '1420018273641', accountName: 'Bianca Maheswari' },
+      ],
+      physicalRecipient: 'Julian & Bianca',
+      physicalPhone: '0812-9871-2345',
+      physicalAddress: 'Villa Senja Cliffside, Jl. Pantai Suluban No. 8, Pecatu, Bali 80361',
+      thankYouTitle: 'Thank You From The Bottom of Our Hearts',
+      thankYouDesc: 'Celebrating this milestone with our closest friends and family across the ocean means everything to us.',
+      signature1: 'The Ardian Family',
+      signature2: 'The Maheswara Family',
+      coupleSignature: 'Julian & Bianca',
+    }),
+  },
+
+  blush: {
+    key: 'blush',
+    label: 'Blush Romance',
+    labelId: 'Wedding',
+    badge: 'Romantic',
+    icon: 'Bl',
+    description: 'Sentuhan lembut Dusty Rose & Alabaster dengan nuansa taman bunga peoni, kuartet gesek, dan amplop bersegel lilin.',
+    color: '#8e515d',
+    bgColor: '#fbf6f6',
+    accentColor: '#d09ca7',
+    theme: {
+      primaryColor: '#8e515d',
+      backgroundColor: '#fbf6f6',
+      fontFamily: 'DM Sans',
+    },
+    blocks: buildWeddingBlocks({
+      primaryColor: '#8e515d',
+      accentColor: '#d09ca7',
+      envelopeColor: '#6d3b45',
+      paperColor: '#fffcfc',
+      gateStyle: 'wax-seal',
+      coverLayout: 'classic',
+      coverPhoto: SAMPLE_PHOTOS.coverBlush,
+      displayFont: 'DM Serif Display',
+      overlayOpacity: 0.34,
+      ornamentStyle: 'dots',
+      quoteStyle: 'framed',
+      quoteText: '"Aku telah menemukan dia yang jiwaku cintai. Bersamanya, setiap detik adalah puisi dan setiap langkah adalah harmoni."',
+      quoteSource: 'Kidung Agung 3:4',
+      countdownStyle: 'outlined',
+      coupleLayout: 'staggered',
+      photoShape: 'rounded',
+      scheduleMode: 'timeline',
+      galleryMode: 'masonry',
+      subtitle: 'The Wedding Celebration Of',
+      coupleName: 'Kevin & Clarissa',
+      date: 'Minggu, 20 September 2026',
+      targetDate: '2026-09-20T10:00:00',
+      name1: 'Kevin Jonathan, B.Bus.',
+      name2: 'Clarissa Aurelia, B.Mus.',
+      title1: 'Putra Pertama dari Bpk. David Jonathan & Ibu Lilian Jonathan',
+      title2: 'Putri Bungsu dari Bpk. Stefanus Wijaya & Ibu Grace Wijaya',
+      coupleDescription: 'Tuhan membuat segala sesuatu indah pada waktunya. Dengan sukacita melimpah, kami mengundang Anda untuk hadir dalam hari pemberkatan suci kami.',
+      songTitle: 'Canon in D (Bridgerton Style String Quartet)',
+      events: [
+        {
+          name: 'Holy Matrimony & Blessing',
+          date: 'Minggu, 20 September 2026',
+          time: '10:00 - 12:00 WIB',
+          venue: 'The Glass Chapel, Pine Hill Lembang',
+          address: 'Jl. Maribaya Timur No. 1, Cibodas, Lembang, Kabupaten Bandung Barat',
+          mapUrl: 'https://maps.google.com/?q=Pine+Hill+Lembang+Bandung',
+        },
+        {
+          name: 'Twilight Garden Banquet',
+          date: 'Minggu, 20 September 2026',
+          time: '16:30 - 20:30 WIB',
+          venue: 'Le Pavillon Courtyard, Lembang',
+          address: 'Jl. Maribaya Timur No. 1, Cibodas, Lembang, Kabupaten Bandung Barat',
+          mapUrl: 'https://maps.google.com/?q=Pine+Hill+Lembang+Bandung',
+        },
+      ],
+      scheduleItems: [
+        { time: '10:00', title: 'Pemberkatan Nikah & Janji Suci', description: 'Ibadah pemberkatan nikah kudus dipimpin oleh Pendeta dan doa kedua keluarga.' },
+        { time: '11:30', title: 'Petal Toss & Foto Bersama', description: 'Pelepasan kelopak bunga mawar dan sesi dokumentasi keluarga besar.' },
+        { time: '16:30', title: 'Afternoon Tea & String Quartet', description: 'Jamuan teh sore santai diiringi lantunan kuartet gesek di taman terbuka.' },
+        { time: '18:00', title: 'Twilight Banquet & Sparkler Toast', description: 'Makan malam romantis bertabur lampu peri, pemotongan kue, dan toast kembang api.' },
+      ],
+      swatches: [
+        { label: 'Dusty Rose', color: '#8e515d' },
+        { label: 'Soft Peony', color: '#d09ca7' },
+        { label: 'Champagne Cream', color: '#f8f0ed' },
+      ],
+      dressCodeNote: 'Pastel Elegance: Dusty rose, blush pink, soft champagne, warm cream.',
+      storyItems: [
+        {
+          date: 'Bandung, 2021',
+          title: 'Konser Musik Kampus',
+          description: 'Kevin terpesona melihat permainan biola Clarissa di konser tahunan orkestra kampus.',
+          photo: SAMPLE_PHOTOS.gallery[1],
+        },
+        {
+          date: 'Kyoto, 2024',
+          title: 'Musim Sakura di Arashiyama',
+          description: 'Di bawah rimbunnya sakura musim semi, Kevin melamar dengan melodi lagu yang diciptakannya sendiri.',
+          photo: SAMPLE_PHOTOS.gallery[3],
+        },
+        {
+          date: 'Lembang, 2026',
+          title: 'Janji Seumur Hidup',
+          description: 'Hari ketika melodi dua hati bersatu dalam keindahan janji suci pernikahan.',
+          photo: SAMPLE_PHOTOS.gallery[0],
+        },
+      ],
+      accounts: [
+        { bankName: 'BCA', accountNumber: '7840192837', accountName: 'Kevin Jonathan' },
+        { bankName: 'CIMB Niaga', accountNumber: '706192837400', accountName: 'Clarissa Aurelia' },
+      ],
+      physicalRecipient: 'Kevin & Clarissa',
+      physicalPhone: '0813-8822-1920',
+      physicalAddress: 'Pine Hill Villa Residence No. 5, Jl. Maribaya, Lembang, Bandung Barat 40391',
+      thankYouTitle: 'Terima Kasih Atas Kasih & Doa Anda',
+      thankYouDesc: 'Kehadiran dan doa restu Bapak/Ibu/Saudara/i merupakan kado terindah yang mengiringi langkah awal kehidupan pernikahan kami.',
+      signature1: 'Kel. Bpk. David Jonathan & Ibu Lilian Jonathan',
+      signature2: 'Kel. Bpk. Stefanus Wijaya & Ibu Grace Wijaya',
+      coupleSignature: 'Kevin & Clarissa',
+    }),
   },
 
   birthday: {
     key: 'birthday',
-    label: 'Birthday',
+    label: 'Birthday Soirée',
     labelId: 'Birthday',
-    icon: '🎂',
-    description: 'Cheerful birthday invitation with cover, countdown, photo gallery, RSVP, and location info.',
-    color: '#C06C84',
+    icon: 'Bd',
+    description: 'Undangan perayaan ulang tahun atau private dinner dengan hitung mundur, galeri momen, dan RSVP.',
+    color: '#8c5368',
+    bgColor: '#faf6f7',
+    accentColor: '#d09ca7',
+    theme: {
+      primaryColor: '#8c5368',
+      backgroundColor: '#faf6f7',
+      fontFamily: 'Inter',
+    },
     blocks: [
+      {
+        type: 'envelopeAnimation',
+        data: {
+          ...(BLOCK_TYPES.envelopeAnimation?.defaults || {}),
+          gateStyle: 'wax-seal',
+          openButtonText: 'Buka Undangan',
+          envelopeColor: '#6e3d4f',
+          paperColor: '#fffafb',
+        },
+      },
       {
         type: 'cover',
         data: {
-          ...BLOCK_TYPES.cover.defaults,
-          subtitle: "You're Invited To",
-          coupleName: 'Birthday Party!',
-          date: 'Saturday, November 15, 2026',
+          ...(BLOCK_TYPES.cover?.defaults || {}),
+          backgroundImage: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1000&q=80',
+          subtitle: "You're Cordially Invited To",
+          coupleName: "Aurelia's 25th Soirée",
+          date: 'Sabtu, 21 November 2026',
+          coverLayout: 'arch',
           showGuestName: true,
-        }
+        },
       },
       {
         type: 'heading',
         data: {
-          ...BLOCK_TYPES.heading.defaults,
-          content: "🎉 Let's Celebrate!",
+          ...(BLOCK_TYPES.heading?.defaults || {}),
+          content: 'Mari Merayakan Bersama',
           fontSize: 30,
-          color: '#C06C84',
-        }
+          fontStyle: 'italic',
+          color: '#8c5368',
+        },
       },
       {
         type: 'paragraph',
         data: {
-          ...BLOCK_TYPES.paragraph.defaults,
-          content: 'With great happiness, we invite you to attend and celebrate this special day with us.',
+          ...(BLOCK_TYPES.paragraph?.defaults || {}),
+          content: 'Dengan penuh sukacita, kami mengundang Anda untuk hadir dalam jamuan makan malam dan perayaan ulang tahun yang hangat.',
           fontSize: 15,
-        }
-      },
-      {
-        type: 'photo',
-        data: {
-          ...BLOCK_TYPES.photo.defaults,
-          caption: 'Birthday Star ⭐',
-        }
+        },
       },
       {
         type: 'countdown',
         data: {
-          ...BLOCK_TYPES.countdown.defaults,
-          label: 'Counting down to the party!',
+          ...(BLOCK_TYPES.countdown?.defaults || {}),
+          targetDate: '2026-11-21T19:00:00',
+          label: 'Menuju Malam Perayaan',
           style: 'boxed',
-        }
+        },
       },
       {
         type: 'location',
         data: {
-          ...BLOCK_TYPES.location.defaults,
+          ...(BLOCK_TYPES.location?.defaults || {}),
           events: [
-            { name: 'Birthday Party', date: 'November 15, 2026', time: '4:00 PM', venue: 'Venue Name', address: 'Complete address', mapUrl: '' }
+            {
+              name: 'Birthday Dinner Party',
+              date: 'Sabtu, 21 November 2026',
+              time: '19:00 - 22:00 WIB',
+              venue: 'Botanica Dining Jakarta',
+              address: 'Jl. Jenderal Sudirman Kav. 52-53, SCBD, Jakarta Selatan',
+              mapUrl: 'https://maps.google.com/?q=SCBD+Jakarta',
+            },
           ],
-        }
-      },
-      {
-        type: 'gallery',
-        data: {
-          ...BLOCK_TYPES.gallery.defaults,
-          columns: 3,
-          layoutMode: 'grid',
-        }
+        },
       },
       {
         type: 'rsvp',
         data: {
-          ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Attendance Confirmation',
-        }
+          ...(BLOCK_TYPES.rsvp?.defaults || {}),
+          title: 'Konfirmasi Kehadiran',
+          showSessionChoice: false,
+        },
       },
       {
         type: 'wishes',
         data: {
-          ...BLOCK_TYPES.wishes.defaults,
-          title: 'Birthday Wishes 🎁',
-        }
+          ...(BLOCK_TYPES.wishes?.defaults || {}),
+          title: 'Ucapan & Harapan',
+        },
       },
       {
         type: 'footer',
         data: {
-          ...BLOCK_TYPES.footer.defaults,
-          thankYouText: 'Thank You',
-          coupleName: 'See You There!',
-          subtitle: 'Your presence is the best gift',
-        }
+          ...(BLOCK_TYPES.footer?.defaults || {}),
+          thankYouText: 'Terima Kasih',
+          coupleName: 'Aurelia',
+          subtitle: 'Kehadiran Anda adalah hadiah terbaik',
+        },
       },
-    ]
+    ],
   },
 
   aqiqah: {
     key: 'aqiqah',
-    label: 'Newborn / Aqiqah',
+    label: 'Tasyakuran Aqiqah',
     labelId: 'Aqiqah / Newborn',
-    icon: '👶',
-    description: 'Aqiqah or newborn celebration invitation with photos, countdown, and event details.',
-    color: '#6B9080',
+    icon: 'Aq',
+    description: 'Undangan tasyakuran kelahiran dan aqiqah buah hati dengan doa, profil bayi, lokasi acara, dan ucapan.',
+    color: '#4a6b5d',
+    bgColor: '#f3f7f5',
+    accentColor: '#9ab5a7',
+    theme: {
+      primaryColor: '#4a6b5d',
+      backgroundColor: '#f3f7f5',
+      fontFamily: 'Inter',
+    },
     blocks: [
+      {
+        type: 'envelopeAnimation',
+        data: {
+          ...(BLOCK_TYPES.envelopeAnimation?.defaults || {}),
+          gateStyle: 'arch-gate',
+          openButtonText: 'Buka Undangan',
+          envelopeColor: '#365246',
+          paperColor: '#f9fcfa',
+        },
+      },
       {
         type: 'cover',
         data: {
-          ...BLOCK_TYPES.cover.defaults,
-          subtitle: 'Welcoming the Birth',
-          coupleName: 'Baby Name',
-          date: 'Saturday, December 20, 2026',
+          ...(BLOCK_TYPES.cover?.defaults || {}),
+          backgroundImage: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1000&q=80',
+          subtitle: 'Tasyakuran Aqiqah & Kelahiran',
+          coupleName: 'Malik Ibrahim',
+          date: 'Minggu, 20 Desember 2026',
+          coverLayout: 'arch',
           showGuestName: true,
-        }
+        },
       },
       {
         type: 'heading',
         data: {
-          ...BLOCK_TYPES.heading.defaults,
+          ...(BLOCK_TYPES.heading?.defaults || {}),
           content: '﷽',
           fontSize: 28,
-          color: '#6B9080',
-        }
+          color: '#4a6b5d',
+        },
       },
       {
         type: 'quote',
         data: {
-          ...BLOCK_TYPES.quote.defaults,
-          text: '"With gratitude to Allah SWT, we are blessed with a child."',
-          source: '',
-          style: 'minimal',
-          color: '#6B9080',
-        }
-      },
-      {
-        type: 'photoFrame',
-        data: {
-          ...BLOCK_TYPES.photoFrame.defaults,
-          caption: 'Our Little One 💕',
-          frameStyle: 'polaroid',
-        }
-      },
-      {
-        type: 'paragraph',
-        data: {
-          ...BLOCK_TYPES.paragraph.defaults,
-          content: 'Born on ...\nWeight: ... kg | Length: ... cm',
-          fontSize: 14,
-        }
+          ...(BLOCK_TYPES.quote?.defaults || {}),
+          text: '"Alhamdulillah, telah lahir buah hati kami dengan selamat. Semoga menjadi anak yang shalih, berbakti kepada orang tua, dan bermanfaat bagi sesama."',
+          source: 'Doa Kelahiran Buah Hati',
+          style: 'framed',
+          color: '#4a6b5d',
+        },
       },
       {
         type: 'countdown',
         data: {
-          ...BLOCK_TYPES.countdown.defaults,
-          label: 'Days until event',
+          ...(BLOCK_TYPES.countdown?.defaults || {}),
+          targetDate: '2026-12-20T09:00:00',
+          label: 'Menuju Hari Tasyakuran',
           style: 'boxed',
-        }
+        },
       },
       {
         type: 'location',
         data: {
-          ...BLOCK_TYPES.location.defaults,
+          ...(BLOCK_TYPES.location?.defaults || {}),
           events: [
-            { name: 'Aqiqah Ceremony', date: 'December 20, 2026', time: '9:00 AM', venue: 'Home / Venue', address: 'Complete event address', mapUrl: '' }
+            {
+              name: 'Tasyakuran & Doa Bersama',
+              date: 'Minggu, 20 Desember 2026',
+              time: '09:00 - 12:00 WIB',
+              venue: 'Kediaman Keluarga',
+              address: 'Jl. Taman Cilandak No. 8, Jakarta Selatan',
+              mapUrl: 'https://maps.google.com/?q=Cilandak+Jakarta',
+            },
           ],
-        }
-      },
-      {
-        type: 'gallery',
-        data: {
-          ...BLOCK_TYPES.gallery.defaults,
-          columns: 2,
-          layoutMode: 'masonry',
-        }
+        },
       },
       {
         type: 'rsvp',
         data: {
-          ...BLOCK_TYPES.rsvp.defaults,
-          title: 'Attendance Confirmation',
-        }
-      },
-      {
-        type: 'gift',
-        data: {
-          ...BLOCK_TYPES.gift.defaults,
-          title: 'Gift for the Little One 🎁',
-          accounts: [],
-        }
+          ...(BLOCK_TYPES.rsvp?.defaults || {}),
+          title: 'Konfirmasi Kehadiran',
+          showSessionChoice: false,
+        },
       },
       {
         type: 'wishes',
         data: {
-          ...BLOCK_TYPES.wishes.defaults,
-          title: "Prayers & Wishes 🤲",
-        }
+          ...(BLOCK_TYPES.wishes?.defaults || {}),
+          title: 'Doa & Harapan untuk Buah Hati',
+        },
       },
       {
         type: 'footer',
         data: {
-          ...BLOCK_TYPES.footer.defaults,
-          thankYouText: 'Thank You',
-          coupleName: 'Big Family',
-          subtitle: 'For your prayers and presence',
-        }
+          ...(BLOCK_TYPES.footer?.defaults || {}),
+          thankYouText: 'Terima Kasih',
+          coupleName: 'Kel. Bpk. Farhan & Ibu Nadia',
+          subtitle: 'Atas doa restu dan kehadiran Anda',
+        },
       },
-    ]
+    ],
   },
 
   custom: {
     key: 'custom',
-    label: 'Custom',
+    label: 'Kanvas Kosong (Custom)',
     labelId: 'Empty',
-    icon: '✨',
-    description: 'Start from an empty canvas. Choose and arrange blocks as you wish.',
-    color: '#8A8A8A',
-    blocks: []
-  }
+    icon: 'Cu',
+    description: 'Mulai dari kanvas bersih dan susun blok undangan sesuai imajinasi Anda sendiri.',
+    color: '#6b655e',
+    bgColor: '#f4efea',
+    accentColor: '#c4a882',
+    theme: {
+      primaryColor: '#344c2d',
+      backgroundColor: '#f4efea',
+      fontFamily: 'Inter',
+    },
+    blocks: [],
+  },
 }
 
 export const PRESET_LIST = Object.values(PRESETS)

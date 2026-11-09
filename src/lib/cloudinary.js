@@ -9,6 +9,16 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
  */
 export function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
+    if (!file) {
+      return reject(new Error('Berkas tidak ditemukan.'))
+    }
+
+    // Maximum 25MB file size limit
+    const MAX_SIZE = 25 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      return reject(new Error('Ukuran file melebihi batas maksimal 25MB.'))
+    }
+
     const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`
     const formData = new FormData()
     formData.append('file', file)

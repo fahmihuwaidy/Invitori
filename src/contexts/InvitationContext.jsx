@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { nanoid } from 'nanoid'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
@@ -11,6 +11,8 @@ export function InvitationProvider({ children }) {
   const [invitations, setInvitations] = useState([])
   const [recentRsvps, setRecentRsvps] = useState([])
   const [loading, setLoading] = useState(true)
+  // Ids deleted this session: a refetch already in flight must not bring them back
+  const deletedIdsRef = useRef(new Set())
 
   // Fetch all invitations for the current user
   const fetchInvitations = useCallback(async (isSilent = false) => {
@@ -25,7 +27,7 @@ export function InvitationProvider({ children }) {
     }
     try {
       // Fetch invitations
-      const { data: invData, error: invError } = await supabase
+      let { data: invData, error: invError } = await supabase
         .from('invitations')
         .select('*')
         .eq('user_id', user.id)
@@ -34,6 +36,7 @@ export function InvitationProvider({ children }) {
       if (invError) throw invError
 
       // Fetch blocks for all invitations
+      invData = invData.filter(i => !deletedIdsRef.current.has(i.id))
       const invIds = invData.map(i => i.id)
       let blocksMap = {}
       if (invIds.length > 0) {
@@ -132,19 +135,31 @@ export function InvitationProvider({ children }) {
 
   // --- CRUD Operations ---
 
-  const addInvitation = async ({ title, category }) => {
+  const addInvitation = async ({ title, category, theme }) => {
     if (!user) return null
 
-    const slug = (title || 'untitled').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + nanoid(4)
+    const cleanTitle = (title || 'untitled')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'invitation'
+    const slug = `${cleanTitle}-${Date.now().toString(36)}-${nanoid(6)}`
+
+    const insertPayload = {
+      user_id: user.id,
+      title: title || 'Untitled Invitation',
+      slug,
+      category: category || 'Wedding',
+    }
+    if (theme?.primaryColor) insertPayload.primary_color = theme.primaryColor
+    if (theme?.backgroundColor) insertPayload.background_color = theme.backgroundColor
+    if (theme?.fontFamily) insertPayload.font_family = theme.fontFamily
 
     const { data, error } = await supabase
       .from('invitations')
-      .insert({
-        user_id: user.id,
-        title: title || 'Untitled Invitation',
-        slug,
-        category: category || 'Wedding',
-      })
+      .insert(insertPayload)
       .select()
       .single()
 
@@ -161,9 +176,9 @@ export function InvitationProvider({ children }) {
       guestCount: data.guest_count,
       status: data.status,
       theme: {
-        primaryColor: data.primary_color,
-        backgroundColor: data.background_color,
-        fontFamily: data.font_family,
+        primaryColor: data.primary_color || theme?.primaryColor || '#344c2d',
+        backgroundColor: data.background_color || theme?.backgroundColor || '#f4efea',
+        fontFamily: data.font_family || theme?.fontFamily || 'Inter',
       },
       blocks: [],
       analytics: { totalViews: 0, rsvpCount: 0 },
@@ -221,19 +236,44 @@ export function InvitationProvider({ children }) {
   }
 
   const deleteInvitation = async (id) => {
-    const { error } = await supabase
-      .from('invitations')
-      .delete()
-      .eq('id', id)
+    if (!id) return false
+    
+    // Optimistic removal: add to deleted ref and filter local state immediately
+    // so the dashboard/editor never flickers or re-selects the deleted item
+    deletedIdsRef.current.add(id)
+    setInvitations(prev => prev.filter(inv => inv.id !== id))
 
-    if (error) {
-      console.error('Error deleting invitation:', error)
-      alert('Gagal menghapus undangan: ' + error.message)
+    try {
+      // 1. Explicitly clean child rows to guarantee FK constraints never block deletion
+      await Promise.allSettled([
+        supabase.from('blocks').delete().eq('invitation_id', id),
+        supabase.from('rsvps').delete().eq('invitation_id', id),
+        supabase.from('guests').delete().eq('invitation_id', id),
+      ])
+
+      // 2. Delete the invitation itself
+      const { error } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error deleting invitation from DB:', error)
+        // Rollback optimistic delete on actual DB failure
+        deletedIdsRef.current.delete(id)
+        await fetchInvitations(true)
+        alert('Gagal menghapus undangan: ' + error.message)
+        return false
+      }
+
+      return true
+    } catch (err) {
+      console.error('Critical error in deleteInvitation:', err)
+      deletedIdsRef.current.delete(id)
+      await fetchInvitations(true)
+      alert('Terjadi kesalahan saat menghapus undangan: ' + (err.message || err))
       return false
     }
-
-    setInvitations(prev => prev.filter(inv => inv.id !== id))
-    return true
   }
 
   // --- Block Operations ---
@@ -292,52 +332,45 @@ export function InvitationProvider({ children }) {
     return newBlock
   }
 
-  const addBlocks = async (invId, blocksArray) => {
-    console.log('[DEBUG] addBlocks called with:', invId, blocksArray)
-    const inv = invitations.find(i => i.id === invId)
-    const baseOrder = inv ? inv.blocks.length : 0
+  const addBlocks = async (invId, blocksArray, explicitBaseOrder) => {
+    let baseOrder = explicitBaseOrder
+    if (baseOrder === undefined) {
+      const inv = invitations.find(i => i.id === invId)
+      baseOrder = inv?.blocks ? inv.blocks.length : 0
+    }
 
-    console.log('[DEBUG] Inserting blocks in parallel...')
-    
+    const blocksToInsert = blocksArray.map((b, index) => ({
+      invitation_id: invId,
+      type: b.type,
+      data: b.data,
+      sort_order: baseOrder + index,
+    }))
+
     try {
-      const insertPromises = blocksArray.map((b, index) => 
-        supabase
-          .from('blocks')
-          .insert({
-            invitation_id: invId,
-            type: b.type,
-            data: b.data,
-            sort_order: baseOrder + index
-          })
-          .select()
-          .single()
-      )
+      const { data, error } = await supabase
+        .from('blocks')
+        .insert(blocksToInsert)
+        .select()
 
-      const results = await Promise.all(insertPromises)
-      
-      const failed = results.filter(r => r.error)
-      if (failed.length > 0) {
-        console.error('[DEBUG] Failed to insert some blocks:', failed.map(f => f.error))
+      if (error || !data) {
+        console.error('Error adding bulk blocks:', error)
         return null
       }
 
-      const insertedData = results.map(r => r.data)
-      console.log('[DEBUG] Successfully inserted blocks:', insertedData)
-
-      const newBlocksSorted = insertedData.sort((a, b) => a.sort_order - b.sort_order).map(d => ({
-        id: d.id,
-        type: d.type,
-        data: d.data,
-        sortOrder: d.sort_order
-      }))
+      const newBlocksSorted = data
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(d => ({
+          id: d.id,
+          type: d.type,
+          data: typeof d.data === 'string' ? JSON.parse(d.data) : d.data,
+          sortOrder: d.sort_order,
+        }))
 
       setInvitations(prev =>
         prev.map(item => {
           if (item.id !== invId) return item
-          // Merging and ensuring absolute correct order
           const combined = [...item.blocks, ...newBlocksSorted]
           const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
-          
           return {
             ...item,
             blocks: finalBlocks,
@@ -348,7 +381,7 @@ export function InvitationProvider({ children }) {
 
       return newBlocksSorted
     } catch (err) {
-      console.error('[DEBUG] Exception in addBlocks:', err)
+      console.error('Exception in addBlocks:', err)
       return null
     }
   }
@@ -468,7 +501,7 @@ export function InvitationProvider({ children }) {
 
     const { data: rsvpData } = await supabase
       .from('rsvps')
-      .select('name, message, sent_at')
+      .select('name, message, attendance, sent_at')
       .eq('invitation_id', inv.id)
       .not('message', 'is', null)
       .order('sent_at', { ascending: false })
@@ -505,6 +538,7 @@ export function InvitationProvider({ children }) {
       wishes: (rsvpData || []).filter(r => r.message?.trim().length > 0).map(r => ({
         author: r.name,
         content: r.message,
+        attendance: r.attendance,
         date: r.sent_at,
       })),
       analytics: { totalViews: inv.total_views },
@@ -524,6 +558,7 @@ export function InvitationProvider({ children }) {
         name: rsvpData.name,
         email: rsvpData.email,
         attendance: rsvpData.attendance,
+        guest_count: rsvpData.guestCount || 1,
         message: rsvpData.message || null,
       })
 

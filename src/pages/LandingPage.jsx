@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { HiMenu, HiX } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
+import heroImg from '../assets/hero.png'
 import './LandingPage.css'
 
 export default function LandingPage() {
@@ -51,18 +52,23 @@ export default function LandingPage() {
           {/* Desktop Right Button */}
           <Link to="/contact" className="nav-btn" style={{textDecoration: 'none'}}>Inquire</Link>
 
-          <button className="nav-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+          <button className="nav-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation menu">
             {menuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
           </button>
         </div>
-      </nav>
 
-      {/* ===== Mobile Navigation Menu ===== */}
-      <div className={`nav-links ${menuOpen ? 'open' : ''}`} style={{display: 'none'}}>
-        {/* Actually, I will use a simple inline style to handle the mobile menu display if needed, 
-            but for now the existing CSS media queries handle `.nav-links.open` if we had them. 
-            Since we re-wrote the CSS, let's keep it clean. */}
-      </div>
+        {/* Mobile Navigation Menu Drawer */}
+        {menuOpen && (
+          <div className="nav-mobile-drawer animate-fade-in">
+            <a href="#collections" onClick={(e) => scrollToSection(e, 'collections')}>Collections</a>
+            <a href="#bespoke" onClick={(e) => scrollToSection(e, 'bespoke')}>Bespoke</a>
+            <a href="#process" onClick={(e) => scrollToSection(e, 'process')}>Process</a>
+            <a href="#journal" onClick={(e) => scrollToSection(e, 'journal')}>Journal</a>
+            <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
+            <Link to="/contact" className="nav-btn-mobile" onClick={() => setMenuOpen(false)}>Inquire Now</Link>
+          </div>
+        )}
+      </nav>
 
       {/* ===== Hero Section ===== */}
       <section className="hero">
@@ -78,12 +84,12 @@ export default function LandingPage() {
           <div className="hero-actions">
             <Link to="/contact" className="btn-solid" style={{textDecoration: 'none'}}>Begin Your Story</Link>
             <a href="#collections" className="btn-text" style={{textDecoration: 'none'}} onClick={(e) => scrollToSection(e, 'collections')}>
-              The Collection &rarr;
+              The Collection
             </a>
           </div>
         </div>
         <div className="hero-image-wrapper">
-          {/* Defined in CSS Placeholder */}
+          <img src={heroImg} alt="Invori Artisanal Invitation Preview" className="hero-img-showcase" />
         </div>
       </section>
 
@@ -132,7 +138,7 @@ export default function LandingPage() {
 
       {/* ===== Curated Themes Grid ===== */}
       <section id="collections" className="themes-section">
-        <span className="small-caps" style={{color: 'var(--pink-dusty)'}}>The Gallery</span>
+        <span className="small-caps" style={{color: 'var(--olive)'}}>The Gallery</span>
         <div className="themes-header">
           <h2 className="themes-title serif">Curated Themes</h2>
           <a href="#collections" className="small-caps" style={{letterSpacing: '0.1em', textDecoration: 'none', color: 'var(--text-muted)'}}>Explore All</a>
@@ -154,18 +160,18 @@ export default function LandingPage() {
       {/* ===== Whitespace Design Note ===== */}
       <section id="bespoke" className="note-section">
         <div className="note-box">
-          <span className="small-caps" style={{color: 'var(--pink-dusty)'}}>A Note on Fit</span>
+          <span className="small-caps" style={{color: 'var(--olive)'}}>A Note on Fit</span>
           <h2 className="note-title">Whitespace is the most <em>luxurious</em> material in digital design.</h2>
           <p className="body-text" style={{maxWidth: 400}}>
             "Just as high-quality cotton paper provides weight and presence, intentional spacing allows your message to breathe. Do not fear the empty space; it is where the anticipation lives."
           </p>
-          <p className="note-author">— Juliana Thorne, Lead Creator</p>
+          <p className="note-author">, Juliana Thorne, Studio Director</p>
         </div>
         
         <div className="note-floating-card">
            <span className="nfc-badge">✿</span>
            <h3 className="nfc-title serif-italic">The Secret Garden</h3>
-           <span className="small-caps" style={{fontSize: 8}}>Invori Fine Digital Invitations</span>
+           <span className="small-caps" style={{fontSize: 9}}>Invori Fine Digital Invitations</span>
         </div>
       </section>
 
@@ -175,13 +181,13 @@ export default function LandingPage() {
           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
         </svg>
         <p className="test-text">
-          "From the moment our guests clicked the link, they knew they were part of something extraordinary. It <strong>wasn't just</strong> an invite; it <strong>was</strong> the first chapter of our wedding day."
+          "From the moment our guests clicked the link, they knew they were part of something extraordinary. It was not merely an invite; it was the first chapter of our celebration."
         </p>
         <div className="test-author">
-           <div className="ta-avatar"></div>
+           <div className="ta-avatar" style={{ background: 'var(--olive-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 600 }}>✦</div>
            <div className="ta-info">
-             <span className="ta-name">Eleanor Vance</span>
-             <span className="ta-title">Florence Summer Society</span>
+             <span className="ta-name">Invori Atelier</span>
+             <span className="ta-title">Bespoke Digital Stationery</span>
            </div>
         </div>
       </section>
@@ -189,10 +195,10 @@ export default function LandingPage() {
       {/* ===== Full-Width CTA ===== */}
       <section className="cta-block">
         <h2 className="serif-italic">Ready to craft your<br />moment in history?</h2>
-        <Link to="/contact">
-          <button className="btn-white">Begin Your Story</button>
+        <Link to="/contact" className="btn-white" style={{ textDecoration: 'none' }}>
+          Begin Your Story
         </Link>
-        <span className="cta-sub">NO CREDIT CARD REQUIRED. PERSONAL CURATION AWAITS.</span>
+        <span className="cta-sub">PERSONAL CURATION AND DIGITAL FINERY AWAIT.</span>
       </section>
 
       {/* ===== Minimalist Footer ===== */}
@@ -207,23 +213,22 @@ export default function LandingPage() {
         <div className="f-col-2">
           <div>
             <span className="f-label">Legal</span>
-            <a href="#" className="f-link">Privacy Policy</a>
-            <a href="#" className="f-link">Terms of Service</a>
+            <Link to="/contact" className="f-link">Privacy Policy</Link>
+            <Link to="/contact" className="f-link">Terms of Service</Link>
           </div>
           <div>
             <span className="f-label">Connect</span>
-            <a href="#" className="f-link">Instagram</a>
-            <a href="#" className="f-link">Pinterest</a>
+            <a href="https://instagram.com/invori_studio" target="_blank" rel="noreferrer" className="f-link">Instagram</a>
+            <Link to="/contact" className="f-link">Inquire</Link>
           </div>
         </div>
         
         <div className="f-col-3">
-          <span className="f-link" style={{fontSize: 10, letterSpacing: '0.1em'}}>© 2026 THE INVORI STUDIO.</span>
+          <span className="f-link" style={{fontSize: 11, letterSpacing: '0.08em'}}>© 2026 THE INVORI STUDIO.</span>
           <div className="f-socials">
-            {/* simple symbols instead of complex react icons for elegance */}
-            <span style={{cursor: 'pointer'}}>❖</span>
-            <span style={{cursor: 'pointer'}}>❀</span>
-            <span style={{cursor: 'pointer'}}>✑</span>
+            <span>❖</span>
+            <span>❀</span>
+            <span>✑</span>
           </div>
         </div>
       </footer>

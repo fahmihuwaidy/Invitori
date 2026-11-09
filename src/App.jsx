@@ -8,7 +8,6 @@ import EditorPage from './pages/EditorPage'
 import PublicInvitationPage from './pages/PublicInvitationPage'
 import AtelierLayout from './layouts/AtelierLayout'
 import ContactPage from './pages/ContactPage'
-import ComingSoon from './components/ComingSoon'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -20,7 +19,6 @@ function ProtectedRoute({ children }) {
     )
   }
   if (!user) return <Navigate to="/login" replace />
-  if (user.email !== 'fahmihuwaidy8@gmail.com') return <Navigate to="/" replace />
   return children
 }
 
@@ -30,7 +28,7 @@ function App() {
       <AuthProvider>
         <InvitationProvider>
           <Routes>
-            <Route path="/" element={<ComingSoon><LandingPage /></ComingSoon>} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/undangan/:slug" element={<PublicInvitationPage />} />

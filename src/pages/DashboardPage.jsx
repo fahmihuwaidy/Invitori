@@ -3,115 +3,122 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvitations } from '../contexts/InvitationContext'
-import { PRESET_LIST } from '../utils/presets'
+import { PRESET_LIST, PRESETS } from '../utils/presets'
+
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX, HiX, HiSelector, HiOutlineLink, HiOutlineDocumentDuplicate, HiOutlineCog } from 'react-icons/hi'
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX, HiX, HiSelector, HiOutlineLink, HiOutlineDocumentDuplicate, HiOutlineCog, HiOutlineHeart, HiOutlineViewGrid, HiOutlineChatAlt2 } from 'react-icons/hi'
 import './DashboardPage.css'
 
+const WA_TEMPLATES = {
+  formal: {
+    label: 'Formal & Elegan',
+    text: `Kepada Yth. *{nama}*,\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan memberikan doa restu pada acara pernikahan kami:\n\n*{judul}*\n\nInformasi lengkap mengenai waktu, lokasi, dan konfirmasi kehadiran dapat diakses melalui tautan undangan digital berikut:\n{link}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir.\n\nKami yang berbahagia,\n*{judul}*`,
+  },
+  islami: {
+    label: 'Islami (Syar\'i)',
+    text: `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nKepada Yth. *{nama}*,\n\nDengan memohon rahmat dan ridho Allah SWT, kami bermaksud mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara syukuran pernikahan kami:\n\n*{judul}*\n\nDetail acara dan konfirmasi kehadiran dapat dibuka melalui tautan berikut:\n{link}\n\nKehadiran serta doa restu Bapak/Ibu/Saudara/i merupakan hadiah terindah bagi kami.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.`,
+  },
+  santai: {
+    label: 'Hangat & Santai',
+    text: `Halo *{nama}*! ✨\n\nKami punya kabar bahagia dan ingin mengundangmu untuk hadir di hari spesial kami:\n\n*{judul}*\n\nCek detail acara, lokasi, dan isi RSVP kamu lewat link undangan khusus ini ya:\n{link}\n\nSampai bertemu di hari bahagia kami! 🤍`,
+  },
+  english: {
+    label: 'Modern English',
+    text: `Dear *{nama}*,\n\nTogether with our families, we joyfully invite you to celebrate our wedding:\n\n*{judul}*\n\nKindly view your personal digital invitation and confirm your attendance via the link below:\n{link}\n\nWe look forward to celebrating this special day with you.`,
+  },
+}
 
-
-/* ---- Preset Selection Modal ---- */
-function PresetModal({ onClose, onSelect }) {
-  const [step, setStep] = useState('choose') // 'choose' or 'title'
-  const [selectedPreset, setSelectedPreset] = useState(null)
+/* ---- Create New Invitation Modal with Curated Preset Gallery ---- */
+function CreateInvitationModal({ onClose, onSelect }) {
   const [title, setTitle] = useState('')
+  const [selectedPreset, setSelectedPreset] = useState('wedding')
   const [isCreating, setIsCreating] = useState(false)
-
-  const handlePresetClick = (preset) => {
-    setSelectedPreset(preset)
-    setTitle(preset.key === 'wedding' ? 'Wedding Invitation' : preset.key === 'birthday' ? 'Birthday Invitation' : preset.key === 'aqiqah' ? 'Aqiqah Invitation' : 'My Invitation')
-    setStep('title')
-  }
 
   const handleCreate = async () => {
     if (!title.trim() || isCreating) return
     setIsCreating(true)
     try {
-      await onSelect(selectedPreset.key, title.trim())
+      await onSelect(title.trim(), selectedPreset)
     } catch (err) {
       console.error(err)
-      alert('Failed to create invitation. Please try again.')
+      alert('Gagal membuat undangan. Silakan coba lagi.')
       setIsCreating(false)
     }
   }
 
   return (
     <div className="preset-modal-overlay" onClick={isCreating ? null : onClose}>
-      <div className="preset-modal" onClick={e => e.stopPropagation()}>
+      <div className="preset-modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
         {!isCreating && <button className="preset-modal-close" onClick={onClose}><HiX size={20} /></button>}
 
-        {step === 'choose' ? (
-          <>
-            <div className="preset-modal-header">
-              <h2 className="serif-italic">Choose Template</h2>
-              <p>Select an invitation category to start with a matching template.</p>
-            </div>
-            <div className="preset-grid">
-              {PRESET_LIST.map(preset => (
+        <div className="preset-modal-header" style={{ marginBottom: 16 }}>
+          <h2 className="serif-italic" style={{ fontSize: '1.6rem' }}>Buat Undangan Baru</h2>
+          <p>Pilih tema desain kurasi kami dan beri judul undangan Anda.</p>
+        </div>
+
+        <div className="preset-title-form" style={{ marginTop: 8 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--olive)', display: 'block', marginBottom: 6 }}>
+            Judul Undangan / Nama Mempelai
+          </label>
+          <input
+            type="text"
+            className="preset-title-input"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleCreate()}
+            placeholder="Contoh: Aris & Laras"
+            autoFocus
+            disabled={isCreating}
+            style={{ marginBottom: 18 }}
+          />
+
+          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--olive)', display: 'block', marginBottom: 10 }}>
+            Pilih Tema Desain ({PRESET_LIST.length} Pilihan)
+          </label>
+          <div className="preset-cards-grid">
+            {PRESET_LIST.map(preset => {
+              const isSelected = selectedPreset === preset.key
+              return (
                 <button
+                  type="button"
                   key={preset.key}
-                  className="preset-card"
-                  onClick={() => handlePresetClick(preset)}
-                  style={{ '--preset-color': preset.color }}
+                  onClick={() => setSelectedPreset(preset.key)}
+                  disabled={isCreating}
+                  className={`preset-choice-card ${isSelected ? 'selected' : ''}`}
                 >
-                  <div className="preset-card-icon">{preset.icon}</div>
-                  <div className="preset-card-body">
-                    <h3>{preset.label}</h3>
-                    <span className="preset-card-label-id">{preset.labelId}</span>
-                    <p>{preset.description}</p>
+                  <div className="preset-choice-top">
+                    <span className="preset-choice-icon">{preset.icon}</span>
+                    <div className="preset-choice-swatches">
+                      <span style={{ background: preset.theme?.primaryColor || '#3D4828' }} />
+                      <span style={{ background: preset.theme?.backgroundColor || '#FAF7F2' }} />
+                    </div>
                   </div>
-                  <div className="preset-card-blocks">
-                    {preset.blocks.length > 0 ? (
-                      <span>{preset.blocks.length} blocks</span>
-                    ) : (
-                      <span>Empty canvas</span>
-                    )}
-                  </div>
-                  <div className="preset-card-arrow">→</div>
+                  <div className="preset-choice-title">{preset.label}</div>
+                  {preset.badge && <span className="preset-choice-badge">{preset.badge}</span>}
+                  <p className="preset-choice-desc">{preset.description}</p>
                 </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="preset-modal-header">
-              {!isCreating && <button className="preset-back-btn" onClick={() => setStep('choose')}>← Back</button>}
-              <div className="preset-chosen-badge" style={{ background: `${selectedPreset.color}15`, color: selectedPreset.color }}>
-                <span>{selectedPreset.icon}</span> {selectedPreset.label}
-              </div>
-              <h2 className="serif-italic" style={{ marginTop: 12 }}>Name Your Invitation</h2>
-              <p>Enter a title for your invitation. You can change this later.</p>
-            </div>
-            <div className="preset-title-form">
-              <input
-                type="text"
-                className="preset-title-input"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                placeholder="e.g.: Oliver & Sophia's Wedding"
-                autoFocus
-                disabled={isCreating}
-              />
-              <button
-                className="btn btn-primary btn-full preset-create-btn"
-                onClick={handleCreate}
-                disabled={!title.trim() || isCreating}
-              >
-                {isCreating ? (
-                  <>
-                    <div className="spinner-sm" style={{ marginRight: 8 }}></div>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <HiOutlinePlus size={16} /> Create Invitation
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
+              )
+            })}
+          </div>
+
+          <button
+            className="btn btn-primary btn-full preset-create-btn"
+            onClick={handleCreate}
+            disabled={!title.trim() || isCreating}
+            style={{ marginTop: 20 }}
+          >
+            {isCreating ? (
+              <>
+                <div className="spinner-sm" style={{ marginRight: 8 }}></div>
+                Menyiapkan Tema & Blok...
+              </>
+            ) : (
+              <>
+                <HiOutlinePlus size={16} /> Buat Undangan dengan Tema "{PRESETS[selectedPreset]?.label}"
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -122,6 +129,43 @@ function GuestListTab({ invitation, guests, setGuests, loading }) {
   const [newPhone, setNewPhone] = useState('')
   const [adding, setAdding] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+  const [copiedMsgId, setCopiedMsgId] = useState(null)
+  const [waTemplateKey, setWaTemplateKey] = useState('formal')
+  const [customWaText, setCustomWaText] = useState(WA_TEMPLATES.formal.text)
+  const [sentMap, setSentMap] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`invori_wa_sent_${invitation?.id}`) || '{}')
+    } catch {
+      return {}
+    }
+  })
+
+  useEffect(() => {
+    try {
+      setSentMap(JSON.parse(localStorage.getItem(`invori_wa_sent_${invitation?.id}`) || '{}'))
+    } catch {
+      setSentMap({})
+    }
+  }, [invitation?.id])
+
+  const toggleSentStatus = (guestId, forceTrue = false) => {
+    setSentMap(prev => {
+      const next = { ...prev, [guestId]: forceTrue ? true : !prev[guestId] }
+      try {
+        localStorage.setItem(`invori_wa_sent_${invitation?.id}`, JSON.stringify(next))
+      } catch {
+        // Ignore storage errors
+      }
+      return next
+    })
+  }
+
+  const handleSelectWaTemplate = (key) => {
+    setWaTemplateKey(key)
+    if (WA_TEMPLATES[key]) {
+      setCustomWaText(WA_TEMPLATES[key].text)
+    }
+  }
   
   // Google Spreadsheet Import states
   const [addMethod, setAddMethod] = useState('manual') // 'manual' or 'sheet'
@@ -284,22 +328,51 @@ function GuestListTab({ invitation, guests, setGuests, loading }) {
 
   const getLink = (name) => `${baseUrl}?to=${encodeURIComponent(name)}`
 
+  const buildWaMessage = (guest) => {
+    const link = getLink(guest.name)
+    const invTitle = invitation?.title || 'Pernikahan Kami'
+    return (customWaText || WA_TEMPLATES.formal.text)
+      .replace(/\{nama\}/g, guest.name)
+      .replace(/\{link\}/g, link)
+      .replace(/\{judul\}/g, invTitle)
+  }
+
   const copyLink = (guest) => {
     navigator.clipboard.writeText(getLink(guest.name))
     setCopiedId(guest.id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  const copyMessage = (guest) => {
+    navigator.clipboard.writeText(buildWaMessage(guest))
+    setCopiedMsgId(guest.id)
+    toggleSentStatus(guest.id, true)
+    setTimeout(() => setCopiedMsgId(null), 2000)
+  }
+
+  const sendWhatsApp = (guest) => {
+    const msg = encodeURIComponent(buildWaMessage(guest))
+    let cleanPhone = (guest.phone || '').replace(/[^0-9]/g, '')
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '62' + cleanPhone.slice(1)
+    }
+    const waUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${msg}`
+      : `https://api.whatsapp.com/send?text=${msg}`
+    toggleSentStatus(guest.id, true)
+    window.open(waUrl, '_blank', 'noopener,noreferrer')
+  }
+
   return (
-    <div className="card animate-fade-in-up" style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, gap: 16 }}>
+    <div className="card animate-fade-in-up" style={{ padding: 28 }}>
+      <div className="card-header">
         <div>
-          <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Guest List & Links</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Manage your guest list and get their personalized invitation links.</p>
+          <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)' }}>Guest List & WhatsApp Broadcast</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>Kelola daftar tamu, atur template pesan pengantar, dan kirim langsung ke WhatsApp.</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div className="stat-badge" style={{ background: 'rgba(86,95,52,0.1)', color: 'var(--olive)', padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-            {guests.length} Guests
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ background: 'rgba(52,76,45,0.1)', color: 'var(--olive)', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+            {guests.length} Tamu ({Object.values(sentMap).filter(Boolean).length} Terkirim)
           </div>
           <button 
             className="btn btn-outline btn-sm"
@@ -322,29 +395,47 @@ function GuestListTab({ invitation, guests, setGuests, loading }) {
         </div>
       </div>
 
-      <div style={{ padding: '24px', background: 'rgba(86,95,52,0.03)', border: '1px solid rgba(86,95,52,0.1)', borderRadius: 16, marginBottom: 32 }}>
-        <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid rgba(86,95,52,0.1)', marginBottom: 20, paddingBottom: 8 }}>
+      {/* WhatsApp Broadcast Template Studio */}
+      <div className="wa-template-studio">
+        <div className="wa-template-header">
+          <div>
+            <span className="label-caps" style={{ color: 'var(--olive)', fontSize: 11, fontWeight: 700 }}>Template Pesan Pengantar WhatsApp</span>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              Gunakan variabel <code>{'{nama}'}</code>, <code>{'{link}'}</code>, dan <code>{'{judul}'}</code> agar pesan otomatis terisi untuk setiap tamu.
+            </p>
+          </div>
+          <div className="wa-template-pills">
+            {Object.entries(WA_TEMPLATES).map(([key, tpl]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleSelectWaTemplate(key)}
+                className={`wa-template-pill ${waTemplateKey === key ? 'active' : ''}`}
+              >
+                {tpl.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <textarea
+          className="settings-input wa-template-textarea"
+          rows={5}
+          value={customWaText}
+          onChange={e => setCustomWaText(e.target.value)}
+        />
+      </div>
+
+      <div className="guest-add-section">
+        <div className="guest-add-tabs">
           <button 
             onClick={() => setAddMethod('manual')} 
-            style={{ 
-              background: 'none', border: 'none', padding: '0 0 4px 0', fontSize: 12, 
-              fontWeight: 600, 
-              color: addMethod === 'manual' ? 'var(--olive)' : 'var(--text-muted)', 
-              borderBottom: addMethod === 'manual' ? '2.5px solid var(--olive)' : '2.5px solid transparent', 
-              cursor: 'pointer', letterSpacing: 0.5 
-            }}
+            className={`guest-add-tab ${addMethod === 'manual' ? 'active' : ''}`}
           >
             INPUT MANUAL
           </button>
           <button 
             onClick={() => setAddMethod('sheet')} 
-            style={{ 
-              background: 'none', border: 'none', padding: '0 0 4px 0', fontSize: 12, 
-              fontWeight: 600, 
-              color: addMethod === 'sheet' ? 'var(--olive)' : 'var(--text-muted)', 
-              borderBottom: addMethod === 'sheet' ? '2.5px solid var(--olive)' : '2.5px solid transparent', 
-              cursor: 'pointer', letterSpacing: 0.5 
-            }}
+            className={`guest-add-tab ${addMethod === 'sheet' ? 'active' : ''}`}
           >
             GOOGLE SPREADSHEET
           </button>
@@ -425,46 +516,77 @@ function GuestListTab({ invitation, guests, setGuests, loading }) {
         {loading ? (
           <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>Loading guest list...</p>
         ) : guests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', background: 'var(--white)', borderRadius: 12, border: '1px dashed var(--border)' }}>
+          <div className="empty-state" style={{ textAlign: 'center', padding: '60px 0', background: 'var(--cream-light)', borderRadius: 16, border: '1px dashed var(--border)' }}>
             <HiOutlineUserGroup size={40} color="var(--text-light)" style={{ marginBottom: 16, opacity: 0.5 }} />
             <p className="serif-italic" style={{ color: 'var(--text-muted)', fontSize: 16 }}>No guests added yet</p>
             <p style={{ color: 'var(--text-light)', fontSize: 12, marginTop: 4 }}>Use the form above to start adding guests.</p>
           </div>
         ) : (
-          <div style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'white' }}>
-            <div style={{ display: 'flex', padding: '12px 20px', background: '#f8f8f6', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: 1 }}>
-              <div style={{ flex: 1 }}>Guest Information</div>
-              <div style={{ width: 140, textAlign: 'right' }}>Actions</div>
+          <div className="guest-table-container">
+            <div className="guest-table-header">
+              <div style={{ flex: 1 }}>Informasi Tamu</div>
+              <div style={{ width: 280, textAlign: 'right' }}>Aksi & Kirim Undangan</div>
             </div>
-            {guests.map((g, idx) => (
-              <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', borderBottom: idx < guests.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.2s' }} className="guest-row-hover">
-                <div style={{ flex: 1, minWidth: 0, paddingRight: 24 }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 600, color: 'var(--text-dark)' }}>{g.name}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-light)', fontSize: 12 }}>
-                      <HiOutlineLink size={14} />
-                      <span style={{ fontFamily: 'monospace', opacity: 0.8 }}>...{getLink(g.name).slice(-30)}</span>
+            {guests.map((g, idx) => {
+              const isSent = !!sentMap[g.id]
+              return (
+                <div key={g.id} className="guest-row" style={{ borderBottom: idx < guests.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-dark)' }}>{g.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleSentStatus(g.id)}
+                        className={`guest-sent-badge ${isSent ? 'sent' : ''}`}
+                        title="Klik untuk menandai sudah/belum dikirim"
+                      >
+                        {isSent ? '✓ Terkirim' : 'Belum Dikirim'}
+                      </button>
                     </div>
-                    {g.phone && (
-                      <div style={{ fontSize: 12, color: 'var(--text-light)', padding: '2px 8px', background: '#f0f0f0', borderRadius: 4 }}>
-                        {g.phone}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-light)', fontSize: 12 }}>
+                        <HiOutlineLink size={14} />
+                        <span style={{ fontFamily: 'monospace', opacity: 0.8 }}>...{getLink(g.name).slice(-30)}</span>
                       </div>
-                    )}
+                      {g.phone && (
+                        <div style={{ fontSize: 12, color: 'var(--text-light)', padding: '2px 10px', background: 'var(--cream)', borderRadius: 6 }}>
+                          {g.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => sendWhatsApp(g)}
+                      className="btn btn-sm guest-wa-btn"
+                      title="Kirim via WhatsApp"
+                    >
+                      <HiOutlineChatAlt2 size={15} />
+                      <span>Kirim WA</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyMessage(g)}
+                      className="btn btn-outline btn-sm"
+                      style={{ padding: '8px 10px' }}
+                      title="Salin Teks Pengantar + Link"
+                    >
+                      {copiedMsgId === g.id ? <><HiOutlineCheck size={14} color="var(--olive)" /> Tersalin</> : 'Salin Pesan'}
+                    </button>
+                    <button onClick={() => copyLink(g)} className="btn btn-outline btn-sm" style={{ padding: '8px 10px', minWidth: 38 }} title="Salin Link Saja">
+                      {copiedId === g.id ? <HiOutlineCheck size={15} color="var(--olive)"/> : <HiOutlineDocumentDuplicate size={15} />}
+                    </button>
+                    <button onClick={() => window.open(getLink(g.name), '_blank')} className="btn btn-outline btn-sm" style={{ padding: '8px 10px' }} title="Buka Undangan">
+                      <HiOutlineExternalLink size={15} />
+                    </button>
+                    <button onClick={() => handleDelete(g.id)} className="btn-icon-only" style={{ color: 'var(--pink-dusty)', padding: '8px' }} title="Hapus Tamu">
+                      <HiOutlineTrash size={15} />
+                    </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => window.open(getLink(g.name), '_blank')} className="btn btn-outline btn-sm" style={{ padding: '8px 14px' }} title="Open Invitation">
-                    <HiOutlineExternalLink size={16} />
-                  </button>
-                  <button onClick={() => copyLink(g)} className="btn btn-outline btn-sm" style={{ padding: '8px 14px', minWidth: 44 }} title="Copy Link">
-                    {copiedId === g.id ? <HiOutlineCheck size={16} color="var(--olive)"/> : <HiOutlineDocumentDuplicate size={16} />}
-                  </button>
-                  <button onClick={() => handleDelete(g.id)} className="btn btn-ghost btn-sm" style={{ padding: '8px 14px', color: 'var(--pink-dusty)' }} title="Delete">
-                    <HiOutlineTrash size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -474,10 +596,10 @@ function GuestListTab({ invitation, guests, setGuests, loading }) {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { invitations, loading, deleteInvitation, addInvitation, deleteRsvp } = useInvitations()
+  const { invitations, loading, deleteInvitation, addInvitation, addBlocks, deleteRsvp } = useInvitations()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [showPresetModal, setShowPresetModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedInvId, setSelectedInvId] = useState(searchParams.get('inv') || '')
   const [allRsvps, setAllRsvps] = useState([])
   const [rsvpsLoading, setRsvpsLoading] = useState(false)
@@ -629,28 +751,43 @@ export default function DashboardPage() {
         icon,
         isAttending,
         isDeclined,
+        guestCount: Number(rsvp.guest_count) || 1,
         name: rsvp.name || 'Tamu',
         message: rsvp.message,
         time: timeStr,
         text: (
           <>
             <strong>{rsvp.name || 'Guest'}</strong>{' '}
-            {isAttending ? 'is attending' : isDeclined ? 'is not attending' : 'sent a message'}
-            {rsvp.message && <span className="activity-message">— "{rsvp.message}"</span>}
+            {isAttending ? `is attending (${Number(rsvp.guest_count) || 1} pax)` : isDeclined ? 'is not attending' : 'sent a message'}
+            {rsvp.message && <span className="activity-message">: "{rsvp.message}"</span>}
           </>
         ),
       }
     })
   }, [allRsvps])
 
-  const handleDelete = async (id) => {
-    if (confirm('Delete this invitation?')) {
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = (id) => {
+    if (!id || deleting) return
+    setPendingDelete(invitations.find(inv => inv.id === id) || { id, title: 'undangan ini' })
+  }
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return
+    const target = pendingDelete
+    const id = target.id
+    setDeleting(true)
+    
+    // Compute next selection before state change
+    const remaining = invitations.filter(inv => inv.id !== id)
+    const nextId = remaining.length > 0 ? remaining[0].id : ''
+    
+    try {
       const success = await deleteInvitation(id)
       if (success) {
-        // If we deleted the currently selected invitation, reset or select the first remaining one
         if (selectedInvId === id) {
-          const remaining = invitations.filter(inv => inv.id !== id)
-          const nextId = remaining.length > 0 ? remaining[0].id : ''
           setSelectedInvId(nextId)
           const params = new URLSearchParams(searchParams)
           if (nextId) {
@@ -661,16 +798,50 @@ export default function DashboardPage() {
           setSearchParams(params, { replace: true })
         }
       }
+    } finally {
+      setDeleting(false)
+      setPendingDelete(null)
     }
   }
 
-  const handlePresetSelect = async (presetKey, title) => {
-    setShowPresetModal(false)
-    const category = presetKey === 'wedding' ? 'Wedding' : presetKey === 'birthday' ? 'Birthday' : presetKey === 'aqiqah' ? 'Aqiqah' : 'Custom'
-    const newInv = await addInvitation({ title, category })
-    if (newInv) {
-      navigate(`/editor/${newInv.id}?preset=${presetKey}`)
+  useEffect(() => {
+    if (!pendingDelete) return
+    const onKey = (e) => { if (e.key === 'Escape' && !deleting) setPendingDelete(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pendingDelete, deleting])
+
+  const handleCreateInvitation = async (title, presetKey = 'wedding') => {
+    const preset = PRESETS[presetKey] || PRESETS.custom
+    const newInv = await addInvitation({
+      title,
+      category: preset.labelId || 'Wedding',
+      theme: preset.theme,
+    })
+    if (!newInv) {
+      throw new Error('Gagal membuat undangan baru di database. Periksa koneksi internet Anda.')
     }
+
+    if (preset.blocks && preset.blocks.length > 0) {
+      const blocksToCreate = preset.blocks.map(b => {
+        if (b.type === 'cover') {
+          return { ...b, data: { ...b.data, coupleName: title } }
+        }
+        if (b.type === 'footer') {
+          return { ...b, data: { ...b.data, coupleName: title } }
+        }
+        return b
+      })
+      await addBlocks(newInv.id, blocksToCreate, 0)
+    }
+
+    setSelectedInvId(newInv.id)
+    const params = new URLSearchParams(searchParams)
+    params.set('inv', newInv.id)
+    setSearchParams(params, { replace: true })
+    setShowCreateModal(false)
+
+    navigate(`/editor/${newInv.id}`)
   }
 
   if (loading && invitations.length === 0) {
@@ -705,11 +876,8 @@ export default function DashboardPage() {
                     width: '100%', 
                     paddingRight: 36, 
                     appearance: 'none', 
-                    background: 'var(--white)', 
                     fontWeight: 600,
-                    height: 42,
-                    border: '1.5px solid var(--border)',
-                    borderRadius: '8px'
+                    height: 44,
                   }}
                 >
                   {invitations.map(inv => (
@@ -721,16 +889,8 @@ export default function DashboardPage() {
             </div>
           )}
           <button 
-            className="btn btn-primary" 
-            onClick={() => setShowPresetModal(true)}
-            style={{ 
-              height: 42, 
-              padding: '0 24px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
+            className="btn btn-primary dash-create-btn" 
+            onClick={() => setShowCreateModal(true)}
           >
             <HiOutlinePlus size={18} /> Create New
           </button>
@@ -739,25 +899,20 @@ export default function DashboardPage() {
 
       {/* Tabs Navigation */}
       {invitations.length > 0 && selectedInv && (
-        <div className="dash-tabs" style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 24, overflowX: 'auto', paddingBottom: 2 }}>
+        <div className="dash-tabs">
           {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'rsvps', label: 'RSVPs' },
-            { id: 'wishes', label: 'Wishes' },
-            { id: 'guests', label: 'Guest List Links' },
+            { id: 'overview', label: 'Overview', icon: HiOutlineViewGrid },
+            { id: 'rsvps', label: 'RSVPs', icon: HiOutlineMail },
+            { id: 'wishes', label: 'Wishes', icon: HiOutlineHeart },
+            { id: 'guests', label: 'Guest List', icon: HiOutlineUserGroup },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              style={{
-                background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: 13,
-                fontWeight: activeTab === t.id ? 600 : 500,
-                color: activeTab === t.id ? 'var(--olive)' : 'var(--text-muted)',
-                borderBottom: activeTab === t.id ? '2px solid var(--olive)' : '2px solid transparent',
-                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s'
-              }}
+              className={`dash-tab-btn ${activeTab === t.id ? 'active' : ''}`}
             >
-              {t.label}
+              <t.icon size={16} />
+              <span className="tab-label-text">{t.label}</span>
             </button>
           ))}
         </div>
@@ -769,7 +924,7 @@ export default function DashboardPage() {
           <div className="project-new-icon" style={{ margin: '0 auto 16px auto' }}><HiOutlinePlus size={32} /></div>
           <h2 className="serif-italic" style={{ fontSize: '1.5rem', marginBottom: 8 }}>No Invitations Yet</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>Start by creating your first invitation now.</p>
-          <button className="btn btn-primary" onClick={() => setShowPresetModal(true)}>Create New Invitation</button>
+          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>Create New Invitation</button>
         </div>
       ) : activeTab === 'overview' ? (
         /* ----- OVERVIEW TAB ----- */
@@ -850,28 +1005,32 @@ export default function DashboardPage() {
 
           <div className="dash-projects" style={{ marginTop: 40 }}>
             <div className="projects-header">
-              <h2 className="serif-italic" style={{ fontSize: '1.4rem' }}>Actions for this invitation</h2>
+              <h2 className="serif-italic" style={{ fontSize: '1.4rem' }}>Quick Actions</h2>
             </div>
-            <div className="project-card card" style={{ maxWidth: 400 }}>
-              <div className="project-thumb" style={{ background: selectedInv?.theme?.backgroundColor || '#EDE9E7', minHeight: 120 }}>
+            <div className="card action-bar">
+              <div className="action-bar-preview" style={{ background: selectedInv?.theme?.backgroundColor || '#EDE9E7', minHeight: 100 }}>
                 <span className={`badge ${selectedInv?.status === 'published' ? 'badge-published' : 'badge-draft'}`}>
                   {selectedInv?.status === 'published' ? 'Published' : 'Draft'}
                 </span>
-                <div className="project-thumb-content serif-italic" style={{ color: selectedInv?.theme?.primaryColor || '#565F34' }}>
+                <div className="project-thumb-content serif-italic" style={{ color: selectedInv?.theme?.primaryColor || '#565F34', fontSize: '1rem' }}>
                   {selectedInv?.title || 'Untitled'}
                 </div>
               </div>
-              <div className="project-info">
-                <div className="project-actions" style={{ marginTop: 12 }}>
+              <div className="action-bar-info">
+                <div className="action-bar-title serif-italic">{selectedInv?.title || 'Untitled'}</div>
+                <div className="action-bar-meta">
+                  {selectedInv?.status === 'published' ? '🟢 Published & Live' : '📝 Draft — not published yet'}
+                </div>
+                <div className="project-actions">
                   <button className="btn btn-outline btn-sm" onClick={() => navigate(`/editor/${selectedInv?.id}`)}>
-                    <HiOutlinePencil size={14} /> Edit Desain
+                    <HiOutlinePencil size={14} /> Edit Design
                   </button>
                   {selectedInv?.status === 'published' && (
                     <button className="btn btn-ghost btn-sm" onClick={() => window.open(`/undangan/${selectedInv?.slug}`, '_blank')}>
                       <HiOutlineExternalLink size={14} /> View Site
                     </button>
                   )}
-                  <button className="project-delete" onClick={() => handleDelete(selectedInv?.id)} style={{ marginLeft: 'auto' }}>
+                  <button className="project-delete" onClick={() => handleDelete(selectedInv?.id)}>
                     <HiOutlineTrash size={16} />
                   </button>
                 </div>
@@ -882,11 +1041,11 @@ export default function DashboardPage() {
       ) : activeTab === 'rsvps' ? (
         /* ----- RSVPs TAB ----- */
         <div className="rsvps-tab animate-fade-in-up">
-          <div className="card" style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, gap: 16 }}>
+          <div className="card" style={{ padding: 28 }}>
+            <div className="card-header">
               <div>
-                <h3 className="serif-italic" style={{ fontSize: '1.5rem', color: 'var(--olive)', marginBottom: 4 }}>Attendance Confirmation</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>See who is coming to your event.</p>
+                <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)' }}>Attendance Confirmation</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>See who is coming to your event.</p>
               </div>
               <button 
                 className="btn btn-outline btn-sm" 
@@ -908,56 +1067,63 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 32 }}>
-              <div className="stat-card" style={{ padding: '16px 20px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: 1 }}>Total RSVP</span>
-                <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--text-dark)', marginTop: 4 }}>{activityItems.filter(i => i.isAttending || i.isDeclined).length}</div>
+            <div className="rsvp-summary-grid">
+              <div className="rsvp-summary-card total">
+                <div className="rsvp-summary-label" style={{ color: 'var(--text-light)' }}>Total RSVP</div>
+                <div className="rsvp-summary-value" style={{ color: 'var(--text-dark)' }}>{activityItems.filter(i => i.isAttending || i.isDeclined).length}</div>
               </div>
-              <div className="stat-card" style={{ padding: '16px 20px', background: 'rgba(86,95,52,0.05)', border: '1px solid rgba(86,95,52,0.1)', borderRadius: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: 1 }}>Attending</span>
-                <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--olive)', marginTop: 4 }}>{activityItems.filter(i => i.isAttending).length}</div>
+              <div className="rsvp-summary-card attending">
+                <div className="rsvp-summary-label" style={{ color: 'var(--olive)' }}>Attending</div>
+                <div className="rsvp-summary-value" style={{ color: 'var(--olive)' }}>{activityItems.filter(i => i.isAttending).length}</div>
               </div>
-              <div className="stat-card" style={{ padding: '16px 20px', background: 'rgba(208,156,167,0.05)', border: '1px solid rgba(208,156,167,0.1)', borderRadius: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--pink-dusty)', textTransform: 'uppercase', letterSpacing: 1 }}>Not Attending</span>
-                <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--pink-dusty)', marginTop: 4 }}>{activityItems.filter(i => i.isDeclined).length}</div>
+              <div className="rsvp-summary-card attending">
+                <div className="rsvp-summary-label" style={{ color: 'var(--olive)' }}>Total Pax Hadir</div>
+                <div className="rsvp-summary-value" style={{ color: 'var(--olive)' }}>
+                  {activityItems.filter(i => i.isAttending).reduce((sum, i) => sum + (i.guestCount || 1), 0)}
+                </div>
+              </div>
+              <div className="rsvp-summary-card declined">
+                <div className="rsvp-summary-label" style={{ color: 'var(--pink-dusty)' }}>Not Attending</div>
+                <div className="rsvp-summary-value" style={{ color: 'var(--pink-dusty)' }}>{activityItems.filter(i => i.isDeclined).length}</div>
               </div>
             </div>
 
             {rsvpsLoading ? (
               <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>Loading RSVP data...</p>
             ) : activityItems.length === 0 ? (
-              <div className="empty-state" style={{ padding: '40px 0', textAlign: 'center' }}>
-                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>No guests have filled out this RSVP yet.</p>
+              <div className="empty-state" style={{ padding: '48px 0', textAlign: 'center' }}>
+                <HiOutlineMail size={36} style={{ color: 'var(--text-light)', marginBottom: 12 }} />
+                <p className="serif-italic" style={{ color: 'var(--text-light)', fontSize: 15 }}>No guests have filled out this RSVP yet.</p>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
+              <div className="rsvp-table-container">
+                <table className="rsvp-table">
                   <thead>
-                    <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Guest Name</th>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attendance</th>
-                      <th style={{ padding: '12px 16px', fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time</th>
-                      <th style={{ padding: '12px 16px', width: 40 }}></th>
+                    <tr>
+                      <th>Guest Name</th>
+                      <th>Attendance</th>
+                      <th>Pax</th>
+                      <th>Time</th>
+                      <th style={{ width: 50 }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {activityItems.filter(item => item.isAttending || item.isDeclined).map((item, idx) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
-                        <td style={{ padding: '16px', fontWeight: 500 }}>{item.name || 'Anonymous'}</td>
-                        <td style={{ padding: '16px' }}>
-                          <span style={{ 
-                            display: 'inline-block', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600,
-                            background: item.isAttending ? 'rgba(86,95,52,0.1)' : item.isDeclined ? 'rgba(208,156,167,0.1)' : 'rgba(0,0,0,0.05)',
-                            color: item.isAttending ? 'var(--olive)' : item.isDeclined ? 'var(--pink-dusty)' : 'var(--text-muted)'
-                          }}>
-                            {item.isAttending ? 'Attending' : item.isDeclined ? 'Not Attending' : 'Wishes Only'}
+                    {activityItems.filter(item => item.isAttending || item.isDeclined).map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ fontWeight: 500 }}>{item.name || 'Anonymous'}</td>
+                        <td>
+                          <span className={`rsvp-attendance-badge ${item.isAttending ? 'attending' : item.isDeclined ? 'declined' : 'unknown'}`}>
+                            {item.isAttending ? '✓ Attending' : item.isDeclined ? '✕ Not Attending' : 'Wishes Only'}
                           </span>
                         </td>
-                        <td style={{ padding: '16px', fontSize: 12, color: 'var(--text-muted)' }}>{item.time}</td>
-                        <td style={{ padding: '16px', textAlign: 'right' }}>
+                        <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+                          {item.isAttending ? `${item.guestCount || 1} Orang` : '-'}
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.time}</td>
+                        <td style={{ textAlign: 'right' }}>
                           <button 
-                            className="btn-icon-only" 
-                            style={{ color: 'var(--pink-dusty)', opacity: 0.5 }}
+                            className="btn-icon-only rsvp-delete-btn" 
+                            style={{ color: 'var(--pink-dusty)' }}
                             onClick={async () => { 
                               if(confirm('Delete this RSVP?')) {
                                 const success = await deleteRsvp(item.id);
@@ -980,34 +1146,63 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : activeTab === 'wishes' ? (
-        /* ----- WISHES TAB ----- */
-        <div className="wishes-tab animate-fade-in-up">
-          <div className="card" style={{ padding: 24 }}>
-            <div style={{ marginBottom: 24 }}>
-              <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)', marginBottom: 4 }}>Wishes & Prayers</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>A collection of sweet messages from your guests.</p>
+               <div className="wishes-tab animate-fade-in-up">
+          <div className="card" style={{ padding: 28 }}>
+            <div className="card-header">
+              <div>
+                <h3 className="serif-italic" style={{ fontSize: '1.4rem', color: 'var(--olive)' }}>Wishes & Prayers</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>A collection of sweet messages from your guests.</p>
+              </div>
+              <button 
+                className="btn btn-outline btn-sm" 
+                onClick={() => {
+                  const wishes = activityItems.filter(item => item.message)
+                  const csv = [
+                    ['Name', 'Message', 'Sent At'].join(','),
+                    ...wishes.map(i => [
+                      `"${(i.name || 'Guest').replace(/"/g, '""')}"`,
+                      `"${(i.message || '').replace(/"/g, '""')}"`,
+                      `"${(i.time || '').replace(/"/g, '""')}"`
+                    ].join(','))
+                  ].join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `Wishes_${selectedInv?.title || 'Invitation'}.csv`;
+                  a.click();
+                }}
+                disabled={activityItems.filter(item => item.message).length === 0}
+              >
+                Export CSV
+              </button>
             </div>
 
             {rsvpsLoading ? (
               <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>Memuat ucapan...</p>
             ) : activityItems.filter(item => item.message).length === 0 ? (
-              <div className="empty-state" style={{ padding: '40px 0', textAlign: 'center' }}>
-                <p className="serif-italic" style={{ color: 'var(--text-light)' }}>No wishes from guests yet.</p>
+              <div className="empty-state" style={{ padding: '48px 0', textAlign: 'center' }}>
+                <HiOutlineHeart size={36} style={{ color: 'var(--text-light)', marginBottom: 12 }} />
+                <p className="serif-italic" style={{ color: 'var(--text-light)', fontSize: 15 }}>No wishes from guests yet.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+              <div className="wishes-masonry">
                 {activityItems.filter(item => item.message).map((item) => (
-                  <div key={item.id} className="card wish-card" style={{ padding: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid var(--border)', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--olive)' }} />
-                        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--olive)' }}>{item.name}</span>
+                  <div key={item.id} className="card wish-card">
+                    <div className="wish-card-header">
+                      <div className="wish-card-author">
+                        <div className="wish-card-avatar">
+                          {(item.name || 'G').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="wish-card-name">{item.name}</div>
+                          <div className="wish-card-time">{item.time}</div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontSize: 10, color: 'var(--text-light)' }}>{item.time}</span>
+                      <div className="wish-card-actions">
                         <button 
                           className="btn-icon-only" 
-                          style={{ color: 'var(--pink-dusty)', opacity: 0.5 }}
+                          style={{ color: 'var(--pink-dusty)' }}
                           onClick={async () => { 
                             if(confirm('Delete this wish?')) {
                               const success = await deleteRsvp(item.id);
@@ -1021,8 +1216,7 @@ export default function DashboardPage() {
                         </button>
                       </div>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-dark)', fontStyle: 'italic', lineHeight: 1.6, position: 'relative' }}>
-                      <span style={{ fontSize: 24, position: 'absolute', top: -10, left: -10, opacity: 0.1, color: 'var(--olive)' }}>“</span>
+                    <p className="wish-card-message">
                       {item.message}
                     </p>
                   </div>
@@ -1040,12 +1234,27 @@ export default function DashboardPage() {
         />
       ) : null}
 
-      {/* Preset Modal */}
-      {showPresetModal && (
-        <PresetModal
-          onClose={() => setShowPresetModal(false)}
-          onSelect={handlePresetSelect}
+      {/* Create Modal */}
+      {showCreateModal && (
+        <CreateInvitationModal
+          onClose={() => setShowCreateModal(false)}
+          onSelect={handleCreateInvitation}
         />
+      )}
+
+      {pendingDelete && (
+        <div className="confirm-overlay" onClick={() => !deleting && setPendingDelete(null)}>
+          <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onClick={e => e.stopPropagation()}>
+            <h3 id="confirm-title">Hapus “{pendingDelete.title}”?</h3>
+            <p>Tamu, RSVP, dan ucapan yang masuk ke undangan ini ikut terhapus dan tidak bisa dikembalikan.</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPendingDelete(null)} disabled={deleting}>Batal</button>
+              <button type="button" className="confirm-danger" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? 'Menghapus...' : 'Hapus undangan'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

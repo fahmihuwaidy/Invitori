@@ -7,9 +7,11 @@
   --olive-hover: #263821;
   --olive-light: #899c75;     /* Sage/Light Olive */
   --olive-bg: rgba(137, 156, 117, 0.15);
+  --olive-glow: 0 4px 20px rgba(52, 76, 45, 0.2);
   
   --pink-dusty: #d09ca7;      /* Dusty Rose */
   --pink-dusty-bg: rgba(208, 156, 167, 0.15);
+  --pink-glow: 0 4px 20px rgba(208, 156, 167, 0.2);
   
   --cream: #f4efea;           /* Warm Paper Cream */
   --cream-light: #fbf9f6;     /* Bright paper */
@@ -26,13 +28,20 @@
   /* Typography */
   --font-display: 'Gambarino', Georgia, serif;
   --font-body: 'Inter', -apple-system, sans-serif;
-  --font-script: 'Brush Script MT', cursive, var(--font-display);
+  --font-script: 'Pinyon Script', cursive, Georgia, serif;
+
+  /* Safe Area Insets (Mobile Notch & Home Bar) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
-
-  /* Typography */
-  --font-display: 'Gambarino', Georgia, serif;
-  --font-body: 'Inter', -apple-system, sans-serif;
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.1);
 
   /* Spacing */
   --space-xs: 4px;
@@ -45,9 +54,10 @@
   --space-4xl: 96px;
 
   /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -100,14 +110,22 @@ button {
   font-family: var(--font-body);
   cursor: pointer;
   border: none;
-  outline: none;
   background: none;
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--olive);
+  outline-offset: 2px;
 }
 
 input, textarea, select {
   font-family: var(--font-body);
   font-size: 15px;
-  outline: none;
+}
+
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--olive);
+  outline-offset: 1px;
 }
 
 /* ==================== */
@@ -141,20 +159,27 @@ input, textarea, select {
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  transition: all var(--transition);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary {
   background: var(--olive);
   color: var(--white);
+  border: 1.5px solid transparent;
 }
 .btn-primary:hover {
   background: var(--olive-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: var(--olive-glow);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .btn-outline {
@@ -164,6 +189,8 @@ input, textarea, select {
 }
 .btn-outline:hover {
   background: var(--olive-bg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
@@ -174,11 +201,13 @@ input, textarea, select {
 .btn-ghost:hover {
   border-color: var(--text-muted);
   background: var(--white);
+  transform: translateY(-1px);
 }
 
 .btn-sm {
   padding: 8px 16px;
   font-size: 12px;
+  border-radius: var(--radius-sm);
 }
 
 .btn-lg {
@@ -190,6 +219,21 @@ input, textarea, select {
   width: 100%;
 }
 
+.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.btn-icon-only:hover {
+  background: rgba(0,0,0,0.04);
+}
+
 /* ==================== */
 /*  Cards                */
 /* ==================== */
@@ -197,13 +241,50 @@ input, textarea, select {
 .card {
   background: var(--white);
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  transition: all var(--transition);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-xs);
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--border);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.card-header h3 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+/* Guest row hover */
+.guest-row-hover:hover {
+  background: var(--cream-light) !important;
+}
+
+/* Settings input refinement */
+.settings-input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: var(--white);
+  color: var(--text-dark);
+}
+.settings-input:focus {
+  border-color: var(--olive);
+  box-shadow: 0 0 0 3px rgba(52, 76, 45, 0.08);
+  outline: none;
 }
 
 /* ==================== */

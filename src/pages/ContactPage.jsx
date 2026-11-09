@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { HiArrowLeft, HiOutlineMail, HiOutlineChatAlt2, HiOutlineCamera } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
+import heroImg from '../assets/hero.png'
 import './ContactPage.css'
 
 export default function ContactPage() {
@@ -20,16 +21,14 @@ export default function ContactPage() {
 
       <main className="contact-main">
         <div className="contact-content">
-          <span className="small-caps" style={{ color: 'var(--pink-dusty)' }}>Say Hello</span>
+          <span className="small-caps" style={{ color: 'var(--olive)' }}>Say Hello</span>
           <h1 className="contact-title serif">
             Begin Your <br />
             <em className="serif-italic">Digital Legacy</em>
           </h1>
           <p className="body-text contact-desc">
-            We would be honored to weave your story into an unforgettable digital experience.
-            Reach out through any of our channels below to request a bespoke consultation.
-            <br /><br />
-            Quisque velit nisi, pretium ut lacinia in, elementum id enim. Donec rutrum congue leo eget malesuada.
+            We would be honored to weave your celebration into an unforgettable digital invitation experience.
+            Reach out through any of our channels below to request a bespoke consultation or technical assistance.
           </p>
 
           <div className="contact-methods">
@@ -38,7 +37,7 @@ export default function ContactPage() {
               <div className="contact-card-content">
                 <h3 className="method-name">WhatsApp</h3>
                 <p className="method-detail">+62 812-5850-6237</p>
-                <p className="method-note">For urgent inquiries & bespoke planning</p>
+                <p className="method-note">For bespoke planning & direct inquiry</p>
               </div>
             </a>
 
@@ -47,7 +46,7 @@ export default function ContactPage() {
               <div className="contact-card-content">
                 <h3 className="method-name">Email</h3>
                 <p className="method-detail">hello@invori.com</p>
-                <p className="method-note">For collaborations & general questions</p>
+                <p className="method-note">For collaboration & support</p>
               </div>
             </a>
 
@@ -56,14 +55,14 @@ export default function ContactPage() {
               <div className="contact-card-content">
                 <h3 className="method-name">Instagram</h3>
                 <p className="method-detail">@invori_studio</p>
-                <p className="method-note">Explore our curated gallery</p>
+                <p className="method-note">Explore our curated aesthetic gallery</p>
               </div>
             </a>
           </div>
         </div>
 
         <div className="contact-image-wrapper">
-          {/* Placeholder for aesthetic image */}
+          <img src={heroImg} alt="Invori Studio Visual" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       </main>
     </div>

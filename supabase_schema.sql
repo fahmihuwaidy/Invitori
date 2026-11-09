@@ -49,8 +49,18 @@ CREATE TABLE IF NOT EXISTS rsvps (
   name TEXT NOT NULL,
   email TEXT,
   attendance TEXT CHECK (attendance IN ('yes', 'no')),
+  guest_count INT DEFAULT 1,
   message TEXT,
   sent_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. Guests table
+CREATE TABLE IF NOT EXISTS guests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invitation_id UUID NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- =============================================
@@ -61,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_invitations_slug ON invitations(slug);
 CREATE INDEX IF NOT EXISTS idx_blocks_invitation_id ON blocks(invitation_id);
 CREATE INDEX IF NOT EXISTS idx_blocks_sort_order ON blocks(invitation_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_rsvps_invitation_id ON rsvps(invitation_id);
+CREATE INDEX IF NOT EXISTS idx_guests_invitation_id ON guests(invitation_id);
 
 -- =============================================
 -- RPC: Increment view count
@@ -146,6 +157,29 @@ CREATE POLICY "Owners can view RSVPs"
     EXISTS (
       SELECT 1 FROM invitations
       WHERE invitations.id = rsvps.invitation_id
+      AND invitations.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Owners can delete RSVPs"
+  ON rsvps FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM invitations
+      WHERE invitations.id = rsvps.invitation_id
+      AND invitations.user_id = auth.uid()
+    )
+  );
+
+-- Guests
+ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can CRUD guests of own invitations"
+  ON guests FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM invitations
+      WHERE invitations.id = guests.invitation_id
       AND invitations.user_id = auth.uid()
     )
   );

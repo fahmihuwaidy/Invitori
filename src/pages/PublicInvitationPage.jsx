@@ -2,10 +2,185 @@
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useInvitations } from '../contexts/InvitationContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { HiOutlineCheck, HiOutlineLocationMarker, HiOutlineCalendar, HiOutlineClock, HiOutlineMusicNote, HiOutlineMailOpen, HiChevronLeft, HiChevronRight, HiOutlineX, HiOutlineClipboard, HiOutlineExternalLink } from 'react-icons/hi'
+import { HiOutlineCheck, HiOutlineLocationMarker, HiOutlineCalendar, HiOutlineClock, HiOutlineMusicNote, HiOutlineMailOpen, HiChevronLeft, HiChevronRight, HiOutlineX, HiOutlineClipboard, HiOutlineExternalLink, HiOutlineHome, HiOutlineUserGroup, HiOutlineViewGrid, HiOutlineHeart, HiOutlineGift } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import '../index.css'
 import './PublicInvitationPage.css'
+
+// A simple deterministic pseudo-random generator based on sine wave
+function getSeededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+/** Extract couple monogram initials (e.g. "Arjun & Larasati" -> "A & L") */
+function extractMonogram(coupleName = '', customMonogram = '') {
+  if (customMonogram && customMonogram.trim()) return customMonogram.trim()
+  const parts = (coupleName || 'Invori').split(/[&+]/).map(s => s.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[0].charAt(0).toUpperCase()} & ${parts[1].charAt(0).toUpperCase()}`
+  }
+  return parts[0] ? parts[0].slice(0, 2).toUpperCase() : 'I'
+}
+
+/** Parse loose date/time strings into start/end Date objects for Calendar export */
+function parseEventDates(dateStr, timeStr, fallbackIso) {
+  let baseDate = fallbackIso ? new Date(fallbackIso) : new Date('2026-11-14T08:00:00')
+  if (dateStr) {
+    const cleaned = dateStr
+      .replace(/^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*,\s*/i, '')
+      .replace(/Januari/i, 'January')
+      .replace(/Februari/i, 'February')
+      .replace(/Maret/i, 'March')
+      .replace(/Mei/i, 'May')
+      .replace(/Juni/i, 'June')
+      .replace(/Juli/i, 'July')
+      .replace(/Agustus/i, 'August')
+      .replace(/Oktober/i, 'October')
+      .replace(/November/i, 'November')
+      .replace(/Desember/i, 'December')
+    const parsed = new Date(cleaned)
+    if (!isNaN(parsed.getTime())) {
+      baseDate = parsed
+    }
+  }
+  if (isNaN(baseDate.getTime())) {
+    baseDate = new Date(Date.now() + 86400000 * 30)
+  }
+
+  let startHour = 9
+  let startMin = 0
+  if (timeStr) {
+    const match = timeStr.match(/(\d{1,2})[:.](\d{2})/)
+    if (match) {
+      startHour = parseInt(match[1], 10)
+      startMin = parseInt(match[2], 10)
+      if (/pm/i.test(timeStr) && startHour < 12) startHour += 12
+    }
+  }
+
+  const start = new Date(baseDate)
+  start.setHours(startHour, startMin, 0, 0)
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+
+  const toCalFormat = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  return { start, end, startStr: toCalFormat(start), endStr: toCalFormat(end) }
+}
+
+function buildGoogleCalendarUrl({ title, dateStr, timeStr, venue, address, fallbackIso }) {
+  const { startStr, endStr } = parseEventDates(dateStr, timeStr, fallbackIso)
+  const location = [venue, address].filter(Boolean).join(', ')
+  const details = `Undangan Digital: ${title || 'Acara Pernikahan'}${location ? ` di ${location}` : ''}`
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title || 'Wedding Celebration')}&dates=${startStr}/${endStr}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`
+}
+
+function downloadIcsFile({ title, dateStr, timeStr, venue, address, fallbackIso }) {
+  const { startStr, endStr } = parseEventDates(dateStr, timeStr, fallbackIso)
+  const location = [venue, address].filter(Boolean).join(', ')
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Invori Digital Atelier//ID',
+    'BEGIN:VEVENT',
+    `DTSTART:${startStr}`,
+    `DTEND:${endStr}`,
+    `SUMMARY:${title || 'Wedding Celebration'}`,
+    `LOCATION:${location}`,
+    `DESCRIPTION:Undangan pernikahan digital via Invori.`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n')
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', `${(title || 'Invitation').replace(/\s+/g, '_')}.ics`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/** Deterministic SVG QR Matrix for Guest Check-in Ticket */
+function GuestQrMatrix({ seedText = 'INVORI', color = '#24351f' }) {
+  const size = 21
+  let hash = 2166136261
+  for (let i = 0; i < seedText.length; i++) {
+    hash ^= seedText.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  const isFinder = (r, c) => {
+    const inTopLeft = r < 7 && c < 7
+    const inTopRight = r < 7 && c >= size - 7
+    const inBottomLeft = r >= size - 7 && c < 7
+    if (!inTopLeft && !inTopRight && !inBottomLeft) return null
+    const lr = inTopLeft ? r : inTopRight ? r : r - (size - 7)
+    const lc = inTopLeft ? c : inTopRight ? c - (size - 7) : c
+    if (lr === 0 || lr === 6 || lc === 0 || lc === 6) return true
+    if (lr >= 2 && lr <= 4 && lc >= 2 && lc <= 4) return true
+    return false
+  }
+
+  const cells = []
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const finder = isFinder(r, c)
+      if (finder !== null) {
+        if (finder) cells.push(<rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill={color} />)
+        continue
+      }
+      if (r === 6 || c === 6) {
+        if ((r + c) % 2 === 0) cells.push(<rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill={color} />)
+        continue
+      }
+      const cellSeed = Math.abs(Math.sin((hash % 9973) + r * 31 + c * 17) * 10000)
+      if (cellSeed - Math.floor(cellSeed) > 0.46) {
+        cells.push(<rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill={color} rx={0.15} />)
+      }
+    }
+  }
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width="136" height="136" style={{ display: 'block' }} aria-label="QR Code Tiket Tamu">
+      {cells}
+    </svg>
+  )
+}
+
+function ParticleOverlay({ type, intensity = 20 }) {
+  const chars = {
+    sakura: '🌸',
+    hearts: '❤️',
+    snow: '❄️',
+    confetti: '🎉'
+  }
+  const char = chars[type] || '🌸'
+  const count = Math.min(intensity, 40)
+  
+  return (
+    <div className="public-particle-container">
+      {Array.from({ length: count }).map((_, i) => {
+        const left = getSeededRandom(i * 14.3 + 1.2) * 100
+        const duration = 5 + getSeededRandom(i * 37.7 + 4.5) * 7
+        const delay = getSeededRandom(i * 59.1 + 8.8) * -10
+        const fontSize = 12 + getSeededRandom(i * 83.4 + 12.3) * 14
+        const style = {
+          left: `${left}%`,
+          animationDuration: `${duration}s`,
+          animationDelay: `${delay}s`,
+          fontSize: `${fontSize}px`,
+        }
+        return (
+          <span key={i} className="public-particle" style={style}>
+            {char}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 
 
 /** Detects if a URL points to a video file */
@@ -50,8 +225,9 @@ export default function PublicInvitationPage() {
   const isPreviewUrl = searchParams.get('preview') === 'true'
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', message: '', attendance: '', guestCount: 1 })
+  const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', message: '', attendance: '', guestCount: 1, session: 'Akad & Resepsi' })
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [submittedAttendance, setSubmittedAttendance] = useState('yes')
   const [isRsvpLoading, setIsRsvpLoading] = useState(false)
   const [wishForm, setWishForm] = useState({ name: guestName, content: '' })
   const [isWishLoading, setIsWishLoading] = useState(false)
@@ -60,6 +236,7 @@ export default function PublicInvitationPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
   const scrollContainerRef = useRef(null)
+  const [activeSection, setActiveSection] = useState('cover')
 
   useEffect(() => {
     const load = async () => {
@@ -72,9 +249,11 @@ export default function PublicInvitationPage() {
     load()
   }, [slug, fetchPublicInvitation, incrementView, isPreviewUrl])
 
-  const musicUrl = (invitation?.musicUrl === undefined || invitation?.musicUrl === null)
-    ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
-    : invitation.musicUrl
+  // Extract music block details
+  const musicBlock = invitation?.blocks?.find(b => b.type === 'backgroundMusic')
+  const musicUrl = musicBlock?.data?.url || invitation?.musicUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+  const musicSongTitle = musicBlock?.data?.songTitle || 'Wedding Soundtrack'
+  const musicVolume = musicBlock?.data?.volume ?? 80
 
   useEffect(() => {
     if (musicUrl && audioRef.current) {
@@ -86,10 +265,129 @@ export default function PublicInvitationPage() {
     }
   }, [isPlaying, isOpen, musicUrl])
 
+  // Auto-pause music when user switches browser tabs
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!audioRef.current) return
+      if (document.hidden) {
+        audioRef.current.pause()
+      } else if (isPlaying && isOpen) {
+        audioRef.current.play().catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [isPlaying, isOpen])
+
+  // Manage volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = musicVolume / 100
+    }
+  }, [musicVolume])
+
   useEffect(() => {
     document.body.style.overflow = !isOpen ? 'hidden' : 'auto'
     return () => { document.body.style.overflow = 'auto' }
   }, [isOpen])
+
+  // Load Google Fonts Dynamically
+  useEffect(() => {
+    if (!invitation) return
+
+    const fontFamilies = new Set()
+    if (invitation.theme?.fontFamily) fontFamilies.add(invitation.theme.fontFamily)
+    invitation.blocks?.forEach(block => {
+      if (block.data?.fontFamily) {
+        fontFamilies.add(block.data.fontFamily)
+      }
+      if (block.data?.displayFont) {
+        fontFamilies.add(block.data.displayFont)
+      }
+    })
+
+    if (fontFamilies.size > 0) {
+      const fontsArray = Array.from(fontFamilies).filter(font => 
+        !['serif', 'sans-serif', 'monospace', 'inherit', 'Gambarino'].includes(font) && !font.includes(',') && !font.startsWith('var(')
+      )
+      
+      if (fontsArray.length > 0) {
+        const linkId = 'dynamic-google-fonts'
+        let linkEl = document.getElementById(linkId)
+        if (!linkEl) {
+          linkEl = document.createElement('link')
+          linkEl.id = linkId
+          linkEl.rel = 'stylesheet'
+          document.head.appendChild(linkEl)
+        }
+        
+        // Build Google Fonts URL
+        const FONT_SPECS = {
+          'Bodoni Moda': 'ital,wght@0,400;0,600;1,400',
+          'Cormorant Garamond': 'ital,wght@0,400;0,600;1,400;1,500',
+          'Amiri': 'ital,wght@0,400;0,700;1,400',
+          'Fraunces': 'ital,wght@0,400;0,600;1,400',
+          'DM Serif Display': 'ital@0;1',
+          'DM Sans': 'ital,wght@0,400;0,500;0,700;1,400',
+          'Lora': 'ital,wght@0,400;0,600;1,400',
+        }
+        const defaultSpec = 'ital,wght@0,300;0,400;0,500;0,600;0,700;1,400'
+        const fontQueries = fontsArray.map(font => `family=${font.replace(/\s+/g, '+')}:${FONT_SPECS[font] || defaultSpec}`).join('&')
+        linkEl.href = `https://fonts.googleapis.com/css2?${fontQueries}&display=swap`
+      }
+    }
+  }, [invitation])
+
+  // Track active section for floating menu
+  useEffect(() => {
+    if (!isOpen || !invitation) return
+
+    const sections = ['cover', 'couple', 'event', 'gallery', 'wishes', 'gift']
+    const observedElements = []
+
+    const observerOptions = {
+      root: window.innerWidth >= 480 ? scrollContainerRef.current : null,
+      rootMargin: '-20% 0px -60% 0px',
+      threshold: 0
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id)
+        }
+      })
+    }, observerOptions)
+
+    sections.forEach(id => {
+      const el = document.getElementById(id)
+      if (el) {
+        observer.observe(el)
+        observedElements.push(el)
+      }
+    })
+
+    return () => {
+      observedElements.forEach(el => observer.unobserve(el))
+    }
+  }, [isOpen, invitation])
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    
+    if (window.innerWidth >= 480 && scrollContainerRef.current) {
+      // Desktop scrolling inside container
+      scrollContainerRef.current.scrollTo({
+        top: el.offsetTop,
+        behavior: 'smooth'
+      })
+    } else {
+      // Mobile scrolling window
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+    setActiveSection(id)
+  }
 
   const handleOpenInvitation = () => {
     setIsOpen(true)
@@ -122,14 +420,23 @@ export default function PublicInvitationPage() {
   }
 
   const theme = invitation.theme || {}
+  const displayFont = invitation.blocks?.find(b => b.type === 'cover')?.data?.displayFont || 'Gambarino'
 
   const handleRsvp = async (e, attendanceValue) => {
     if (e) e.preventDefault()
     if (isRsvpLoading) return
     const submitAttendance = attendanceValue || rsvpForm.attendance || 'yes'
+    setSubmittedAttendance(submitAttendance)
     setIsRsvpLoading(true)
     try {
-      const success = await addRsvp(invitation.id, { ...rsvpForm, attendance: submitAttendance, sentAt: new Date().toISOString() })
+      const sessionNote = rsvpForm.session ? `[Sesi: ${rsvpForm.session}]` : ''
+      const combinedMessage = [sessionNote, rsvpForm.message].filter(Boolean).join(' ').trim()
+      const success = await addRsvp(invitation.id, {
+        ...rsvpForm,
+        message: combinedMessage || null,
+        attendance: submitAttendance,
+        sentAt: new Date().toISOString()
+      })
       if (success) setRsvpSent(true)
     } catch (err) {
       console.error('RSVP Error:', err)
@@ -166,17 +473,67 @@ export default function PublicInvitationPage() {
     }
   }
 
+  // Extract decorative/overlay components
+  const particlesBlock = invitation.blocks?.find(b => b.type === 'particles')
+  const navBlock = invitation.blocks?.find(b => b.type === 'navigationMenu')
+  const hasBlock = (type) => invitation.blocks?.some(b => b.type === type)
+
+  const navItems = navBlock ? [
+    ...(navBlock.data?.showCover !== false && hasBlock('cover') ? [{ id: 'cover', label: 'Cover', icon: <HiOutlineHome /> }] : []),
+    ...(navBlock.data?.showCouple !== false && hasBlock('couple') ? [{ id: 'couple', label: 'Couple', icon: <HiOutlineHeart /> }] : []),
+    ...(navBlock.data?.showEvent !== false && hasBlock('location') ? [{ id: 'event', label: 'Event', icon: <HiOutlineCalendar /> }] : []),
+    ...(navBlock.data?.showGallery !== false && hasBlock('gallery') ? [{ id: 'gallery', label: 'Gallery', icon: <HiOutlineViewGrid /> }] : []),
+    ...(navBlock.data?.showWishes !== false && hasBlock('wishes') ? [{ id: 'wishes', label: 'Wishes', icon: <HiOutlineUserGroup /> }] : []),
+    ...(navBlock.data?.showGift !== false && hasBlock('gift') ? [{ id: 'gift', label: 'Gift', icon: <HiOutlineGift /> }] : [])
+  ] : []
+
   return (
-    <div className="public-page-wrapper">
+    <div
+      className="public-page-wrapper"
+      style={{
+        '--font-display': `'${displayFont}', serif`,
+        ...(theme.fontFamily ? { fontFamily: theme.fontFamily.includes(',') ? theme.fontFamily : `'${theme.fontFamily}', sans-serif` } : {}),
+      }}
+    >
       <IntroOverlay isOpen={isOpen} onOpen={handleOpenInvitation} invitation={invitation} guestName={guestName} />
 
       {musicUrl && (
-        <BackgroundMusic url={musicUrl} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} />
+        <BackgroundMusic url={musicUrl} songTitle={musicSongTitle} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} primaryColor={theme.primaryColor || '#344c2d'} />
       )}
 
       <div ref={scrollContainerRef} className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
+        {particlesBlock && (
+          <ParticleOverlay 
+            type={particlesBlock.data?.effect || 'sakura'} 
+            intensity={particlesBlock.data?.intensity || 30} 
+          />
+        )}
+
+        {isOpen && navBlock && navItems.length > 0 && (
+          <div className="public-floating-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className={`public-floating-nav-btn ${activeSection === item.id ? 'active' : ''}`}
+                onClick={() => scrollToSection(item.id)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {(invitation.blocks || [])
-          .filter(block => block.type !== 'music' && block.type !== 'signature' && block.type !== 'registry')
+          .filter(block => 
+            block.type !== 'music' && 
+            block.type !== 'signature' && 
+            block.type !== 'registry' &&
+            block.type !== 'backgroundMusic' &&
+            block.type !== 'particles' &&
+            block.type !== 'navigationMenu' &&
+            block.type !== 'envelopeAnimation'
+          )
           .map((block) => {
             const hasBg = !!block.data?.backgroundImage
             const blockMinHeight = block.data?.blockMinHeight || 0
@@ -184,6 +541,15 @@ export default function PublicInvitationPage() {
             const isCover = block.type === 'cover'
             const isFooter = block.type === 'footer'
             const isFullWidth = isCover || isFooter
+
+            // Assign IDs to components for scroll spy navigation
+            let blockId = undefined
+            if (block.type === 'cover') blockId = 'cover'
+            else if (block.type === 'couple') blockId = 'couple'
+            else if (block.type === 'location') blockId = 'event'
+            else if (block.type === 'gallery') blockId = 'gallery'
+            else if (block.type === 'wishes') blockId = 'wishes'
+            else if (block.type === 'gift') blockId = 'gift'
 
             return (
               <ScrollRevealBlock
@@ -211,6 +577,7 @@ export default function PublicInvitationPage() {
                   '--text-light': block.data?.customTextColor || undefined,
                 }}
               >
+                <div id={blockId} style={{ position: 'absolute', top: -40 }} />
                 {hasBg && !isCover && (
                   <>
                     <MediaRenderer
@@ -233,7 +600,10 @@ export default function PublicInvitationPage() {
                     wishForm, setWishForm, handleSendWish, wishSent,
                     guestName, isPreviewUrl,
                     invitation.wishes || [],
-                    isRsvpLoading, isWishLoading
+                    isRsvpLoading, isWishLoading,
+                    false,
+                    submittedAttendance,
+                    invitation.title
                   )}
                 </div>
               </ScrollRevealBlock>
@@ -256,7 +626,9 @@ export function renderPublicBlock(
   wishes = [],
   isRsvpLoading = false,
   isWishLoading = false,
-  isEditorCanvas = false
+  isEditorCanvas = false,
+  submittedAttendance = 'yes',
+  invitationTitle = ''
 ) {
   const primaryColor = theme?.primaryColor || '#565F34'
 
@@ -264,6 +636,89 @@ export function renderPublicBlock(
     // ── COVER ──────────────────────────────────────────────────────────────
     case 'cover': {
       const layout = block.data.coverLayout || 'classic'
+      const monogram = extractMonogram(block.data.coupleName || invitationTitle)
+
+      if (layout === 'arch') {
+        return (
+          <div className="public-cover public-cover--arch">
+            <div className="public-cover-arch-card">
+              <div className="public-cover-crest" style={{ color: primaryColor }}>
+                <span className="public-cover-crest-circle" style={{ borderColor: `${primaryColor}40` }}>{monogram}</span>
+              </div>
+              <p className="public-cover-subtitle animate-cover-1" style={{ color: primaryColor }}>
+                {block.data.subtitle || 'The Wedding Celebration Of'}
+              </p>
+              <div className="public-cover-arch-window" style={{ borderColor: `${primaryColor}40` }}>
+                <MediaRenderer
+                  src={block.data.backgroundImage}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  className="public-cover-bg"
+                />
+                <div
+                  className="public-cover-overlay"
+                  style={{
+                    position: 'absolute', inset: 0,
+                    backgroundColor: block.data.overlayColor || '#000000',
+                    opacity: Math.min(block.data.overlayOpacity ?? 0.15, 0.3),
+                  }}
+                />
+              </div>
+              <h1 className="public-cover-name animate-cover-2" style={{ color: primaryColor }}>
+                {block.data.coupleName || 'Couple Name'}
+              </h1>
+              {block.data.date && (
+                <p className="public-cover-date animate-cover-3">
+                  <span>{block.data.date}</span>
+                </p>
+              )}
+              {block.data.showGuestName && guestName && (
+                <div className="public-cover-guest-card animate-cover-4" style={{ borderColor: `${primaryColor}30`, background: `${primaryColor}06` }}>
+                  <p className="public-cover-guest-label">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+                  <p className="public-cover-guest-name" style={{ color: primaryColor }}>{guestName}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      if (layout === 'editorial') {
+        return (
+          <div className="public-cover public-cover--editorial">
+            <div className="public-cover-bg-wrapper" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+              <MediaRenderer
+                src={block.data.backgroundImage}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="public-cover-bg"
+              />
+              <div
+                className="public-cover-overlay"
+                style={{
+                  position: 'absolute', inset: 0,
+                  background: `linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,${Math.max(block.data.overlayOpacity ?? 0.55, 0.6)}) 100%)`,
+                  zIndex: 1,
+                }}
+              />
+            </div>
+            <div className="public-cover-editorial-top">
+              <span className="public-cover-editorial-issue">INVORI EDITORIAL</span>
+              <span className="public-cover-editorial-monogram">{monogram}</span>
+              <span className="public-cover-editorial-date">{block.data.date || 'SPECIAL ISSUE'}</span>
+            </div>
+            <div className="public-cover-content public-cover-content--editorial">
+              <p className="public-cover-subtitle animate-cover-1">{block.data.subtitle || 'The Wedding Celebration'}</p>
+              <h1 className="public-cover-name public-cover-name--editorial animate-cover-2">{block.data.coupleName || 'Couple Name'}</h1>
+              {block.data.showGuestName && guestName && (
+                <div className="public-cover-guest-card public-cover-guest-card--editorial animate-cover-4">
+                  <p className="public-cover-guest-label">Private Invitation For</p>
+                  <p className="public-cover-guest-name">{guestName}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
       return (
         <div className={`public-cover public-cover--${layout}`} style={{ alignItems: block.data.coverAlignItems || 'center' }}>
           <div className="public-cover-bg-wrapper" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
@@ -276,19 +731,21 @@ export function renderPublicBlock(
               className="public-cover-overlay"
               style={{
                 position: 'absolute', inset: 0,
-                backgroundColor: block.data.overlayColor || '#000000',
-                opacity: block.data.overlayOpacity ?? 0.4,
+                background: `linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,${Math.max(block.data.overlayOpacity ?? 0.45, 0.45)}) 100%)`,
                 zIndex: 1,
               }}
             />
           </div>
           <div className="public-cover-content" style={{ width: '100%', textAlign: block.data.coverTextAlign || 'center' }}>
-            <p className="public-cover-subtitle animate-cover-1">{block.data.subtitle || 'We Are Getting Married'}</p>
+            <div className="public-cover-crest" style={{ color: '#fff', marginBottom: 12 }}>
+              <span className="public-cover-crest-circle" style={{ borderColor: 'rgba(255,255,255,0.4)' }}>{monogram}</span>
+            </div>
+            <p className="public-cover-subtitle animate-cover-1">{block.data.subtitle || 'The Wedding Celebration Of'}</p>
             <h1 className="public-cover-name animate-cover-2">{block.data.coupleName || 'Couple Name'}</h1>
             <p className="public-cover-date animate-cover-3">{block.data.date || ''}</p>
             {block.data.showGuestName && guestName && (
-              <div className="public-cover-guest animate-cover-4">
-                <p className="public-cover-guest-label">Special Invitation to</p>
+              <div className="public-cover-guest-card public-cover-guest-card--classic animate-cover-4">
+                <p className="public-cover-guest-label">Special Invitation To</p>
                 <p className="public-cover-guest-name">{guestName}</p>
               </div>
             )}
@@ -296,7 +753,7 @@ export function renderPublicBlock(
           {block.data.showScrollIndicator && (
             <div className="public-cover-scroll">
               <div className="scroll-mouse"><div className="scroll-wheel" /></div>
-              <span>Scroll</span>
+              <span>Gulir ke Bawah</span>
             </div>
           )}
         </div>
@@ -309,7 +766,7 @@ export function renderPublicBlock(
         <h2
           className="public-heading"
           style={{
-            fontFamily: block.data.fontFamily || 'Gambarino',
+            fontFamily: block.data.fontFamily || 'var(--font-display)',
             fontSize: `clamp(1.8rem, 8vw, ${block.data.fontSize || 36}px)`,
             color: block.data.color || primaryColor,
             textAlign: block.data.align || 'center',
@@ -347,7 +804,7 @@ export function renderPublicBlock(
       return (
         <div className={`public-quote public-quote--${qStyle}`} style={{ '--quote-color': block.data.color || primaryColor }}>
           {qStyle === 'framed' && <div className="public-quote-mark">"</div>}
-          <blockquote className="public-quote-text">{block.data.text}</blockquote>
+          <blockquote className="public-quote-text" style={{ color: block.data.textColor || undefined }}>{block.data.text}</blockquote>
           {block.data.source && <cite className="public-quote-source">{block.data.source}</cite>}
         </div>
       )
@@ -499,33 +956,44 @@ export function renderPublicBlock(
               if (qMatch) return `https://maps.google.com/maps?q=${qMatch[1]}&output=embed`
               return `https://maps.google.com/maps?q=${encodeURIComponent(event.address || event.venue)}&output=embed`
             })()
+            const gcalUrl = buildGoogleCalendarUrl(event, invitationTitle)
 
             return (
-              <div key={idx} className="public-location-event">
-                {events.length > 1 && (
-                  <div className="public-location-event-name" style={{ color: primaryColor }}>{event.name}</div>
-                )}
-                <div className="public-location-meta">
+              <div key={idx} className="public-location-card" style={{ borderColor: `${primaryColor}22` }}>
+                <div className="public-location-card-header">
+                  <span className="public-location-pill" style={{ color: primaryColor, backgroundColor: `${primaryColor}12` }}>
+                    {event.name || 'Rangkaian Acara'}
+                  </span>
+                  <h3 className="public-location-title" style={{ color: primaryColor }}>
+                    {event.name || 'Akad & Resepsi'}
+                  </h3>
+                </div>
+
+                <div className="public-location-datetime">
                   {event.date && (
                     <div className="public-location-meta-item">
-                      <HiOutlineCalendar size={16} />
-                      <span>{event.date}</span>
+                      <HiOutlineCalendar size={18} style={{ color: primaryColor, flexShrink: 0 }} />
+                      <span className="public-location-date-text">{event.date}</span>
                     </div>
                   )}
                   {event.time && (
                     <div className="public-location-meta-item">
-                      <HiOutlineClock size={16} />
-                      <span>{event.time}</span>
-                    </div>
-                  )}
-                  {event.venue && (
-                    <div className="public-location-meta-item">
-                      <HiOutlineLocationMarker size={16} />
-                      <span>{event.venue}</span>
+                      <HiOutlineClock size={17} style={{ color: primaryColor, flexShrink: 0 }} />
+                      <span className="public-location-time-text">{event.time}</span>
                     </div>
                   )}
                 </div>
-                {event.address && <p className="public-location-address">{event.address}</p>}
+
+                <div className="public-location-venue-box">
+                  {event.venue && (
+                    <div className="public-location-meta-item public-location-meta-item--venue">
+                      <HiOutlineLocationMarker size={18} style={{ color: primaryColor, flexShrink: 0 }} />
+                      <span className="public-location-venue-name">{event.venue}</span>
+                    </div>
+                  )}
+                  {event.address && <p className="public-location-address">{event.address}</p>}
+                </div>
+
                 {event.mapUrl && mapDisplay === 'iframe' && embedSrc && (
                   <div className="public-location-map-embed">
                     <iframe
@@ -538,15 +1006,35 @@ export function renderPublicBlock(
                     />
                   </div>
                 )}
-                {event.mapUrl && (
-                  <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <div className="public-location-actions">
+                  {event.mapUrl && (
                     <a href={event.mapUrl} target="_blank" rel="noopener noreferrer" className="public-location-btn" style={{ background: primaryColor }}>
                       <HiOutlineLocationMarker size={16} />
-                      Get Directions
+                      Petunjuk Lokasi (Google Maps)
                     </a>
+                  )}
+                  <div className="public-location-cal-btns">
+                    <a
+                      href={gcalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="public-location-cal-btn"
+                      style={{ borderColor: `${primaryColor}40`, color: primaryColor }}
+                    >
+                      <HiOutlineCalendar size={14} />
+                      Google Calendar
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => downloadIcsFile(event, invitationTitle)}
+                      className="public-location-cal-btn"
+                      style={{ borderColor: `${primaryColor}40`, color: primaryColor }}
+                    >
+                      <HiOutlineCalendar size={14} />
+                      Simpan .ICS
+                    </button>
                   </div>
-                )}
-                {idx < events.length - 1 && <div className="public-location-separator" />}
+                </div>
               </div>
             )
           })}
@@ -596,72 +1084,118 @@ export function renderPublicBlock(
     }
 
     // ── RSVP ──────────────────────────────────────────────────────────────
-    case 'rsvp':
+    case 'rsvp': {
+      const showQrTicket = block.data.showQrTicket !== false
+      const showSessionChoice = block.data.showSessionChoice !== false
+      const ticketGuestName = rsvpForm.name || (guestName && guestName !== 'Guest' ? guestName : 'Tamu Kehormatan')
+      const ticketCode = `INV-${Math.abs((ticketGuestName + invitationTitle).split('').reduce((a, c) => ((a << 5) - a) + c.charCodeAt(0), 0)).toString(36).toUpperCase().slice(0, 6)}`
+
       if (rsvpSent) {
         return (
           <div className="public-rsvp-done">
             <div className="public-rsvp-done-icon" style={{ background: primaryColor + '20', color: primaryColor }}>
               <HiOutlineCheck size={32} />
             </div>
-            <h4 className="serif-italic">Thank You!</h4>
-            <p>{block.data.confirmationMessage || 'Your attendance confirmation has been saved.'}</p>
+            <h4 className="serif-italic">Terima Kasih!</h4>
+            <p>{block.data.confirmationMessage || 'Konfirmasi kehadiran Anda telah kami terima.'}</p>
+
+            {submittedAttendance === 'yes' && showQrTicket && (
+              <div className="public-qr-ticket" style={{ borderColor: `${primaryColor}30` }}>
+                <div className="public-qr-ticket-header" style={{ background: primaryColor }}>
+                  <span className="public-qr-ticket-badge">PERSONAL ACCESS PASS</span>
+                  <span className="public-qr-ticket-code">#{ticketCode}</span>
+                </div>
+                <div className="public-qr-ticket-body">
+                  <div className="public-qr-ticket-matrix">
+                    <GuestQrMatrix value={`${invitationTitle}|${ticketGuestName}|${rsvpForm.guestCount || 1}|${rsvpForm.session || 'Akad & Resepsi'}|${ticketCode}`} size={136} color="#181818" />
+                  </div>
+                  <div className="public-qr-ticket-info">
+                    <p className="public-qr-ticket-name">{ticketGuestName}</p>
+                    <div className="public-qr-ticket-meta">
+                      <span><strong>{rsvpForm.guestCount || 1}</strong> Orang</span>
+                      <span>•</span>
+                      <span>{rsvpForm.session || 'Akad & Resepsi'}</span>
+                    </div>
+                    <p className="public-qr-ticket-hint">Simpan tangkapan layar (screenshot) tiket QR ini untuk registrasi buku tamu di lokasi acara.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )
       }
       return (
         <div className="public-rsvp-container">
           <form className="public-rsvp">
-            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 28, color: primaryColor }}>{block.data.title || 'Attendance Confirmation'}</h4>
+            <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 24, color: primaryColor }}>{block.data.title || 'Konfirmasi Kehadiran'}</h4>
             <div className="public-rsvp-field">
-              <label>Full Name</label>
-              <input className="public-input" placeholder="Your full name" value={rsvpForm.name} onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })} required />
+              <label>Nama Lengkap</label>
+              <input className="public-input" placeholder="Nama lengkap Anda" value={rsvpForm.name} onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })} required />
             </div>
             <div className="public-rsvp-field">
-              <label>Phone / WhatsApp</label>
+              <label>Nomor WhatsApp</label>
               <input className="public-input" type="tel" placeholder="08xxx..." value={rsvpForm.email} onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })} />
             </div>
             {block.data.showGuestCount !== false && (
               <div className="public-rsvp-field">
-                <label>Number of Guests</label>
+                <label>Jumlah Tamu</label>
                 <select className="public-input public-input--select" value={rsvpForm.guestCount || 1} onChange={e => setRsvpForm({ ...rsvpForm, guestCount: Number(e.target.value) })}>
-                  {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} person{n > 1 ? 's' : ''}</option>)}
+                  {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Orang</option>)}
+                </select>
+              </div>
+            )}
+            {showSessionChoice && (
+              <div className="public-rsvp-field">
+                <label>Sesi Kehadiran</label>
+                <select className="public-input public-input--select" value={rsvpForm.session || 'Akad & Resepsi'} onChange={e => setRsvpForm({ ...rsvpForm, session: e.target.value })}>
+                  <option value="Akad & Resepsi">Hadir di Akad & Resepsi</option>
+                  <option value="Akad Nikah Saja">Akad Nikah Saja</option>
+                  <option value="Resepsi Saja">Resepsi Saja</option>
                 </select>
               </div>
             )}
             <div className="public-rsvp-buttons">
               <button type="submit" className="public-rsvp-btn public-rsvp-btn--attend" style={{ background: primaryColor }} onClick={e => handleRsvp(e, 'yes')} disabled={isRsvpLoading}>
-                {isRsvpLoading ? '...' : (block.data.attendingLabel || 'Attending ✓')}
+                {isRsvpLoading ? '...' : (block.data.attendingLabel || 'Hadir ✓')}
               </button>
               <button type="submit" className="public-rsvp-btn public-rsvp-btn--decline" onClick={e => handleRsvp(e, 'no')} disabled={isRsvpLoading}>
-                {isRsvpLoading ? '...' : (block.data.declineLabel || 'Decline')}
+                {isRsvpLoading ? '...' : (block.data.declineLabel || 'Berhalangan')}
               </button>
             </div>
           </form>
         </div>
       )
+    }
 
     // ── COUPLE ────────────────────────────────────────────────────────────
     case 'couple': {
       const photoShape = block.data.photoShape || 'portrait'
       const layout = block.data.layout || 'staggered'
+      const initial1 = (block.data.name1 || 'A').trim().charAt(0).toUpperCase()
+      const initial2 = (block.data.name2 || 'B').trim().charAt(0).toUpperCase()
       return (
         <div className={`public-couple public-couple--${layout}`}>
           <div className="public-couple-row">
             {/* Person 1 */}
             <div className="public-person">
-              {block.data.photo1 && (
-                <div className={`public-person-img-wrapper public-person-img--${photoShape}`}>
+              {block.data.photo1 ? (
+                <div className={`public-person-img-wrapper public-person-img--${photoShape}`} style={{ borderColor: `${primaryColor}25` }}>
                   <MediaRenderer src={block.data.photo1} className="public-person-img" />
+                </div>
+              ) : (
+                <div className="public-person-monogram" style={{ borderColor: `${primaryColor}35`, color: primaryColor, background: `${primaryColor}0C` }}>
+                  <span className="serif-italic">{initial1}</span>
                 </div>
               )}
               <div className="public-person-info">
-                <h4 className="public-person-name" style={{ color: primaryColor }}>{block.data.name1 || ''}</h4>
+                <span className="public-person-role" style={{ color: primaryColor }}>THE GROOM</span>
+                <h3 className="public-person-name" style={{ color: primaryColor }}>{block.data.name1 || ''}</h3>
                 {block.data.title1 && <p className="public-person-title">{block.data.title1}</p>}
               </div>
               {block.data.instagram1 && (
-                <a href={`https://instagram.com/${block.data.instagram1}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ background: `${primaryColor}15`, color: primaryColor }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
-                  @{block.data.instagram1}
+                <a href={`https://instagram.com/${block.data.instagram1}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ color: primaryColor }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                  <span>@{block.data.instagram1}</span>
                 </a>
               )}
             </div>
@@ -669,25 +1203,30 @@ export function renderPublicBlock(
             {/* Ampersand connector */}
             {block.data.showAmpersand !== false && (
               <div className="public-couple-amp" style={{ color: primaryColor }}>
-                <span className="serif-italic">&</span>
+                <span className="public-couple-amp-symbol">&</span>
               </div>
             )}
 
             {/* Person 2 */}
-            <div className="public-person" style={{ marginTop: layout === 'staggered' && block.data.photo2 ? 48 : 0 }}>
-              {block.data.photo2 && (
-                <div className={`public-person-img-wrapper public-person-img--${photoShape}`}>
+            <div className="public-person" style={{ marginTop: layout === 'staggered' && block.data.photo2 ? 44 : 0 }}>
+              {block.data.photo2 ? (
+                <div className={`public-person-img-wrapper public-person-img--${photoShape}`} style={{ borderColor: `${primaryColor}25` }}>
                   <MediaRenderer src={block.data.photo2} className="public-person-img" />
+                </div>
+              ) : (
+                <div className="public-person-monogram" style={{ borderColor: `${primaryColor}35`, color: primaryColor, background: `${primaryColor}0C` }}>
+                  <span className="serif-italic">{initial2}</span>
                 </div>
               )}
               <div className="public-person-info">
-                <h4 className="public-person-name" style={{ color: primaryColor }}>{block.data.name2 || ''}</h4>
+                <span className="public-person-role" style={{ color: primaryColor }}>THE BRIDE</span>
+                <h3 className="public-person-name" style={{ color: primaryColor }}>{block.data.name2 || ''}</h3>
                 {block.data.title2 && <p className="public-person-title">{block.data.title2}</p>}
               </div>
               {block.data.instagram2 && (
-                <a href={`https://instagram.com/${block.data.instagram2}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ background: `${primaryColor}15`, color: primaryColor }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
-                  @{block.data.instagram2}
+                <a href={`https://instagram.com/${block.data.instagram2}`} target="_blank" rel="noopener noreferrer" className="public-person-ig" style={{ color: primaryColor }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                  <span>@{block.data.instagram2}</span>
                 </a>
               )}
             </div>
@@ -746,7 +1285,7 @@ export function renderPublicBlock(
           )}
           {block.data.note && (
             <div className="public-dresscode-note">
-              <span>⚠</span> {block.data.note}
+              <span>Catatan:</span> {block.data.note}
             </div>
           )}
         </div>
@@ -772,6 +1311,15 @@ export function renderPublicBlock(
                 <GiftAccountCard key={i} account={acc} primaryColor={primaryColor} isPreviewUrl={isPreviewUrl} />
               ))}
             </div>
+          )}
+
+          {giftData.physicalAddress && (
+            <PhysicalGiftCard
+              recipient={giftData.physicalRecipient}
+              phone={giftData.physicalPhone}
+              address={giftData.physicalAddress}
+              primaryColor={primaryColor}
+            />
           )}
 
           {giftData.qrisImage && (
@@ -800,37 +1348,53 @@ export function renderPublicBlock(
       const displayMode = block.data.displayMode || 'masonry'
       return (
         <div className="public-wishes">
-          <h4 className="serif-italic public-wishes-title" style={{ color: primaryColor }}>{block.data.title || 'Send Your Wishes'}</h4>
+          <h4 className="serif-italic public-wishes-title" style={{ color: primaryColor }}>{block.data.title || 'Ucapan & Doa'}</h4>
 
           <form className="public-wish-form" onSubmit={handleSendWish}>
             {wishSent && (
               <div className="public-wish-sent-msg">
-                <HiOutlineCheck size={16} /> Wishes sent! Thank you.
+                <HiOutlineCheck size={16} /> Ucapan terkirim! Terima kasih atas doa Anda.
               </div>
             )}
-            <input className="public-input" placeholder="Your Name" value={wishForm.name} onChange={e => setWishForm({ ...wishForm, name: e.target.value })} required disabled={isWishLoading} />
-            <textarea className="public-input" placeholder="Write your wishes and prayers..." rows={3} value={wishForm.content} onChange={e => setWishForm({ ...wishForm, content: e.target.value })} required disabled={isWishLoading} />
+            <input className="public-input" placeholder="Nama Anda" value={wishForm.name} onChange={e => setWishForm({ ...wishForm, name: e.target.value })} required disabled={isWishLoading} />
+            <textarea className="public-input" placeholder="Tuliskan ucapan dan doa terbaik untuk kedua mempelai..." rows={3} value={wishForm.content} onChange={e => setWishForm({ ...wishForm, content: e.target.value })} required disabled={isWishLoading} />
             <button type="submit" className="public-wish-btn" style={{ background: primaryColor }} disabled={isWishLoading || !wishForm.content.trim()}>
-              {isWishLoading ? 'Sending...' : '✉ Send Wish'}
+              {isWishLoading ? 'Mengirim...' : 'Kirim Ucapan'}
             </button>
           </form>
 
           {wishes.length > 0 && (
             <div className={`public-wishes-list public-wishes-list--${displayMode}`}>
-              {wishes.map((msg, i) => (
-                <div key={i} className="public-wish-card">
-                  <div className="public-wish-avatar" style={{ background: `${primaryColor}20`, color: primaryColor }}>
-                    {(msg.author || 'T').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="public-wish-body">
-                    <p className="public-wish-content">"{msg.content}"</p>
-                    <div className="public-wish-footer">
-                      <span className="public-wish-author" style={{ color: primaryColor }}>{msg.author || 'Tamu'}</span>
-                      {msg.date && <span className="public-wish-date">{new Date(msg.date).toLocaleDateString()}</span>}
+              {wishes.map((msg, i) => {
+                const isAttending = msg.attendance === 'yes' || msg.attendance === 'attending' || msg.attendance === true
+                const isDeclined = msg.attendance === 'no' || msg.attendance === 'declined' || msg.attendance === false
+                return (
+                  <div key={i} className="public-wish-card">
+                    <div className="public-wish-avatar" style={{ background: `${primaryColor}20`, color: primaryColor }}>
+                      {(msg.author || 'T').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="public-wish-body">
+                      <p className="public-wish-content">"{msg.content}"</p>
+                      <div className="public-wish-footer">
+                        <div className="public-wish-author-row">
+                          <span className="public-wish-author" style={{ color: primaryColor }}>{msg.author || 'Tamu'}</span>
+                          {isAttending && (
+                            <span className="public-wish-badge public-wish-badge--yes" style={{ background: `${primaryColor}15`, color: primaryColor }}>
+                              ✓ Hadir
+                            </span>
+                          )}
+                          {isDeclined && (
+                            <span className="public-wish-badge public-wish-badge--no">
+                              Berhalangan
+                            </span>
+                          )}
+                        </div>
+                        {msg.date && <span className="public-wish-date">{new Date(msg.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -945,6 +1509,144 @@ export function renderPublicBlock(
       )
     }
 
+    case 'thankYou':
+      return (
+        <div className="public-thank-you">
+          <h4 className="serif-italic" style={{ fontSize: 22, color: primaryColor, marginBottom: 16 }}>{block.data.title || 'Terima Kasih'}</h4>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 24 }}>{block.data.description}</p>
+          <div className="public-thank-you-signatures">
+            {block.data.signature1 && (
+              <div className="public-ty-sig">
+                <span className="public-ty-sig-label">Hormat Kami,</span>
+                <span className="public-ty-sig-name">{block.data.signature1}</span>
+              </div>
+            )}
+            {block.data.signature2 && (
+              <div className="public-ty-sig">
+                <span className="public-ty-sig-label">Turut Mengundang,</span>
+                <span className="public-ty-sig-name">{block.data.signature2}</span>
+              </div>
+            )}
+          </div>
+          {block.data.coupleSignature && (
+            <div className="public-thank-you-couple" style={{ color: primaryColor }}>{block.data.coupleSignature}</div>
+          )}
+        </div>
+      )
+
+    case 'liveStreaming': {
+      const provider = block.data.provider || 'youtube'
+      const title = block.data.title || 'Live Streaming'
+      const desc = block.data.description || 'Bergabunglah bersama kami secara virtual dalam merayakan momen suci ini.'
+      const url = block.data.url
+      return (
+        <div className="public-livestreaming" style={{ textAlign: 'center', width: '100%' }}>
+          <h4 className="serif-italic" style={{ fontSize: 22, color: primaryColor, marginBottom: 8 }}>{title}</h4>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>{desc}</p>
+          {url ? (
+            provider === 'youtube' && (url.includes('youtube.com') || url.includes('youtu.be')) ? (
+              <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '16/9', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+                <iframe 
+                  src={`https://www.youtube.com/embed/${url.includes('v=') ? url.split('v=')[1].split('&')[0] : url.split('/').pop()}`} 
+                  style={{ width: '100%', height: '100%', border: 'none' }} 
+                  allowFullScreen 
+                />
+              </div>
+            ) : (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="public-location-btn" style={{ background: primaryColor }}>
+                <HiOutlineExternalLink size={16} /> Watch Live Stream
+              </a>
+            )
+          ) : (
+            <div style={{ padding: '24px', background: 'rgba(0,0,0,0.03)', borderRadius: 8, color: 'var(--text-muted)', fontSize: 13 }}>
+              Live stream link will be available soon.
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    case 'weddingAR': {
+      const title = block.data.title || 'Instagram AR Filter'
+      const subtitle = block.data.subtitle || 'Abadikan momen bahagia kami dengan menggunakan filter Instagram khusus pernikahan kami!'
+      const url = block.data.url
+      const qrCode = block.data.qrCode
+      return (
+        <div className="public-weddingar" style={{ textAlign: 'center', width: '100%' }}>
+          <h4 className="serif-italic" style={{ fontSize: 22, color: primaryColor, marginBottom: 8 }}>{title}</h4>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>{subtitle}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            {qrCode && (
+              <img src={qrCode} alt="AR Filter QR Code" style={{ width: 140, height: 140, borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', padding: 8, background: '#fff' }} />
+            )}
+            {url && (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="public-location-btn" style={{ background: primaryColor }}>
+                <span>🤳</span> Open AR Filter
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    case 'healthProtocol': {
+      const items = [
+        { icon: '😷', label: 'Gunakan Masker' },
+        { icon: '🧼', label: 'Cuci Tangan' },
+        { icon: '↔️', label: 'Jaga Jarak' },
+        { icon: '🙏', label: 'Hindari Salaman' }
+      ]
+      return (
+        <div className="public-health" style={{ textAlign: 'center', width: '100%' }}>
+          <h4 className="serif-italic" style={{ fontSize: 22, color: primaryColor, marginBottom: 8 }}>Protokol Kesehatan</h4>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>Untuk kenyamanan bersama, mohon patuhi protokol kesehatan berikut:</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {items.map((item, idx) => (
+              <div key={idx} className="public-health-item">
+                <div className="public-health-icon">{item.icon}</div>
+                <div className="public-health-label">{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    case 'socialShare': {
+      const message = block.data.message || 'Anda diundang ke pernikahan kami.'
+      const url = window.location.href
+      const shareText = encodeURIComponent(message + ' ' + url)
+      const platforms = block.data.platforms || ['whatsapp', 'facebook', 'twitter', 'telegram']
+      return (
+        <div className="public-social-share">
+          <h4 className="serif-italic" style={{ fontSize: 22, color: primaryColor, marginBottom: 8 }}>Share This Invitation</h4>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Bagikan kabar bahagia ini kepada keluarga dan teman.</p>
+          <div className="public-social-buttons">
+            {platforms.includes('whatsapp') && (
+              <a href={`https://api.whatsapp.com/send?text=${shareText}`} target="_blank" rel="noopener noreferrer" className="public-social-btn whatsapp" title="WhatsApp">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.488 1.459 5.407 1.46h.006c5.553 0 10.07-4.51 10.074-10.059.002-2.689-1.043-5.216-2.943-7.119C17.29 1.53 14.77.487 12.006.487 6.45.487 1.936 5.002 1.932 10.55c-.001 1.902.501 3.761 1.456 5.376l-1.018 3.722 3.823-1.002zM17.48 15.14c-.3-.15-1.782-.88-2.057-.98-.275-.1-.475-.15-.675.15-.2.3-.77.98-.94 1.18-.17.2-.35.225-.65.075-3.05-1.52-5.006-4.507-5.967-6.162-.27-.46-.02-.705.23-.956.225-.225.5-.58.75-.88.25-.3.325-.5.5-.83.17-.33.08-.63-.04-.88-.12-.25-.97-2.34-1.33-3.21-.35-.85-.71-.73-.97-.73h-.83c-.27 0-.72.1-1.1.52-.37.42-1.43 1.4-1.43 3.42 0 2.02 1.47 3.97 1.67 4.24.2.27 2.89 4.41 7 6.17 2.45 1.05 3.39 1.16 4.61.98.7-.1 2.15-.88 2.45-1.73.3-.85.3-1.58.21-1.73-.09-.15-.29-.24-.59-.39z"/></svg>
+              </a>
+            )}
+            {platforms.includes('facebook') && (
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="public-social-btn facebook" title="Facebook">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </a>
+            )}
+            {platforms.includes('twitter') && (
+              <a href={`https://twitter.com/intent/tweet?text=${shareText}`} target="_blank" rel="noopener noreferrer" className="public-social-btn twitter" title="Twitter">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+              </a>
+            )}
+            {platforms.includes('telegram') && (
+              <a href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer" className="public-social-btn telegram" title="Telegram">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0C5.344 0 0 5.344 0 11.944c0 5.622 3.88 10.325 9.125 11.595-.125-.944-.233-2.385.044-3.578.25-1.077 1.6-6.786 1.6-6.786s-.408-.816-.408-2.025c0-1.9 1.1-3.32 2.483-3.32 1.17 0 1.73.875 1.73 1.925 0 1.177-.75 2.937-1.137 4.57-.32 1.36.68 2.467 2.022 2.467 2.428 0 4.294-2.56 4.294-6.254 0-3.27-2.35-5.56-5.707-5.56-3.89 0-6.175 2.92-6.175 5.935 0 1.176.45 2.436 1.017 3.115.11.133.127.25.093.385-.1.425-.333 1.358-.38 1.547-.06.26-.2.356-.46.24-1.72-.8-2.793-3.3-2.793-5.32 0-4.328 3.146-8.303 9.065-8.303 4.76 0 8.455 3.39 8.455 7.917 0 4.726-2.98 8.532-7.11 8.532-1.39 0-2.69-.72-3.136-1.58L10.9 20.358c-.36 1.378-.8 3.036-.8 3.036l-.01.037c2.51.77 5.176.243 7.21-1.394 2.033-1.637 3.178-4.083 3.178-6.657C20.478 5.344 15.134 0 11.944 0z"/></svg>
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    }
+
     default:
       return null
   }
@@ -964,18 +1666,50 @@ function GiftAccountCard({ account, primaryColor, isPreviewUrl }) {
     })
   }
   return (
-    <div className="public-gift-card">
-      <div className="public-gift-card-header">
-        <span className="public-gift-bank-name">{account.bankName || (isPreviewUrl ? '(Bank Name)' : '')}</span>
-      </div>
-      <div className="public-gift-account-number" onClick={handleCopy} title="Tap to copy">
-        {account.accountNumber || (isPreviewUrl ? '(Account Number)' : '')}
-        <span className="public-gift-copy-icon" style={{ color: primaryColor }}>
-          {copied ? <HiOutlineCheck size={16} /> : <HiOutlineClipboard size={16} />}
+    <div className="public-gift-card public-gift-card--premiere" style={{ borderColor: `${primaryColor}25` }}>
+      <div className="public-gift-card-top">
+        <div className="public-gift-chip">
+          <svg width="28" height="22" viewBox="0 0 28 22" fill="none">
+            <rect x="0.5" y="0.5" width="27" height="21" rx="3.5" fill="#D8B86A" fillOpacity="0.3" stroke="#C5A059" />
+            <path d="M9 1V21M19 1V21M1 8H27M1 14H27" stroke="#C5A059" strokeOpacity="0.6" strokeWidth="0.8" />
+          </svg>
+        </div>
+        <span className="public-gift-bank-name" style={{ color: primaryColor }}>
+          {account.bankName || (isPreviewUrl ? 'BANK' : '')}
         </span>
       </div>
-      <div className="public-gift-account-name">{account.accountName || (isPreviewUrl ? '(Account Name)' : '')}</div>
-      {copied && <div className="public-gift-copied-toast" style={{ color: primaryColor }}>Copied! ✓</div>}
+      <div className="public-gift-account-number" onClick={handleCopy} title="Ketuk untuk menyalin">
+        <span>{account.accountNumber || (isPreviewUrl ? '0000 0000 00' : '')}</span>
+        <button type="button" className="public-gift-copy-pill" style={{ background: copied ? primaryColor : `${primaryColor}14`, color: copied ? '#fff' : primaryColor }}>
+          {copied ? <><HiOutlineCheck size={14} /> Tersalin</> : <><HiOutlineClipboard size={14} /> Salin</>}
+        </button>
+      </div>
+      <div className="public-gift-account-name">a.n. {account.accountName || (isPreviewUrl ? 'Nama Penerima' : '')}</div>
+    </div>
+  )
+}
+
+function PhysicalGiftCard({ recipient, phone, address, primaryColor }) {
+  const [copied, setCopied] = useState(false)
+  const fullText = [recipient, phone, address].filter(Boolean).join(' - ')
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullText).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <div className="public-gift-physical" style={{ borderColor: `${primaryColor}28` }}>
+      <div className="public-gift-physical-header">
+        <span className="public-gift-physical-badge" style={{ background: `${primaryColor}15`, color: primaryColor }}>
+          🎁 Kirim Kado Fisik
+        </span>
+        <button type="button" onClick={handleCopy} className="public-gift-copy-pill" style={{ background: copied ? primaryColor : `${primaryColor}14`, color: copied ? '#fff' : primaryColor }}>
+          {copied ? <><HiOutlineCheck size={14} /> Alamat Tersalin</> : <><HiOutlineClipboard size={14} /> Salin Alamat</>}
+        </button>
+      </div>
+      {recipient && <p className="public-gift-physical-name">{recipient} {phone ? `(${phone})` : ''}</p>}
+      <p className="public-gift-physical-address">{address}</p>
     </div>
   )
 }
@@ -1105,10 +1839,10 @@ function PublicCountdown({ targetDate, label, expiredMessage, showSeconds, style
   }
 
   const units = [
-    { value: timeLeft.days, label: 'Days' },
-    { value: timeLeft.hours, label: 'Hours' },
-    { value: timeLeft.mins, label: 'Mins' },
-    ...(showSeconds !== false ? [{ value: timeLeft.secs, label: 'Secs' }] : [])
+    { value: timeLeft.days, label: 'Hari' },
+    { value: timeLeft.hours, label: 'Jam' },
+    { value: timeLeft.mins, label: 'Menit' },
+    ...(showSeconds !== false ? [{ value: timeLeft.secs, label: 'Detik' }] : [])
   ]
 
   return (
@@ -1160,23 +1894,175 @@ function ScrollRevealBlock({ children, className, style, isCover = false, animat
   )
 }
 
-function BackgroundMusic({ url, isPlaying, setIsPlaying, audioRef }) {
+function BackgroundMusic({ url, songTitle, isPlaying, setIsPlaying, audioRef }) {
   return (
     <div className="public-music-player">
       <audio ref={audioRef} src={url} loop />
-      <div className="music-disc-wrapper" onClick={() => setIsPlaying(!isPlaying)}>
+      <button
+        type="button"
+        className={`music-pill-wrapper ${isPlaying ? 'playing' : ''}`}
+        onClick={() => setIsPlaying(!isPlaying)}
+        aria-label={isPlaying ? 'Jeda musik latar' : 'Putar musik latar'}
+      >
         <div className={`music-disc ${isPlaying ? 'music-disc-spinning' : ''}`}>
-          <HiOutlineMusicNote size={20} />
+          <HiOutlineMusicNote size={18} />
           <div className="music-disc-center" />
         </div>
-      </div>
+        {songTitle && (
+          <span className="music-pill-label">
+            {isPlaying ? `♫ ${songTitle}` : 'Musik Dijeda'}
+          </span>
+        )}
+      </button>
     </div>
   )
 }
 
 function IntroOverlay({ isOpen, onOpen, invitation, guestName }) {
+  const envelopeBlock = invitation?.blocks?.find(b => b.type === 'envelopeAnimation')
   const coverBlock = invitation?.blocks?.find(b => b.type === 'cover')
+  const coupleName = coverBlock?.data?.coupleName || invitation?.title || 'The Wedding'
+  const subtitle = coverBlock?.data?.subtitle || 'The Wedding Invitation'
+  const eventDate = coverBlock?.data?.date || ''
   const bgMedia = coverBlock?.data?.backgroundImage
+  const monogram = envelopeBlock?.data?.monogram || extractMonogram(coupleName)
+
+  if (envelopeBlock) {
+    const gateStyle = envelopeBlock.data?.gateStyle || 'arch-gate'
+    const envColor = envelopeBlock.data?.envelopeColor || invitation?.theme?.primaryColor || '#3D4828'
+    const paperColor = envelopeBlock.data?.paperColor || invitation?.theme?.backgroundColor || '#FAF7F2'
+    const btnText = envelopeBlock.data?.openButtonText || 'Buka Undangan'
+
+    // 1. SPLIT ARCH GATE (Featured Interactive Double Doors)
+    if (gateStyle === 'arch-gate') {
+      return (
+        <div
+          className={`gate-arch-overlay ${isOpen ? 'opened' : ''}`}
+          style={{ '--gate-color': envColor, '--paper-color': paperColor }}
+        >
+          <div className="gate-arch-door gate-arch-door--left">
+            <div className="gate-arch-panel-ornament" />
+            <div className="gate-arch-handle gate-arch-handle--left" />
+          </div>
+          <div className="gate-arch-door gate-arch-door--right">
+            <div className="gate-arch-panel-ornament" />
+            <div className="gate-arch-handle gate-arch-handle--right" />
+          </div>
+
+          <div className="gate-arch-center">
+            <div className="gate-arch-card" style={{ background: paperColor }}>
+              <div className="gate-arch-card-frame" style={{ borderColor: `${envColor}25` }}>
+                {bgMedia && (
+                  <div className="gate-arch-photo-window" style={{ borderColor: `${envColor}35` }}>
+                    <MediaRenderer
+                      src={bgMedia}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div className="gate-arch-photo-scrim" />
+                  </div>
+                )}
+                <div className="gate-arch-monogram" style={{ color: envColor, borderColor: `${envColor}35` }}>
+                  <span className="serif-italic">{monogram}</span>
+                </div>
+                <p className="gate-arch-subtitle" style={{ color: envColor }}>{subtitle}</p>
+                <h1 className="gate-arch-title serif-italic" style={{ color: envColor }}>{coupleName}</h1>
+                {eventDate && <p className="gate-arch-date">{eventDate}</p>}
+
+                {guestName && guestName !== 'Guest' && (
+                  <div className="gate-arch-guest" style={{ borderColor: `${envColor}25`, background: `${envColor}08` }}>
+                    <p className="gate-arch-guest-label">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+                    <h2 className="gate-arch-guest-name" style={{ color: envColor }}>{guestName}</h2>
+                  </div>
+                )}
+
+                <button type="button" className="gate-arch-open-btn" style={{ background: envColor }} onClick={onOpen}>
+                  <HiOutlineMailOpen size={16} />
+                  <span>{btnText}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 2. EDITORIAL MAGAZINE GATE
+    if (gateStyle === 'editorial') {
+      return (
+        <div className={`gate-editorial-overlay ${isOpen ? 'opened' : ''}`} style={{ '--gate-color': envColor }}>
+          {bgMedia && (
+            <MediaRenderer
+              src={bgMedia}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+            />
+          )}
+          <div className="gate-editorial-scrim" />
+          <div className="gate-editorial-frame">
+            <div className="gate-editorial-masthead">
+              <span>INVORI ARCHIVE</span>
+              <span>{monogram}</span>
+              <span>{eventDate || 'SPECIAL ISSUE'}</span>
+            </div>
+            <div className="gate-editorial-body">
+              <p className="gate-editorial-kicker">{subtitle}</p>
+              <h1 className="gate-editorial-headline serif-italic">{coupleName}</h1>
+              {guestName && guestName !== 'Guest' && (
+                <div className="gate-editorial-guest">
+                  <span>RESERVED FOR</span>
+                  <strong>{guestName}</strong>
+                </div>
+              )}
+              <button type="button" className="gate-editorial-btn" onClick={onOpen}>
+                <HiOutlineMailOpen size={16} />
+                <span>{btnText}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 3. WAX SEAL ENVELOPE (Artisanal Pocket & Flap)
+    return (
+      <div
+        className={`envelope-overlay ${isOpen ? 'opened' : ''}`}
+        style={{ '--envelope-color': envColor, '--paper-color': paperColor }}
+      >
+        <div className="envelope-wrapper">
+          <div className="envelope-pocket" style={{ background: envColor }}>
+            <div className="envelope-wax-seal" style={{ background: envColor }} onClick={onOpen} title={btnText}>
+              <div className="envelope-wax-seal-rim" />
+              <span className="envelope-wax-monogram serif-italic">{monogram}</span>
+            </div>
+
+            <div className="envelope-card" style={{ background: paperColor }}>
+              <div className="envelope-card-inner" style={{ borderColor: `${envColor}25` }}>
+                <div className="envelope-crest-monogram" style={{ color: envColor }}>
+                  <span className="serif-italic">{monogram}</span>
+                </div>
+                <p className="envelope-subtitle" style={{ color: envColor }}>{subtitle}</p>
+                <h1 className="envelope-title serif-italic" style={{ color: envColor }}>{coupleName}</h1>
+                {eventDate && <p className="envelope-date">{eventDate}</p>}
+
+                {guestName && guestName !== 'Guest' && (
+                  <div className="envelope-guest-badge" style={{ borderColor: `${envColor}20`, background: `${envColor}08` }}>
+                    <p className="envelope-guest-label">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+                    <h2 className="envelope-guest-name" style={{ color: envColor }}>{guestName}</h2>
+                  </div>
+                )}
+
+                <button type="button" className="envelope-open-action" style={{ background: envColor }} onClick={onOpen}>
+                  <HiOutlineMailOpen size={16} />
+                  <span>{btnText}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`public-intro-overlay ${isOpen ? 'hidden' : ''}`}>
       <div className="public-intro-container" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -1189,24 +2075,24 @@ function IntroOverlay({ isOpen, onOpen, invitation, guestName }) {
         <div className="public-cover-overlay" style={{ backgroundColor: coverBlock?.data?.overlayColor || '#000000', opacity: coverBlock?.data?.overlayOpacity ?? 0.6 }} />
         <div className="public-intro-content">
           <div className="public-intro-header">
-            <p className="public-cover-subtitle" style={{ color: '#fff', opacity: 0.8 }}>{coverBlock?.data?.subtitle || 'Wedding Invitation'}</p>
+            <p className="public-cover-subtitle" style={{ color: '#fff', opacity: 0.8 }}>{subtitle}</p>
             <h1 className="serif-italic" style={{ color: '#fff', fontSize: 'clamp(2rem, 10vw, 3.2rem)', margin: '12px 0', lineHeight: 1.15 }}>
-              {coverBlock?.data?.coupleName || 'Couple Name'}
+              {coupleName}
             </h1>
-            {coverBlock?.data?.date && (
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 8 }}>{coverBlock.data.date}</p>
+            {eventDate && (
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 8 }}>{eventDate}</p>
             )}
           </div>
           {guestName && guestName !== 'Guest' && (
             <div className="public-intro-guest">
-              <p className="public-intro-guest-label">Special Invitation for</p>
+              <p className="public-intro-guest-label">Kepada Yth. Bapak/Ibu/Saudara/i</p>
               <h2 className="public-intro-guest-name">{guestName}</h2>
             </div>
           )}
           <div style={{ marginTop: 32 }}>
-            <button className="public-intro-btn" onClick={onOpen}>
+            <button type="button" className="public-intro-btn" onClick={onOpen}>
               <HiOutlineMailOpen size={18} />
-              Open Invitation
+              Buka Undangan
             </button>
           </div>
         </div>

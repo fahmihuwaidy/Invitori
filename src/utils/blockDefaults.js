@@ -1,7 +1,7 @@
 export const BLOCK_TYPES = {
   // ─── ESSENTIALS ──────────────────────────────────────────
   cover: {
-    label: 'Cover',
+    label: 'Hero Cover',
     category: 'essential',
     icon: '🎴',
     defaults: {
@@ -13,35 +13,15 @@ export const BLOCK_TYPES = {
       showScrollIndicator: true,
       overlayOpacity: 0.4,
       overlayColor: '#000000',
-      // layout: 'classic' | 'minimal' | 'split'
       coverLayout: 'classic',
       coverAlignItems: 'center',
       coverTextAlign: 'center',
       fullWidth: true,
     }
   },
-  footer: {
-    label: 'Footer',
-    category: 'essential',
-    icon: '🏁',
-    defaults: {
-      thankYouText: 'Thank You',
-      coupleName: 'Oliver & Sophia',
-      subtitle: 'For Being Part of Our Special Day',
-      photos: [],
-      showWatermark: true,
-      // bgStyle: 'dark' | 'gradient' | 'slideshow'
-      bgStyle: 'dark',
-      gradientFrom: '#2D2D2D',
-      gradientTo: '#1a1a1a',
-      fullWidth: true,
-    }
-  },
-
-  // ─── TYPOGRAPHY ───────────────────────────────────────────
   heading: {
     label: 'Heading',
-    category: 'typography',
+    category: 'essential',
     icon: 'T',
     defaults: {
       content: 'Your Heading',
@@ -59,7 +39,7 @@ export const BLOCK_TYPES = {
   },
   paragraph: {
     label: 'Paragraph',
-    category: 'typography',
+    category: 'essential',
     icon: '≡',
     defaults: {
       content: 'Write your text here...',
@@ -72,55 +52,119 @@ export const BLOCK_TYPES = {
       fullWidth: true,
     }
   },
-  quote: {
-    label: 'Quote',
-    category: 'typography',
-    icon: '❝',
+  thankYou: {
+    label: 'Thank You',
+    category: 'essential',
+    icon: '✍️',
     defaults: {
-      text: '"And of His signs is that He created for you from yourselves mates that you may find tranquility in them."',
-      source: '— QS. Ar-Rum: 21',
-      // style: 'minimal' | 'bordered' | 'framed'
-      style: 'framed',
-      color: '#565F34',
+      title: 'Terima Kasih',
+      description: 'Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu kepada kedua mempelai.',
+      signature1: 'Keluarga Bpk. Montague & Ibu Montague',
+      signature2: 'Keluarga Bpk. Capulet & Ibu Capulet',
+      coupleSignature: 'Romeo & Juliet',
+      fullWidth: true,
+    }
+  },
+  footer: {
+    label: 'Footer Credits',
+    category: 'essential',
+    icon: '🏁',
+    defaults: {
+      thankYouText: 'Thank You',
+      coupleName: 'Oliver & Sophia',
+      subtitle: 'For Being Part of Our Special Day',
+      photos: [],
+      showWatermark: true,
+      bgStyle: 'dark',
+      gradientFrom: '#2D2D2D',
+      gradientTo: '#1a1a1a',
       fullWidth: true,
     }
   },
 
-  // ─── MEDIA & VISUALS ─────────────────────────────────────
-  photo: {
-    label: 'Photo',
-    category: 'media',
-    icon: '📷',
+  // ─── COUPLE ──────────────────────────────────────────────
+  couple: {
+    label: 'Couple Profile',
+    category: 'couple',
+    icon: '💑',
     defaults: {
-      url: '',
-      caption: '',
-      fit: 'cover',
-      // aspectRatio: '1/1' | '4/3' | '16/9' | '3/4' | 'auto'
-      aspectRatio: 'auto',
-      // borderStyle: 'none' | 'shadow' | 'solid' | 'double'
-      borderStyle: 'none',
-      borderRadius: 8,
-      borderColor: '#E0DCD8',
-      shadowIntensity: 0,
+      name1: 'Romeo Montague',
+      name2: 'Juliet Capulet',
+      photo1: '',
+      photo2: '',
+      description: 'We found love in a hopeless place, and now we pledge our lives to one another under the stars.',
+      instagram1: 'romeo',
+      instagram2: 'juliet',
+      title1: 'Son of Mr. & Mrs. Montague',
+      title2: 'Daughter of Mr. & Mrs. Capulet',
+      photoShape: 'portrait',
+      layout: 'staggered',
+      showAmpersand: true,
       fullWidth: true,
     }
   },
-  photoFrame: {
-    label: 'Photo Frame',
-    category: 'media',
-    icon: '🖼',
+
+  // ─── EVENT ───────────────────────────────────────────────
+  location: {
+    label: 'Event Details',
+    category: 'event',
+    icon: '📍',
     defaults: {
-      url: '',
-      caption: '',
-      captionPosition: 'outside', // 'outside' | 'overlay'
-      // frameStyle: 'natural' | 'polaroid' | 'film' | 'oval'
-      frameStyle: 'polaroid',
+      events: [
+        { name: 'Akad Nikah', date: 'Saturday, August 30, 2026', time: '08:00 AM - 10:00 AM', venue: 'Grand Mosque', address: 'Jl. Masjid Agung No. 12', mapUrl: '' },
+        { name: 'Resepsi Pernikahan', date: 'Saturday, August 30, 2026', time: '11:00 AM - 02:00 PM', venue: 'Grand Ballroom', address: 'Jl. Pemuda Kencana No. 45', mapUrl: '' }
+      ],
+      mapDisplay: 'iframe',
+      fullWidth: true,
+    }
+  },
+  schedule: {
+    label: 'Timeline Agenda',
+    category: 'event',
+    icon: '📅',
+    defaults: {
+      title: 'Wedding Agenda',
+      layoutMode: 'timeline',
+      items: [
+        { time: '08:00', title: 'Akad Nikah', description: 'Sacred wedding vow ceremony', icon: '💍' },
+        { time: '11:00', title: 'Resepsi', description: 'Wedding reception guest greetings', icon: '🥂' },
+        { time: '18:00', title: 'Dinner Party', description: 'Intimate dinner party with family', icon: '🕯️' },
+      ],
+      fullWidth: true,
+    }
+  },
+  countdown: {
+    label: 'Countdown Timer',
+    category: 'event',
+    icon: '⏰',
+    defaults: {
+      targetDate: '2026-08-30T08:00:00',
+      label: 'Menuju Hari Bahagia',
+      expiredMessage: '🎉 The day has come!',
+      showSeconds: true,
+      style: 'boxed',
+      fullWidth: true,
+    }
+  },
+
+  // ─── GALLERY ─────────────────────────────────────────────
+  gallery: {
+    label: 'Photo Gallery',
+    category: 'gallery',
+    icon: '📸',
+    defaults: {
+      images: [],
+      layoutMode: 'masonry',
+      columns: 2,
+      gap: 8,
+      enableLightbox: true,
+      showCaptions: false,
       fullWidth: true,
     }
   },
   video: {
-    label: 'Video',
-    category: 'media',
+    label: 'Video Player',
+    category: 'gallery',
     icon: '🎬',
     defaults: {
       url: '',
@@ -131,174 +175,146 @@ export const BLOCK_TYPES = {
       fullWidth: true,
     }
   },
-  gallery: {
-    label: 'Gallery',
-    category: 'media',
-    icon: '📸',
+  photo: {
+    label: 'Single Photo',
+    category: 'gallery',
+    icon: '📷',
     defaults: {
-      images: [],
-      // layoutMode: 'grid' | 'masonry' | 'slideshow'
-      layoutMode: 'masonry',
-      columns: 2,
-      gap: 8,
-      enableLightbox: true,
-      showCaptions: false,
+      url: '',
+      caption: '',
+      fit: 'cover',
+      aspectRatio: 'auto',
+      borderStyle: 'none',
+      borderRadius: 8,
+      borderColor: '#E0DCD8',
+      shadowIntensity: 0,
       fullWidth: true,
     }
   },
-  location: {
-    label: 'Location',
-    category: 'media',
-    icon: '📍',
+  photoFrame: {
+    label: 'Photo Frame',
+    category: 'gallery',
+    icon: '🖼',
     defaults: {
-      // Multi-event support
-      events: [
-        { name: 'Akad Nikah', date: '', time: '', venue: 'Venue Name', address: 'Address', mapUrl: '', mapEmbed: '' }
-      ],
-      // mapDisplay: 'button' | 'iframe'
-      mapDisplay: 'button',
+      url: '',
+      caption: '',
+      captionPosition: 'outside',
+      frameStyle: 'polaroid',
       fullWidth: true,
     }
   },
 
-  // ─── DETAILS ─────────────────────────────────────────────
-  couple: {
-    label: 'Couple',
-    category: 'details',
-    icon: '💑',
-    defaults: {
-      name1: '',
-      name2: '',
-      photo1: '',
-      photo2: '',
-      description: '',
-      instagram1: '',
-      instagram2: '',
-      title1: '',
-      title2: '',
-      // photoShape: 'circle' | 'rounded' | 'portrait'
-      photoShape: 'portrait',
-      // layout: 'staggered' | 'side-by-side' | 'stacked'
-      layout: 'staggered',
-      showAmpersand: true,
-      fullWidth: true,
-    }
-  },
-  countdown: {
-    label: 'Countdown',
-    category: 'details',
-    icon: '⏰',
-    defaults: {
-      targetDate: '',
-      label: 'Days until the big day',
-      expiredMessage: '🎉 The day has come!',
-      showSeconds: true,
-      // style: 'minimal' | 'boxed' | 'outlined'
-      style: 'boxed',
-      fullWidth: true,
-    }
-  },
-  schedule: {
-    label: 'Schedule',
-    category: 'details',
-    icon: '📅',
-    defaults: {
-      title: 'Wedding Agenda',
-      // layoutMode: 'timeline' | 'cards'
-      layoutMode: 'timeline',
-      items: [
-        { time: '08:00', title: 'Akad Nikah', description: 'Sacred wedding ceremony', icon: '💍' },
-        { time: '11:00', title: 'Resepsi', description: 'Wedding reception & lunch', icon: '🥂' },
-        { time: '18:00', title: 'Dinner', description: 'Evening dinner celebration', icon: '🕯️' },
-      ],
-      fullWidth: true,
-    }
-  },
+  // ─── STORY ───────────────────────────────────────────────
   story: {
-    label: 'Our Story',
-    category: 'details',
+    label: 'Love Story',
+    category: 'story',
     icon: '📖',
     defaults: {
       items: [
-        { date: '', title: '', description: '', photo: '' }
+        { date: '2020', title: 'First Meet', description: 'We locked eyes across a crowded room and knew instantly.', photo: '' },
+        { date: '2023', title: 'The Proposal', description: 'Underneath a canopy of stars, he asked and she said yes!', photo: '' }
       ],
       fullWidth: true,
     }
   },
-  dressCode: {
-    label: 'Dress Code',
-    category: 'details',
-    icon: '👗',
+
+  // ─── SOCIAL ──────────────────────────────────────────────
+  socialShare: {
+    label: 'Social Share',
+    category: 'social',
+    icon: '🔗',
     defaults: {
-      title: 'Dress Code',
-      description: 'We kindly request that guests dress according to the theme of the event.',
-      swatches: [
-        { color: '#EDE9E7', label: 'Cream' },
-        { color: '#8B956D', label: 'Sage Green' },
-        { color: '#C4A882', label: 'Warm Sand' },
-      ],
-      note: 'Please avoid wearing white, black, or bright neon colors.',
+      message: 'Anda diundang ke pernikahan Romeo & Juliet. Klik link berikut untuk melihat undangan digital kami.',
+      platforms: ['whatsapp', 'facebook', 'twitter', 'telegram'],
       fullWidth: true,
     }
   },
-  gift: {
-    label: 'Gift',
-    category: 'details',
-    icon: '🎁',
+  weddingAR: {
+    label: 'Wedding Filter / AR',
+    category: 'social',
+    icon: '🤳',
     defaults: {
-      title: 'Wedding Gift',
-      subtitle: 'Your presence is our greatest gift. If you wish to give, below are our details.',
-      // Bank accounts / e-wallets
-      accounts: [
-        { bankName: '', accountNumber: '', accountName: '', logo: '' }
-      ],
-      // QRIS
-      qrisImage: '',
-      // Registry links (replaces removed registry block)
-      registryLinks: [],
+      title: 'Instagram AR Filter',
+      subtitle: 'Abadikan momen bahagia kami dengan menggunakan filter Instagram khusus pernikahan kami!',
+      url: 'https://instagram.com/a/r/filter',
+      qrCode: '',
+      fullWidth: true,
+    }
+  },
+
+  // ─── INTERACTIVE ─────────────────────────────────────────
+  rsvp: {
+    label: 'RSVP Form',
+    category: 'interactive',
+    icon: '✉️',
+    defaults: {
+      title: 'Konfirmasi Kehadiran',
+      attendingLabel: 'Hadir',
+      declineLabel: 'Berhalangan',
+      showGuestCount: true,
+      showSessionChoice: true,
+      showQrTicket: true,
+      confirmationMessage: 'Terima kasih atas konfirmasi kehadiran Anda! Simpan tiket QR di bawah ini untuk akses buku tamu.',
       fullWidth: true,
     }
   },
   wishes: {
-    label: 'Wishes',
-    category: 'details',
+    label: 'Wishes Wall',
+    category: 'interactive',
     icon: '💬',
     defaults: {
-      title: 'Send Your Wishes',
-      // displayMode: 'list' | 'masonry'
+      title: 'Ucapan & Doa Restu',
       displayMode: 'masonry',
       messages: [],
       fullWidth: true,
     }
   },
+  gift: {
+    label: 'Digital Gift',
+    category: 'interactive',
+    icon: '🎁',
+    defaults: {
+      title: 'Tanda Kasih',
+      subtitle: 'Doa restu Anda adalah karunia terindah. Namun jika ingin mengirimkan tanda kasih, Anda dapat menyalurkannya melalui rekening atau alamat berikut:',
+      accounts: [
+        { bankName: 'BCA', accountNumber: '8420918273', accountName: 'Romeo Montague', logo: '' }
+      ],
+      qrisImage: '',
+      physicalRecipient: '',
+      physicalPhone: '',
+      physicalAddress: '',
+      registryLinks: [],
+      fullWidth: true,
+    }
+  },
+  liveStreaming: {
+    label: 'Live Streaming',
+    category: 'interactive',
+    icon: '📺',
+    defaults: {
+      title: 'Live Streaming',
+      description: 'Bergabunglah bersama kami secara virtual dalam merayakan momen suci ini.',
+      provider: 'youtube', // 'youtube' | 'zoom' | 'custom'
+      url: '',
+      fullWidth: true,
+    }
+  },
+
+  // ─── DECORATIVE ──────────────────────────────────────────
   ornament: {
-    label: 'Ornament',
-    category: 'details',
+    label: 'Divider Ornament',
+    category: 'decorative',
     icon: '✦',
     defaults: {
-      // style: 'line' | 'double-line' | 'dots' | 'floral' | 'wave'
       style: 'floral',
       color: '#C4A882',
       width: 60,
       fullWidth: true,
     }
   },
-  rsvp: {
-    label: 'RSVP',
-    category: 'details',
-    icon: '✉️',
-    defaults: {
-      title: 'Attendance Confirmation',
-      attendingLabel: 'Attending',
-      declineLabel: 'Decline',
-      showGuestCount: true,
-      confirmationMessage: 'Thank you! We look forward to celebrating with you.',
-      fullWidth: true,
-    }
-  },
   floatingOrnament: {
     label: 'Floating Ornament',
-    category: 'media',
+    category: 'decorative',
     icon: '🔮',
     defaults: {
       url: '',
@@ -312,11 +328,104 @@ export const BLOCK_TYPES = {
       fullWidth: true,
     }
   },
+  backgroundMusic: {
+    label: 'Background Music',
+    category: 'decorative',
+    icon: '🎵',
+    defaults: {
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      songTitle: 'Eternal Vows (Instrumental)',
+      autoplay: true,
+      loop: true,
+      volume: 80,
+      fullWidth: true,
+    }
+  },
+  navigationMenu: {
+    label: 'Floating Nav Menu',
+    category: 'decorative',
+    icon: '🧭',
+    defaults: {
+      showCover: true,
+      showCouple: true,
+      showEvent: true,
+      showGallery: true,
+      showWishes: true,
+      showGift: true,
+      fullWidth: true,
+    }
+  },
+  particles: {
+    label: 'Particle Effects',
+    category: 'decorative',
+    icon: '🌸',
+    defaults: {
+      effect: 'sakura', // 'sakura' | 'hearts' | 'snow' | 'confetti'
+      intensity: 30,
+      fullWidth: true,
+    }
+  },
+  envelopeAnimation: {
+    label: 'Envelope Opener',
+    category: 'decorative',
+    icon: '✉️',
+    defaults: {
+      gateStyle: 'arch-gate', // 'arch-gate' | 'wax-seal' | 'editorial' | 'classic'
+      monogram: '',
+      openButtonText: 'Buka Undangan',
+      envelopeColor: '#344c2d',
+      paperColor: '#fbf9f6',
+      fullWidth: true,
+    }
+  },
+  quote: {
+    label: 'Quote & Verse',
+    category: 'decorative',
+    icon: '❝',
+    defaults: {
+      text: '"Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya."',
+      source: '— QS. Ar-Rum: 21',
+      style: 'framed',
+      color: '#565F34',
+      textColor: '#2D2D2D',
+      fullWidth: true,
+    }
+  },
+  dressCode: {
+    label: 'Dress Code',
+    category: 'event',
+    icon: '👔',
+    defaults: {
+      title: 'Dress Code',
+      description: 'Formal attire is appreciated. Earth tones and pastels are encouraged.',
+      note: '',
+      swatches: [
+        { name: 'Sage', color: '#899c75' },
+        { name: 'Dusty Rose', color: '#d09ca7' },
+        { name: 'Cream', color: '#f4efea' },
+      ],
+      fullWidth: true,
+    }
+  },
+  healthProtocol: {
+    label: 'Health Protocol',
+    category: 'social',
+    icon: '😷',
+    defaults: {
+      title: 'Protokol Kesehatan',
+      description: 'Untuk kenyamanan bersama, mohon patuhi protokol kesehatan berikut:',
+      fullWidth: true,
+    }
+  },
 }
 
 export const BLOCK_CATEGORIES = [
-  { key: 'essential', label: 'ESSENTIALS' },
-  { key: 'typography', label: 'TYPOGRAPHY' },
-  { key: 'media', label: 'MEDIA & VISUALS' },
-  { key: 'details', label: 'DETAILS' },
+  { key: 'essential', label: 'ESSENTIAL' },
+  { key: 'couple', label: 'COUPLE' },
+  { key: 'event', label: 'EVENT' },
+  { key: 'gallery', label: 'GALLERY' },
+  { key: 'story', label: 'STORY' },
+  { key: 'social', label: 'SOCIAL' },
+  { key: 'interactive', label: 'INTERACTIVE' },
+  { key: 'decorative', label: 'DECORATIVE' },
 ]

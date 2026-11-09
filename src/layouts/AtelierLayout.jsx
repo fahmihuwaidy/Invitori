@@ -34,9 +34,9 @@ export default function AtelierLayout({ children }) {
             <div className="sidebar-brand">
               <img src={Logo} alt="Invori Logo" />
             </div>
-            <span className="label-caps" style={{ fontSize: 10 }}>Premium Member</span>
+            <span className="sidebar-member-badge">✦ Premium</span>
           </div>
-          <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
+          <button className="sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
             <HiX size={20} />
           </button>
         </div>
@@ -48,6 +48,7 @@ export default function AtelierLayout({ children }) {
               to={item.to}
               className={`sidebar-link ${currentTab === item.id ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
+              aria-label={item.label}
             >
               <item.icon size={18} />
               <span>{item.label}</span>
@@ -66,6 +67,15 @@ export default function AtelierLayout({ children }) {
             <HiPlus size={16} />
             Create New
           </button>
+          <div className="sidebar-user-section">
+            <div className="sidebar-user-avatar">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">{user?.name || 'User'}</div>
+              <div className="sidebar-user-email">{user?.email || ''}</div>
+            </div>
+          </div>
           <button
             className="sidebar-logout"
             onClick={() => { logout(); navigate('/') }}

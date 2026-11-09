@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import './LoginPage.css'
@@ -12,14 +13,34 @@ export default function LoginPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+
+  const handleForgotPassword = async () => {
+    if (!form.email.trim()) {
+      setError('Masukkan alamat email Anda terlebih dahulu di kolom email.')
+      return
+    }
+    setError('')
+    setIsLoading(true)
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(form.email.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      })
+      if (resetErr) {
+        setError(resetErr.message)
+      } else {
+        setResetSent(true)
+      }
+    } catch {
+      setError('Gagal mengirim tautan reset kata sandi.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (user) {
-      if (user.email === 'fahmihuwaidy8@gmail.com') {
-        navigate('/admin', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
+      navigate('/admin', { replace: true })
     }
   }, [user, navigate])
 
@@ -138,9 +159,13 @@ export default function LoginPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label>Password</label>
               {tab === 'signin' && (
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--maroon)', cursor: 'pointer', letterSpacing: '0.05em' }}>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  style={{ fontSize: 11, fontWeight: 600, color: 'var(--olive)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.05em', padding: 0 }}
+                >
                   FORGOT?
-                </span>
+                </button>
               )}
             </div>
             <div className="input-field">
@@ -157,8 +182,14 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {resetSent && (
+            <div style={{ padding: '10px 14px', backgroundColor: 'rgba(86,95,52,0.1)', color: 'var(--olive)', borderRadius: 6, fontSize: 13, marginBottom: 16 }}>
+              ✓ Tautan pemulihan kata sandi telah dikirim ke email Anda. Silakan periksa inbox atau spam.
+            </div>
+          )}
+
           <button type="submit" className="btn btn-primary btn-full btn-lg login-submit" disabled={isLoading}>
-            {isLoading ? 'Please wait...' : (tab === 'signin' ? 'Access Studio →' : 'Create Account →')}
+            {isLoading ? 'Please wait...' : (tab === 'signin' ? 'Access Studio' : 'Create Account')}
           </button>
 
           <div className="login-divider">
@@ -169,19 +200,18 @@ export default function LoginPage() {
             <button type="button" className="btn btn-ghost social-btn" onClick={handleGoogleLogin} disabled={isLoading}>
               <span>G</span> Google
             </button>
-            <button type="button" className="btn btn-ghost social-btn" disabled={isLoading}>
-              <span></span> Apple
+            <button type="button" className="btn btn-ghost social-btn" onClick={() => alert('Apple Sign-In segera hadir.')} disabled={isLoading} title="Segera hadir">
+              <span></span> Apple (Coming soon)
             </button>
           </div>
         </form>
 
         <div className="login-footer">
           <p className="label-caps" style={{ color: 'var(--olive)', marginBottom: 8 }}>
-            🔒 End-to-end encryption enabled
+            🔒 Secured with SSL & Supabase Auth
           </p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            By continuing you agree to our <a href="#" style={{ color: 'var(--olive)', fontWeight: 500 }}>Terms of Service</a>
-            and <a href="#" style={{ color: 'var(--olive)', fontWeight: 500 }}>Privacy Policy</a>.
+            By continuing you agree to our <Link to="/contact" style={{ color: 'var(--olive)', fontWeight: 500 }}>Terms & Privacy</Link>.
           </p>
         </div>
       </div>
