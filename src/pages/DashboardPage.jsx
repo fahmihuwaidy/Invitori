@@ -778,29 +778,30 @@ export default function DashboardPage() {
     if (!pendingDelete || deleting) return
     const target = pendingDelete
     const id = target.id
-    setDeleting(true)
-    
-    // Compute next selection before state change
+
+    // 1. Immediately close the dialog (0ms perceived latency)
+    setPendingDelete(null)
+
+    // 2. Compute next selection immediately
     const remaining = invitations.filter(inv => inv.id !== id)
     const nextId = remaining.length > 0 ? remaining[0].id : ''
-    
-    try {
-      const success = await deleteInvitation(id)
-      if (success) {
-        if (selectedInvId === id) {
-          setSelectedInvId(nextId)
-          const params = new URLSearchParams(searchParams)
-          if (nextId) {
-            params.set('inv', nextId)
-          } else {
-            params.delete('inv')
-          }
-          setSearchParams(params, { replace: true })
-        }
+
+    if (selectedInvId === id) {
+      setSelectedInvId(nextId)
+      const params = new URLSearchParams(searchParams)
+      if (nextId) {
+        params.set('inv', nextId)
+      } else {
+        params.delete('inv')
       }
-    } finally {
-      setDeleting(false)
-      setPendingDelete(null)
+      setSearchParams(params, { replace: true })
+    }
+
+    // 3. Perform background cascade delete
+    try {
+      await deleteInvitation(id)
+    } catch (err) {
+      console.error('Background deletion error:', err)
     }
   }
 
@@ -813,26 +814,25 @@ export default function DashboardPage() {
 
   const handleCreateInvitation = async (title, presetKey = 'wedding') => {
     const preset = PRESETS[presetKey] || PRESETS.custom
+
+    // Pre-customize template blocks upfront with title
+    const blocksToCreate = (preset.blocks || []).map(b => {
+      if (b.type === 'cover' || b.type === 'footer') {
+        return { ...b, data: { ...b.data, coupleName: title } }
+      }
+      return b
+    })
+
+    // Create invitation with initial blocks in one fast step
     const newInv = await addInvitation({
       title,
       category: preset.labelId || 'Wedding',
       theme: preset.theme,
+      initialBlocks: blocksToCreate,
     })
+
     if (!newInv) {
       throw new Error('Gagal membuat undangan baru di database. Periksa koneksi internet Anda.')
-    }
-
-    if (preset.blocks && preset.blocks.length > 0) {
-      const blocksToCreate = preset.blocks.map(b => {
-        if (b.type === 'cover') {
-          return { ...b, data: { ...b.data, coupleName: title } }
-        }
-        if (b.type === 'footer') {
-          return { ...b, data: { ...b.data, coupleName: title } }
-        }
-        return b
-      })
-      await addBlocks(newInv.id, blocksToCreate, 0)
     }
 
     setSelectedInvId(newInv.id)

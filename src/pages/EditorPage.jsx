@@ -2200,10 +2200,25 @@ export default function EditorPage() {
     if (id === 'new' && !hasCreated.current) {
       hasCreated.current = true
       const title = searchParams.get('title') || 'Untitled Invitation'
-      addInvitation({ title }).then(newInv => {
+      const presetKey = searchParams.get('preset')
+      const preset = presetKey ? PRESETS[presetKey] : null
+      let initialBlocks = []
+      if (preset && preset.blocks) {
+        initialBlocks = preset.blocks.map(b => {
+          if (b.type === 'cover' || b.type === 'footer') {
+            return { ...b, data: { ...b.data, coupleName: title } }
+          }
+          return b
+        })
+      }
+      addInvitation({
+        title,
+        category: preset?.labelId || 'Wedding',
+        theme: preset?.theme,
+        initialBlocks,
+      }).then(newInv => {
         if (newInv) {
-          const searchString = searchParams.toString() ? `?${searchParams.toString()}` : ''
-          navigate(`/editor/${newInv.id}${searchString}`, { replace: true })
+          navigate(`/editor/${newInv.id}`, { replace: true })
         }
       })
     }

@@ -35,38 +35,37 @@ export function InvitationProvider({ children }) {
 
       if (invError) throw invError
 
-      // Fetch blocks for all invitations
+      // Fetch blocks and RSVPs for all invitations concurrently
       invData = invData.filter(i => !deletedIdsRef.current.has(i.id))
       const invIds = invData.map(i => i.id)
       let blocksMap = {}
-      if (invIds.length > 0) {
-        const { data: blockData, error: blockError } = await supabase
-          .from('blocks')
-          .select('*')
-          .in('invitation_id', invIds)
-          .order('sort_order', { ascending: true })
-
-        if (blockError) throw blockError
-
-        blockData.forEach(b => {
-          if (!blocksMap[b.invitation_id]) blocksMap[b.invitation_id] = []
-          blocksMap[b.invitation_id].push(b)
-        })
-      }
-
-      // Fetch RSVPs with full details
       let rsvpMap = {}
       let allRsvps = []
-      if (invIds.length > 0) {
-        const { data: rsvpData, error: rsvpError } = await supabase
-          .from('rsvps')
-          .select('*')
-          .in('invitation_id', invIds)
-          .order('sent_at', { ascending: false })
 
-        if (!rsvpError && rsvpData) {
-          allRsvps = rsvpData
-          rsvpData.forEach(r => {
+      if (invIds.length > 0) {
+        const [blocksResult, rsvpsResult] = await Promise.all([
+          supabase
+            .from('blocks')
+            .select('id, invitation_id, type, data, sort_order')
+            .in('invitation_id', invIds)
+            .order('sort_order', { ascending: true }),
+          supabase
+            .from('rsvps')
+            .select('id, invitation_id, name, email, attendance, message, sent_at')
+            .in('invitation_id', invIds)
+            .order('sent_at', { ascending: false })
+        ])
+
+        if (!blocksResult.error && blocksResult.data) {
+          blocksResult.data.forEach(b => {
+            if (!blocksMap[b.invitation_id]) blocksMap[b.invitation_id] = []
+            blocksMap[b.invitation_id].push(b)
+          })
+        }
+
+        if (!rsvpsResult.error && rsvpsResult.data) {
+          allRsvps = rsvpsResult.data
+          allRsvps.forEach(r => {
             rsvpMap[r.invitation_id] = (rsvpMap[r.invitation_id] || 0) + 1
           })
         }
@@ -135,7 +134,7 @@ export function InvitationProvider({ children }) {
 
   // --- CRUD Operations ---
 
-  const addInvitation = async ({ title, category, theme }) => {
+  const addInvitation = async ({ title, category, theme, initialBlocks = [] }) => {
     if (!user) return null
 
     const cleanTitle = (title || 'untitled')
@@ -160,13 +159,21 @@ export function InvitationProvider({ children }) {
     const { data, error } = await supabase
       .from('invitations')
       .insert(insertPayload)
-      .select()
+      .select('id, title, slug, category, guest_count, status, primary_color, background_color, font_family, created_at, updated_at')
       .single()
 
     if (error || !data) {
       console.error('Error creating invitation:', error)
       return null
     }
+
+    // Pre-assign UUIDs to initial blocks so memory state and DB are 100% matched
+    const preparedBlocks = (initialBlocks || []).map((b, idx) => ({
+      id: b.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${data.id}_block_${idx}`),
+      type: b.type,
+      data: b.data || {},
+      sortOrder: idx,
+    }))
 
     const newInv = {
       id: data.id,
@@ -180,13 +187,35 @@ export function InvitationProvider({ children }) {
         backgroundColor: data.background_color || theme?.backgroundColor || '#f4efea',
         fontFamily: data.font_family || theme?.fontFamily || 'Inter',
       },
-      blocks: [],
+      blocks: preparedBlocks,
       analytics: { totalViews: 0, rsvpCount: 0 },
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     }
 
+    // Instantly update React state with full blocks
     setInvitations(prev => [newInv, ...prev])
+
+    // Asynchronously persist initial blocks in background without blocking navigation
+    if (preparedBlocks.length > 0) {
+      const blocksToInsert = preparedBlocks.map(b => ({
+        id: b.id,
+        invitation_id: data.id,
+        type: b.type,
+        data: b.data,
+        sort_order: b.sortOrder,
+      }))
+
+      supabase
+        .from('blocks')
+        .insert(blocksToInsert)
+        .then(({ error: blockError }) => {
+          if (blockError) {
+            console.error('Background blocks insert error:', blockError)
+          }
+        })
+    }
+
     return newInv
   }
 
@@ -244,34 +273,34 @@ export function InvitationProvider({ children }) {
     setInvitations(prev => prev.filter(inv => inv.id !== id))
 
     try {
-      // 1. Explicitly clean child rows to guarantee FK constraints never block deletion
-      await Promise.allSettled([
-        supabase.from('blocks').delete().eq('invitation_id', id),
-        supabase.from('rsvps').delete().eq('invitation_id', id),
-        supabase.from('guests').delete().eq('invitation_id', id),
-      ])
-
-      // 2. Delete the invitation itself
+      // 1. Direct cascade delete in 1 single fast database call
       const { error } = await supabase
         .from('invitations')
         .delete()
         .eq('id', id)
 
       if (error) {
-        console.error('Error deleting invitation from DB:', error)
-        // Rollback optimistic delete on actual DB failure
-        deletedIdsRef.current.delete(id)
-        await fetchInvitations(true)
-        alert('Gagal menghapus undangan: ' + error.message)
-        return false
+        // Fallback: If FK constraint blocked direct deletion, clean child rows
+        if (error.code === '23503') {
+          await Promise.allSettled([
+            supabase.from('blocks').delete().eq('invitation_id', id),
+            supabase.from('rsvps').delete().eq('invitation_id', id),
+            supabase.from('guests').delete().eq('invitation_id', id),
+          ])
+          const { error: retryError } = await supabase.from('invitations').delete().eq('id', id)
+          if (retryError) throw retryError
+        } else {
+          throw error
+        }
       }
 
       return true
     } catch (err) {
       console.error('Critical error in deleteInvitation:', err)
+      // Rollback optimistic delete on actual DB failure
       deletedIdsRef.current.delete(id)
       await fetchInvitations(true)
-      alert('Terjadi kesalahan saat menghapus undangan: ' + (err.message || err))
+      alert('Gagal menghapus undangan: ' + (err.message || err))
       return false
     }
   }
@@ -340,48 +369,50 @@ export function InvitationProvider({ children }) {
     }
 
     const blocksToInsert = blocksArray.map((b, index) => ({
+      id: b.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : nanoid()),
       invitation_id: invId,
       type: b.type,
       data: b.data,
       sort_order: baseOrder + index,
     }))
 
+    // Optimistically update local state immediately so UI responds with zero delay
+    const newBlocksSorted = blocksToInsert.map(d => ({
+      id: d.id,
+      type: d.type,
+      data: typeof d.data === 'string' ? JSON.parse(d.data) : d.data,
+      sortOrder: d.sort_order,
+    }))
+
+    setInvitations(prev =>
+      prev.map(item => {
+        if (item.id !== invId) return item
+        const combined = [...item.blocks, ...newBlocksSorted]
+        const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
+        return {
+          ...item,
+          blocks: finalBlocks,
+          updatedAt: new Date().toISOString(),
+        }
+      })
+    )
+
     try {
-      const { data, error } = await supabase
+      // Direct insert without .select() overhead saves large payload transmission
+      const { error } = await supabase
         .from('blocks')
         .insert(blocksToInsert)
-        .select()
 
-      if (error || !data) {
-        console.error('Error adding bulk blocks:', error)
+      if (error) {
+        console.error('Error adding bulk blocks in DB:', error)
+        fetchInvitations(true)
         return null
       }
-
-      const newBlocksSorted = data
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map(d => ({
-          id: d.id,
-          type: d.type,
-          data: typeof d.data === 'string' ? JSON.parse(d.data) : d.data,
-          sortOrder: d.sort_order,
-        }))
-
-      setInvitations(prev =>
-        prev.map(item => {
-          if (item.id !== invId) return item
-          const combined = [...item.blocks, ...newBlocksSorted]
-          const finalBlocks = combined.map((b, idx) => ({ ...b, sortOrder: idx }))
-          return {
-            ...item,
-            blocks: finalBlocks,
-            updatedAt: new Date().toISOString(),
-          }
-        })
-      )
 
       return newBlocksSorted
     } catch (err) {
       console.error('Exception in addBlocks:', err)
+      fetchInvitations(true)
       return null
     }
   }
