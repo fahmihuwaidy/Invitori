@@ -3046,10 +3046,16 @@ export default function EditorPage() {
                                     >
                                       {isHidden && (
                                         <div className="canvas-hidden-overlay">
-                                          <span>👁 Hidden Block Preview</span>
+                                          <HiOutlineEyeOff size={14} />
+                                          <span>Hidden Block Preview</span>
                                         </div>
                                       )}
-                                      {isLocked && <div className="canvas-locked-indicator">🔒 Locked</div>}
+                                      {isLocked && (
+                                        <div className="canvas-locked-indicator">
+                                          <HiOutlineLockClosed size={12} />
+                                          <span>Locked</span>
+                                        </div>
+                                      )}
 
                                       {block.data?.backgroundImage && block.type !== 'cover' && <BlockBackgroundLayer data={block.data} />}
                                       
@@ -3079,7 +3085,10 @@ export default function EditorPage() {
                                             [],
                                             false,
                                             false,
-                                            true
+                                            true,
+                                            'yes',
+                                            invitation?.title || 'The Wedding',
+                                            () => {}
                                           )}
                                         </div>
                                       </div>

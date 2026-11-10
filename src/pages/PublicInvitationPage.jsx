@@ -2,7 +2,7 @@
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useInvitations } from '../contexts/InvitationContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { HiOutlineCheck, HiOutlineLocationMarker, HiOutlineCalendar, HiOutlineClock, HiOutlineMusicNote, HiOutlineMailOpen, HiChevronLeft, HiChevronRight, HiOutlineX, HiOutlineClipboard, HiOutlineExternalLink, HiOutlineHome, HiOutlineUserGroup, HiOutlineViewGrid, HiOutlineHeart, HiOutlineGift } from 'react-icons/hi'
+import { HiOutlineCheck, HiOutlineLocationMarker, HiOutlineCalendar, HiOutlineClock, HiOutlineMusicNote, HiOutlineMailOpen, HiChevronLeft, HiChevronRight, HiOutlineX, HiOutlineClipboard, HiOutlineExternalLink, HiOutlineHome, HiOutlineUserGroup, HiOutlineViewGrid, HiOutlineHeart, HiOutlineGift, HiOutlineCamera, HiOutlinePhotograph, HiOutlineTicket, HiOutlineLockClosed } from 'react-icons/hi'
 import Logo from '../assets/Logo.png'
 import '../index.css'
 import './PublicInvitationPage.css'
@@ -1006,7 +1006,13 @@ export function renderPublicBlock(
       const qStyle = block.data.style || 'framed'
       return (
         <div className={`public-quote public-quote--${qStyle}`} style={{ '--quote-color': block.data.color || primaryColor }}>
-          {qStyle === 'framed' && <div className="public-quote-mark">"</div>}
+          {qStyle === 'framed' && (
+            <div className="public-quote-mark" style={{ color: primaryColor }}>
+              <svg width="24" height="18" viewBox="0 0 24 18" fill="currentColor" opacity="0.45">
+                <path d="M6.5 0C2.9 0 0 2.9 0 6.5c0 3.3 2.5 6.1 5.8 6.5v4.5l5-4.8c1.3-1.3 2.1-3 2.1-4.7 0-3.6-2.9-6.5-6.4-6.5zm11 0c-3.6 0-6.5 2.9-6.5 6.5 0 3.3 2.5 6.1 5.8 6.5v4.5l5-4.8c1.3-1.3 2.1-3 2.1-4.7 0-3.6-2.9-6.5-6.4-6.5z"/>
+              </svg>
+            </div>
+          )}
           <blockquote className="public-quote-text" style={{ color: block.data.textColor || undefined }}>{block.data.text}</blockquote>
           {block.data.source && <cite className="public-quote-source">{block.data.source}</cite>}
         </div>
@@ -1124,7 +1130,7 @@ export function renderPublicBlock(
           <div className="public-gallery public-gallery--placeholder">
             {Array(4).fill(0).map((_, i) => (
               <div key={i} className="public-gallery-item public-gallery-placeholder-item">
-                <span>📸</span>
+                <HiOutlinePhotograph size={24} style={{ color: primaryColor, opacity: 0.45 }} />
               </div>
             ))}
           </div>
@@ -1331,22 +1337,26 @@ export function renderPublicBlock(
         <div className="public-rsvp-container">
           <form className="public-rsvp">
             <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 24, color: primaryColor }}>{block.data.title || 'Konfirmasi Kehadiran'}</h4>
-            <div className="public-rsvp-field">
-              <label>Nama Lengkap {guestName && guestName !== 'Guest' && <span style={{ fontSize: 11, opacity: 0.65 }}>(Terkunci)</span>}</label>
-              <input
-                className="public-input"
-                placeholder="Nama lengkap Anda"
-                value={rsvpForm.name}
-                readOnly={guestName && guestName !== 'Guest'}
-                style={guestName && guestName !== 'Guest' ? { background: 'rgba(0,0,0,0.03)', cursor: 'not-allowed' } : {}}
-                onChange={e => {
-                  if (!guestName || guestName === 'Guest') {
-                    setRsvpForm({ ...rsvpForm, name: e.target.value })
-                  }
-                }}
-                required
-              />
-            </div>
+            {guestName && guestName !== 'Guest' ? (
+              <div className="public-rsvp-guest-card" style={{ borderColor: `${primaryColor}30`, background: `${primaryColor}08` }}>
+                <div className="public-rsvp-guest-tag">
+                  <HiOutlineLockClosed size={12} style={{ color: primaryColor }} />
+                  <span>Undangan Khusus Untuk</span>
+                </div>
+                <h5 className="public-rsvp-guest-title" style={{ color: primaryColor }}>{guestName}</h5>
+              </div>
+            ) : (
+              <div className="public-rsvp-field">
+                <label>Nama Lengkap</label>
+                <input
+                  className="public-input"
+                  placeholder="Nama lengkap Anda"
+                  value={rsvpForm.name}
+                  onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })}
+                  required
+                />
+              </div>
+            )}
             <div className="public-rsvp-field">
               <label>Nomor WhatsApp</label>
               <input className="public-input" type="tel" placeholder="08xxx..." value={rsvpForm.email} onChange={e => setRsvpForm({ ...rsvpForm, email: e.target.value })} />
@@ -1523,7 +1533,7 @@ export function renderPublicBlock(
           <h4 className="serif-italic public-gift-title" style={{ color: primaryColor }}>{giftData.title || 'Wedding Gift'}</h4>
           {giftData.subtitle && <p className="public-gift-subtitle">{giftData.subtitle}</p>}
 
-          <div style={{ margin: '18px 0 16px', textAlign: 'center' }}>
+          <div style={{ margin: '20px 0 16px', textAlign: 'center' }}>
             <button
               type="button"
               className="public-gift-modal-trigger-btn"
@@ -1535,28 +1545,32 @@ export function renderPublicBlock(
             </button>
           </div>
 
-          {accounts.length > 0 && (
-            <div className="public-gift-accounts">
-              {accounts.map((acc, i) => (
-                <GiftAccountCard key={i} account={acc} primaryColor={primaryColor} isPreviewUrl={isPreviewUrl} />
-              ))}
-            </div>
-          )}
+          {!onOpenGiftModal && (
+            <>
+              {accounts.length > 0 && (
+                <div className="public-gift-accounts">
+                  {accounts.map((acc, i) => (
+                    <GiftAccountCard key={i} account={acc} primaryColor={primaryColor} isPreviewUrl={isPreviewUrl} />
+                  ))}
+                </div>
+              )}
 
-          {giftData.physicalAddress && (
-            <PhysicalGiftCard
-              recipient={giftData.physicalRecipient}
-              phone={giftData.physicalPhone}
-              address={giftData.physicalAddress}
-              primaryColor={primaryColor}
-            />
-          )}
+              {giftData.physicalAddress && (
+                <PhysicalGiftCard
+                  recipient={giftData.physicalRecipient}
+                  phone={giftData.physicalPhone}
+                  address={giftData.physicalAddress}
+                  primaryColor={primaryColor}
+                />
+              )}
 
-          {giftData.qrisImage && (
-            <div className="public-gift-qris">
-              <p className="public-gift-qris-label">QRIS</p>
-              <img src={giftData.qrisImage} alt="QRIS Code" className="public-gift-qris-img" />
-            </div>
+              {giftData.qrisImage && (
+                <div className="public-gift-qris">
+                  <p className="public-gift-qris-label">QRIS</p>
+                  <img src={giftData.qrisImage} alt="QRIS Code" className="public-gift-qris-img" />
+                </div>
+              )}
+            </>
           )}
 
           {giftData.registryLinks?.length > 0 && (
@@ -1811,7 +1825,8 @@ export function renderPublicBlock(
             )}
             {url && (
               <a href={url} target="_blank" rel="noopener noreferrer" className="public-location-btn" style={{ background: primaryColor }}>
-                <span>🤳</span> Open AR Filter
+                <HiOutlineCamera size={18} />
+                <span>Buka Filter Instagram</span>
               </a>
             )}
           </div>
@@ -1821,10 +1836,43 @@ export function renderPublicBlock(
 
     case 'healthProtocol': {
       const items = [
-        { icon: '😷', label: 'Gunakan Masker' },
-        { icon: '🧼', label: 'Cuci Tangan' },
-        { icon: '↔️', label: 'Jaga Jarak' },
-        { icon: '🙏', label: 'Hindari Salaman' }
+        {
+          label: 'Gunakan Masker',
+          icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 8C4 6.89543 4.89543 6 6 6H18C19.1046 6 20 6.89543 20 8V13C20 16.3137 17.3137 19 14 19H10C6.68629 19 4 16.3137 4 13V8Z" />
+              <path d="M4 10L1 11M20 10L23 11M4 13L1 12M20 13L23 12" />
+              <path d="M8 10H16M8 14H16" />
+            </svg>
+          )
+        },
+        {
+          label: 'Cuci Tangan',
+          icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2C12 2 6 8.5 6 12.5C6 15.8137 8.68629 18.5 12 18.5C15.3137 18.5 18 15.8137 18 12.5C18 8.5 12 2 12 2Z" />
+              <path d="M9 13C9 13 10 16 13 16" />
+            </svg>
+          )
+        },
+        {
+          label: 'Jaga Jarak',
+          icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12H19M5 12L8 9M5 12L8 15M19 12L16 9M19 12L16 15" />
+              <circle cx="5" cy="5" r="1.5" />
+              <circle cx="19" cy="5" r="1.5" />
+            </svg>
+          )
+        },
+        {
+          label: 'Hindari Salaman',
+          icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3V21M7 8L12 3L17 8M6 15L12 21L18 15" />
+            </svg>
+          )
+        }
       ]
       return (
         <div className="public-health" style={{ textAlign: 'center', width: '100%' }}>
@@ -1833,7 +1881,7 @@ export function renderPublicBlock(
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
             {items.map((item, idx) => (
               <div key={idx} className="public-health-item">
-                <div className="public-health-icon">{item.icon}</div>
+                <div className="public-health-icon" style={{ color: primaryColor }}>{item.icon}</div>
                 <div className="public-health-label">{item.label}</div>
               </div>
             ))}
@@ -1917,7 +1965,8 @@ export function renderPublicBlock(
                 alert('Silakan ambil tangkapan layar (screenshot) kartu pass QR ini untuk ditunjukkan saat hari-H.')
               }}
             >
-              <span>🎟️ Simpan QR Pass</span>
+              <HiOutlineTicket size={18} />
+              <span>Simpan QR Pass</span>
             </button>
           </div>
         </div>
