@@ -2599,6 +2599,7 @@ export default function EditorPage() {
     { label: 'Add Live Streaming Block', action: () => addBlock('liveStreaming'), shortcut: 'Interactive' },
     { label: 'Add Instagram AR Filter QR Block', action: () => addBlock('weddingAR'), shortcut: 'Social' },
     { label: 'Add Health Protocol Guidelines Block', action: () => addBlock('healthProtocol'), shortcut: 'Social' },
+    { label: 'Add QR Entry Pass E-Invitation Block', action: () => addBlock('qrPass'), shortcut: 'Interactive' },
     { label: 'Add Background Music Block', action: () => addBlock('backgroundMusic'), shortcut: 'Decorative' },
     { label: 'Add Floating Nav Menu Tabs Block', action: () => addBlock('navigationMenu'), shortcut: 'Decorative' },
     { label: 'Add Particles Cherry Blossom/Heart Block', action: () => addBlock('particles'), shortcut: 'Decorative' },

@@ -417,6 +417,19 @@ export const BLOCK_TYPES = {
       fullWidth: true,
     }
   },
+  qrPass: {
+    label: 'QR Entry Pass',
+    category: 'interactive',
+    icon: '🎟️',
+    defaults: {
+      title: 'QR E-Invitation',
+      subtitle: 'Tunjukkan QR code ini kepada penerima tamu di lokasi acara untuk check-in dan menukarkan suvenir.',
+      showGuestName: true,
+      cardColor: '#FAF7F2',
+      accentColor: '#652128',
+      fullWidth: true,
+    }
+  },
 }
 
 export const BLOCK_CATEGORIES = [

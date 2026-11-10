@@ -213,6 +213,131 @@ export const MediaRenderer = ({ src, className, style, alt = "", ...props }) => 
   return <img src={src} className={className} style={style} alt={alt} {...props} />;
 };
 
+// ── NUMERICAL PRELOADER (TIBRA BENCHMARK) ──────────────────────────────────
+function NumericalPreloader({ coupleName, subtitle, primaryColor, onFinish }) {
+  const [progress, setProgress] = useState(0)
+  const [isClosing, setIsClosing] = useState(false)
+
+  useEffect(() => {
+    const startTime = performance.now()
+    const duration = 1600
+    let animId
+
+    const update = (now) => {
+      const elapsed = now - startTime
+      const current = Math.min(Math.floor((elapsed / duration) * 100), 100)
+      setProgress(current)
+
+      if (current < 100) {
+        animId = requestAnimationFrame(update)
+      } else {
+        setTimeout(() => {
+          setIsClosing(true)
+          setTimeout(onFinish, 400)
+        }, 120)
+      }
+    }
+
+    animId = requestAnimationFrame(update)
+    return () => cancelAnimationFrame(animId)
+  }, [onFinish])
+
+  return (
+    <div
+      className={`public-preloader-screen ${isClosing ? 'fade-out' : ''}`}
+      onClick={() => {
+        setIsClosing(true)
+        setTimeout(onFinish, 150)
+      }}
+      title="Sentuh untuk langsung membuka"
+    >
+      <div className="public-preloader-content">
+        <p className="public-preloader-kicker">{subtitle || 'THE WEDDING INVITATION'}</p>
+        <h2 className="public-preloader-couple serif-italic">{coupleName}</h2>
+
+        <div className="public-preloader-counter">
+          <span className="public-preloader-num">{progress}</span>
+          <span className="public-preloader-pct">%</span>
+        </div>
+
+        <div className="public-preloader-track">
+          <div
+            className="public-preloader-bar"
+            style={{ width: `${progress}%`, background: primaryColor || '#652128' }}
+          />
+        </div>
+
+        <p className="public-preloader-note">Mempersiapkan momen bahagia...</p>
+      </div>
+    </div>
+  )
+}
+
+// ── GIFT MODAL POPUP (TIBRA BENCHMARK) ────────────────────────────────────
+function GiftModal({ isOpen, onClose, accounts = [], physicalGift, qrisImage, primaryColor = '#652128', isPreviewUrl }) {
+  if (!isOpen) return null
+
+  return (
+    <div className="gift-modal-backdrop" onClick={onClose}>
+      <div className="gift-modal-sheet" onClick={e => e.stopPropagation()}>
+        <button type="button" className="gift-modal-close" onClick={onClose} aria-label="Tutup">
+          ✕
+        </button>
+
+        <div className="gift-modal-header">
+          <div className="gift-modal-badge-icon">🎁</div>
+          <h3 className="serif-italic gift-modal-title" style={{ color: primaryColor }}>
+            Tanda Kasih & Amplop Digital
+          </h3>
+          <p className="gift-modal-desc">
+            Doa restu Anda adalah karunia terindah bagi kami. Bagi keluarga dan sahabat yang ingin memberikan tanda kasih, dapat melalui nomor rekening atau alamat pengiriman berikut:
+          </p>
+        </div>
+
+        <div className="gift-modal-body">
+          {accounts.length > 0 && (
+            <div className="gift-modal-section">
+              <h5 className="gift-modal-section-title">Transfer Rekening Bank / E-Wallet</h5>
+              <div className="public-gift-accounts">
+                {accounts.map((acc, i) => (
+                  <GiftAccountCard key={i} account={acc} primaryColor={primaryColor} isPreviewUrl={isPreviewUrl} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {physicalGift?.address && (
+            <div className="gift-modal-section">
+              <h5 className="gift-modal-section-title">Pengiriman Kado Fisik</h5>
+              <PhysicalGiftCard
+                recipient={physicalGift.recipient}
+                phone={physicalGift.phone}
+                address={physicalGift.address}
+                primaryColor={primaryColor}
+              />
+            </div>
+          )}
+
+          {qrisImage && (
+            <div className="gift-modal-section" style={{ textAlign: 'center' }}>
+              <h5 className="gift-modal-section-title">QRIS Pembayaran Digital</h5>
+              <div className="public-gift-qris" style={{ margin: '8px auto' }}>
+                <img src={qrisImage} alt="QRIS" className="public-gift-qris-img" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="gift-modal-footer">
+          <button type="button" className="gift-modal-done-btn" style={{ background: primaryColor }} onClick={onClose}>
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC INVITATION PAGE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -225,6 +350,8 @@ export default function PublicInvitationPage() {
   const isPreviewUrl = searchParams.get('preview') === 'true'
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [preloaderDone, setPreloaderDone] = useState(false)
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false)
   const [rsvpForm, setRsvpForm] = useState({ name: guestName, email: '', message: '', attendance: '', guestCount: 1, session: 'Akad & Resepsi' })
   const [rsvpSent, setRsvpSent] = useState(false)
   const [submittedAttendance, setSubmittedAttendance] = useState('yes')
@@ -487,6 +614,18 @@ export default function PublicInvitationPage() {
     ...(navBlock.data?.showGift !== false && hasBlock('gift') ? [{ id: 'gift', label: 'Gift', icon: <HiOutlineGift /> }] : [])
   ] : []
 
+  const coverBlock = invitation?.blocks?.find(b => b.type === 'cover')
+  const coupleName = coverBlock?.data?.coupleName || invitation?.title || 'The Wedding'
+  const coverSubtitle = coverBlock?.data?.subtitle || 'The Wedding Invitation'
+  const coverDate = coverBlock?.data?.date || ''
+  const coverPhoto = coverBlock?.data?.backgroundImage
+  const monogram = extractMonogram(coupleName)
+
+  const giftBlock = invitation?.blocks?.find(b => b.type === 'gift')
+  const giftAccounts = giftBlock?.data?.accounts?.length > 0
+    ? giftBlock.data.accounts
+    : (giftBlock?.data?.bankName ? [{ bankName: giftBlock.data.bankName, accountNumber: giftBlock.data.accountNumber, accountName: giftBlock.data.accountName }] : [])
+
   return (
     <div
       className="public-page-wrapper"
@@ -495,120 +634,183 @@ export default function PublicInvitationPage() {
         ...(theme.fontFamily ? { fontFamily: theme.fontFamily.includes(',') ? theme.fontFamily : `'${theme.fontFamily}', sans-serif` } : {}),
       }}
     >
-      <IntroOverlay isOpen={isOpen} onOpen={handleOpenInvitation} invitation={invitation} guestName={guestName} />
-
-      {musicUrl && (
-        <BackgroundMusic url={musicUrl} songTitle={musicSongTitle} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} primaryColor={theme.primaryColor || '#344c2d'} />
+      {!preloaderDone && !isPreviewUrl && (
+        <NumericalPreloader
+          coupleName={coupleName}
+          subtitle={coverSubtitle}
+          primaryColor={theme.primaryColor || '#652128'}
+          onFinish={() => setPreloaderDone(true)}
+        />
       )}
 
-      <div ref={scrollContainerRef} className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
-        {particlesBlock && (
-          <ParticleOverlay 
-            type={particlesBlock.data?.effect || 'sakura'} 
-            intensity={particlesBlock.data?.intensity || 30} 
-          />
-        )}
+      <GiftModal
+        isOpen={isGiftModalOpen}
+        onClose={() => setIsGiftModalOpen(false)}
+        accounts={giftAccounts}
+        physicalGift={{
+          recipient: giftBlock?.data?.physicalRecipient,
+          phone: giftBlock?.data?.physicalPhone,
+          address: giftBlock?.data?.physicalAddress,
+        }}
+        qrisImage={giftBlock?.data?.qrisImage}
+        primaryColor={theme.primaryColor || '#652128'}
+        isPreviewUrl={isPreviewUrl}
+      />
 
-        {isOpen && navBlock && navItems.length > 0 && (
-          <div className="public-floating-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                className={`public-floating-nav-btn ${activeSection === item.id ? 'active' : ''}`}
-                onClick={() => scrollToSection(item.id)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
+      <div className="public-desktop-split">
+        {/* Desktop Left Showcase Pane (Tibra Benchmark) */}
+        <aside className="public-desktop-left" style={{ '--primary-color': theme.primaryColor || '#652128' }}>
+          {coverPhoto && (
+            <div className="public-desktop-hero-media">
+              <MediaRenderer src={coverPhoto} alt={coupleName} />
+              <div className="public-desktop-hero-overlay" />
+            </div>
+          )}
+          <div className="public-desktop-left-inner">
+            <div className="public-desktop-monogram-badge" style={{ borderColor: `${theme.primaryColor || '#652128'}40`, color: theme.primaryColor || '#652128' }}>
+              <span className="serif-italic">{monogram}</span>
+            </div>
+            <p className="public-desktop-kicker">{coverSubtitle}</p>
+            <h1 className="public-desktop-couple serif-italic">{coupleName}</h1>
+            {coverDate && <p className="public-desktop-event-date">{coverDate}</p>}
+
+            <div className="public-desktop-divider" style={{ background: `${theme.primaryColor || '#652128'}30` }} />
+
+            {guestName && guestName !== 'Guest' && (
+              <div className="public-desktop-guest-tag">
+                <span>Khusus Kepada Yth:</span>
+                <strong>{guestName}</strong>
+              </div>
+            )}
+
+            <div className="public-desktop-mouse-guide">
+              <div className="public-desktop-mouse-icon">
+                <div className="public-desktop-mouse-wheel" />
+              </div>
+              <span>Gulir layar di sebelah kanan untuk melihat undangan</span>
+            </div>
           </div>
-        )}
+        </aside>
 
-        {(invitation.blocks || [])
-          .filter(block => 
-            block.type !== 'music' && 
-            block.type !== 'signature' && 
-            block.type !== 'registry' &&
-            block.type !== 'backgroundMusic' &&
-            block.type !== 'particles' &&
-            block.type !== 'navigationMenu' &&
-            block.type !== 'envelopeAnimation'
-          )
-          .map((block) => {
-            const hasBg = !!block.data?.backgroundImage
-            const blockMinHeight = block.data?.blockMinHeight || 0
-            const bgAspectRatio = block.data?.backgroundAspectRatio || null
-            const isCover = block.type === 'cover'
-            const isFooter = block.type === 'footer'
-            const isFullWidth = isCover || isFooter
+        {/* Right Pane (or Single Column Mobile Canvas) */}
+        <main className="public-desktop-right">
+          <IntroOverlay isOpen={isOpen} onOpen={handleOpenInvitation} invitation={invitation} guestName={guestName} />
 
-            // Assign IDs to components for scroll spy navigation
-            let blockId = undefined
-            if (block.type === 'cover') blockId = 'cover'
-            else if (block.type === 'couple') blockId = 'couple'
-            else if (block.type === 'location') blockId = 'event'
-            else if (block.type === 'gallery') blockId = 'gallery'
-            else if (block.type === 'wishes') blockId = 'wishes'
-            else if (block.type === 'gift') blockId = 'gift'
+          {musicUrl && (
+            <BackgroundMusic url={musicUrl} songTitle={musicSongTitle} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} primaryColor={theme.primaryColor || '#344c2d'} />
+          )}
 
-            return (
-              <ScrollRevealBlock
-                key={block.id}
-                isCover={isCover}
-                rootRef={scrollContainerRef}
-                animationType={block.data?.animation || 'fade-in-up'}
-                className={`public-block ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`}
-                style={{
-                  paddingTop: isFullWidth ? 0 : (block.data?.spacingTop ?? 40),
-                  paddingBottom: isFullWidth ? 0 : (block.data?.spacingBottom ?? 40),
-                  position: hasBg ? 'relative' : undefined,
-                  overflow: hasBg || block.data?.customBorderRadius ? 'hidden' : undefined,
-                  minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
-                  aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
-                  display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
-                  alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
-                  justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
-                  background: block.data?.customBgColor || undefined,
-                  color: block.data?.customTextColor || undefined,
-                  textAlign: block.data?.customTextAlign || undefined,
-                  borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
-                  '--text-dark': block.data?.customTextColor || undefined,
-                  '--text-muted': block.data?.customTextColor || undefined,
-                  '--text-light': block.data?.customTextColor || undefined,
-                }}
-              >
-                <div id={blockId} style={{ position: 'absolute', top: -40 }} />
-                {hasBg && !isCover && (
-                  <>
-                    <MediaRenderer
-                      src={block.data.backgroundImage}
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: block.data.backgroundFit || 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none', borderRadius: 'inherit' }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.backgroundOverlayColor || '#000000', opacity: block.data.backgroundOverlay ?? 0.3, zIndex: 1, pointerEvents: 'none', borderRadius: 'inherit' }} />
-                  </>
-                )}
-                <div
-                  className="public-block-content"
-                  style={{
-                    ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
-                    ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: isFullWidth ? 0 : 24, paddingRight: isFullWidth ? 0 : 24 } : { paddingLeft: 24, paddingRight: 24 })
-                  }}
-                >
-                  {renderPublicBlock(
-                    block, theme,
-                    rsvpForm, setRsvpForm, handleRsvp, rsvpSent,
-                    wishForm, setWishForm, handleSendWish, wishSent,
-                    guestName, isPreviewUrl,
-                    invitation.wishes || [],
-                    isRsvpLoading, isWishLoading,
-                    false,
-                    submittedAttendance,
-                    invitation.title
-                  )}
-                </div>
-              </ScrollRevealBlock>
-            )
-          })}
+          <div ref={scrollContainerRef} className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
+            {particlesBlock && (
+              <ParticleOverlay 
+                type={particlesBlock.data?.effect || 'sakura'} 
+                intensity={particlesBlock.data?.intensity || 30} 
+              />
+            )}
+
+            {isOpen && navBlock && navItems.length > 0 && (
+              <div className="public-floating-nav">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`public-floating-nav-btn ${activeSection === item.id ? 'active' : ''}`}
+                    onClick={() => scrollToSection(item.id)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {(invitation.blocks || [])
+              .filter(block => 
+                block.type !== 'music' && 
+                block.type !== 'signature' && 
+                block.type !== 'registry' &&
+                block.type !== 'backgroundMusic' &&
+                block.type !== 'particles' &&
+                block.type !== 'navigationMenu' &&
+                block.type !== 'envelopeAnimation'
+              )
+              .map((block) => {
+                const hasBg = !!block.data?.backgroundImage
+                const blockMinHeight = block.data?.blockMinHeight || 0
+                const bgAspectRatio = block.data?.backgroundAspectRatio || null
+                const isCover = block.type === 'cover'
+                const isFooter = block.type === 'footer'
+                const isFullWidth = isCover || isFooter
+
+                // Assign IDs to components for scroll spy navigation
+                let blockId = undefined
+                if (block.type === 'cover') blockId = 'cover'
+                else if (block.type === 'couple') blockId = 'couple'
+                else if (block.type === 'location') blockId = 'event'
+                else if (block.type === 'gallery') blockId = 'gallery'
+                else if (block.type === 'wishes') blockId = 'wishes'
+                else if (block.type === 'gift') blockId = 'gift'
+
+                return (
+                  <ScrollRevealBlock
+                    key={block.id}
+                    isCover={isCover}
+                    rootRef={scrollContainerRef}
+                    animationType={block.data?.animation || 'fade-in-up'}
+                    className={`public-block ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`}
+                    style={{
+                      paddingTop: isFullWidth ? 0 : (block.data?.spacingTop ?? 40),
+                      paddingBottom: isFullWidth ? 0 : (block.data?.spacingBottom ?? 40),
+                      position: hasBg ? 'relative' : undefined,
+                      overflow: hasBg || block.data?.customBorderRadius ? 'hidden' : undefined,
+                      minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
+                      aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
+                      display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
+                      alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                      justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                      background: block.data?.customBgColor || undefined,
+                      color: block.data?.customTextColor || undefined,
+                      textAlign: block.data?.customTextAlign || undefined,
+                      borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
+                      '--text-dark': block.data?.customTextColor || undefined,
+                      '--text-muted': block.data?.customTextColor || undefined,
+                      '--text-light': block.data?.customTextColor || undefined,
+                    }}
+                  >
+                    <div id={blockId} style={{ position: 'absolute', top: -40 }} />
+                    {hasBg && !isCover && (
+                      <>
+                        <MediaRenderer
+                          src={block.data.backgroundImage}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: block.data.backgroundFit || 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none', borderRadius: 'inherit' }}
+                        />
+                        <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.backgroundOverlayColor || '#000000', opacity: block.data.backgroundOverlay ?? 0.3, zIndex: 1, pointerEvents: 'none', borderRadius: 'inherit' }} />
+                      </>
+                    )}
+                    <div
+                      className="public-block-content"
+                      style={{
+                        ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
+                        ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: isFullWidth ? 0 : 24, paddingRight: isFullWidth ? 0 : 24 } : { paddingLeft: 24, paddingRight: 24 })
+                      }}
+                    >
+                      {renderPublicBlock(
+                        block, theme,
+                        rsvpForm, setRsvpForm, handleRsvp, rsvpSent,
+                        wishForm, setWishForm, handleSendWish, wishSent,
+                        guestName, isPreviewUrl,
+                        invitation.wishes || [],
+                        isRsvpLoading, isWishLoading,
+                        false,
+                        submittedAttendance,
+                        invitation.title,
+                        () => setIsGiftModalOpen(true)
+                      )}
+                    </div>
+                  </ScrollRevealBlock>
+                )
+              })}
+          </div>
+        </main>
       </div>
     </div>
   )
@@ -628,7 +830,8 @@ export function renderPublicBlock(
   isWishLoading = false,
   isEditorCanvas = false,
   submittedAttendance = 'yes',
-  invitationTitle = ''
+  invitationTitle = '',
+  onOpenGiftModal = null
 ) {
   const primaryColor = theme?.primaryColor || '#565F34'
 
@@ -1129,8 +1332,20 @@ export function renderPublicBlock(
           <form className="public-rsvp">
             <h4 className="serif-italic" style={{ fontSize: 24, marginBottom: 24, color: primaryColor }}>{block.data.title || 'Konfirmasi Kehadiran'}</h4>
             <div className="public-rsvp-field">
-              <label>Nama Lengkap</label>
-              <input className="public-input" placeholder="Nama lengkap Anda" value={rsvpForm.name} onChange={e => setRsvpForm({ ...rsvpForm, name: e.target.value })} required />
+              <label>Nama Lengkap {guestName && guestName !== 'Guest' && <span style={{ fontSize: 11, opacity: 0.65 }}>(Terkunci)</span>}</label>
+              <input
+                className="public-input"
+                placeholder="Nama lengkap Anda"
+                value={rsvpForm.name}
+                readOnly={guestName && guestName !== 'Guest'}
+                style={guestName && guestName !== 'Guest' ? { background: 'rgba(0,0,0,0.03)', cursor: 'not-allowed' } : {}}
+                onChange={e => {
+                  if (!guestName || guestName === 'Guest') {
+                    setRsvpForm({ ...rsvpForm, name: e.target.value })
+                  }
+                }}
+                required
+              />
             </div>
             <div className="public-rsvp-field">
               <label>Nomor WhatsApp</label>
@@ -1302,8 +1517,23 @@ export function renderPublicBlock(
 
       return (
         <div className="public-gift">
+          <div className="public-gift-icon-bubble" style={{ width: 48, height: 48, borderRadius: '50%', background: `${primaryColor}15`, color: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+            <HiOutlineGift size={24} />
+          </div>
           <h4 className="serif-italic public-gift-title" style={{ color: primaryColor }}>{giftData.title || 'Wedding Gift'}</h4>
           {giftData.subtitle && <p className="public-gift-subtitle">{giftData.subtitle}</p>}
+
+          <div style={{ margin: '18px 0 16px', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="public-gift-modal-trigger-btn"
+              style={{ background: primaryColor }}
+              onClick={() => onOpenGiftModal ? onOpenGiftModal() : null}
+            >
+              <HiOutlineGift size={18} />
+              <span>Buka Amplop Digital</span>
+            </button>
+          </div>
 
           {accounts.length > 0 && (
             <div className="public-gift-accounts">
@@ -1642,6 +1872,53 @@ export function renderPublicBlock(
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0C5.344 0 0 5.344 0 11.944c0 5.622 3.88 10.325 9.125 11.595-.125-.944-.233-2.385.044-3.578.25-1.077 1.6-6.786 1.6-6.786s-.408-.816-.408-2.025c0-1.9 1.1-3.32 2.483-3.32 1.17 0 1.73.875 1.73 1.925 0 1.177-.75 2.937-1.137 4.57-.32 1.36.68 2.467 2.022 2.467 2.428 0 4.294-2.56 4.294-6.254 0-3.27-2.35-5.56-5.707-5.56-3.89 0-6.175 2.92-6.175 5.935 0 1.176.45 2.436 1.017 3.115.11.133.127.25.093.385-.1.425-.333 1.358-.38 1.547-.06.26-.2.356-.46.24-1.72-.8-2.793-3.3-2.793-5.32 0-4.328 3.146-8.303 9.065-8.303 4.76 0 8.455 3.39 8.455 7.917 0 4.726-2.98 8.532-7.11 8.532-1.39 0-2.69-.72-3.136-1.58L10.9 20.358c-.36 1.378-.8 3.036-.8 3.036l-.01.037c2.51.77 5.176.243 7.21-1.394 2.033-1.637 3.178-4.083 3.178-6.657C20.478 5.344 15.134 0 11.944 0z"/></svg>
               </a>
             )}
+          </div>
+        </div>
+      )
+    }
+
+    // ── QR ENTRY PASS (TIBRA BENCHMARK) ──────────────────────────────────
+    case 'qrPass': {
+      const qrData = block.data || {}
+      const qrTitle = qrData.title || 'QR E-Invitation'
+      const qrSubtitle = qrData.subtitle || 'Tunjukkan QR Code ini kepada penerima tamu di lokasi acara untuk check-in dan menukarkan suvenir.'
+      const qrBg = qrData.cardColor || '#FAF7F2'
+      const qrAccent = qrData.accentColor || primaryColor
+      const passGuest = guestName && guestName !== 'Guest' ? guestName : (isPreviewUrl ? 'Nama Tamu Undangan' : 'Tamu Undangan')
+
+      return (
+        <div className="public-qr-pass-wrapper">
+          <div className="public-qr-pass-card" style={{ background: qrBg, borderColor: `${qrAccent}25` }}>
+            <div className="public-qr-pass-badge" style={{ background: qrAccent, color: '#fff' }}>
+              <span>ENTRY PASS</span>
+            </div>
+
+            <div className="public-qr-pass-header">
+              <h4 className="serif-italic public-qr-pass-title" style={{ color: qrAccent }}>{qrTitle}</h4>
+              <p className="public-qr-pass-couple serif-italic">{invitationTitle || 'The Wedding'}</p>
+            </div>
+
+            <div className="public-qr-pass-guest">
+              <span className="public-qr-pass-guest-label">Kepada Yth:</span>
+              <strong className="public-qr-pass-guest-name" style={{ color: qrAccent }}>{passGuest}</strong>
+            </div>
+
+            <div className="public-qr-pass-code-container" style={{ borderColor: `${qrAccent}30` }}>
+              <GuestQrMatrix value={`${invitationTitle || 'inv'}|${passGuest}|ENTRY-PASS`} size={136} color={qrAccent} />
+            </div>
+
+            <p className="public-qr-pass-instruction">{qrSubtitle}</p>
+
+            <button
+              type="button"
+              className="public-qr-pass-btn"
+              style={{ background: qrAccent, color: '#fff' }}
+              onClick={() => {
+                alert('Silakan ambil tangkapan layar (screenshot) kartu pass QR ini untuk ditunjukkan saat hari-H.')
+              }}
+            >
+              <span>🎟️ Simpan QR Pass</span>
+            </button>
           </div>
         </div>
       )
