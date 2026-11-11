@@ -1882,3 +1882,237 @@
     display: none !important;
   }
 }
+
+/* ──────────────────────────────────────
+   DESKTOP HERO CANVAS PREVIEW & IMAGE CROPPER
+   ────────────────────────────────────── */
+
+.editor-desktop-hero-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  box-sizing: border-box;
+  color: #fff;
+  background: #1e1b18;
+}
+
+.editor-desktop-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.editor-desktop-hero-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  background: #24201c;
+  z-index: 0;
+}
+
+.editor-desktop-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.82) 100%);
+  z-index: 1;
+  transition: opacity 0.2s ease;
+}
+
+.editor-desktop-hero-scrim--cinematic {
+  background: linear-gradient(135deg, rgba(20, 15, 12, 0.85) 0%, rgba(45, 20, 24, 0.65) 50%, rgba(12, 9, 8, 0.92) 100%);
+}
+
+.editor-desktop-hero-scrim--dark {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+.editor-desktop-hero-scrim--warm {
+  background: linear-gradient(135deg, rgba(55, 30, 20, 0.82) 0%, rgba(30, 15, 10, 0.88) 100%);
+}
+
+.editor-desktop-hero-scrim--subtle {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+.editor-desktop-hero-scrim--none {
+  background: transparent;
+}
+
+.editor-desktop-hero-info {
+  position: relative;
+  z-index: 2;
+}
+
+.editor-desktop-hero-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.editor-desktop-hero-info h4 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.editor-desktop-hero-info p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* ── IMAGE CROPPER MODAL ─────────────────────────────────────── */
+.cropper-modal-content {
+  max-width: 580px !important;
+}
+
+.cropper-stage {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background: #121110;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  cursor: grab;
+}
+
+.cropper-stage:active {
+  cursor: grabbing;
+}
+
+.cropper-image-wrapper {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.cropper-image-wrapper img {
+  max-width: none;
+  pointer-events: none;
+  display: block;
+}
+
+.cropper-frame {
+  position: relative;
+  pointer-events: none;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+  box-sizing: border-box;
+}
+
+.cropper-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  pointer-events: none;
+}
+
+.cropper-grid-cell {
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+}
+
+.cropper-hint-text {
+  font-size: 11.5px;
+  color: var(--ed-text-secondary);
+  margin: 10px 0 14px;
+  line-height: 1.45;
+}
+
+.cropper-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.cropper-aspect-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cropper-aspect-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ed-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 55px;
+}
+
+.cropper-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cropper-zoom-slider {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--olive);
+}
+
+.cropper-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid var(--ed-border);
+  background: var(--ed-surface);
+  color: var(--ed-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cropper-tool-btn:hover {
+  background: var(--ed-surface-hover);
+}
+
+.cropper-tool-btn.active {
+  background: var(--olive);
+  color: #fff;
+  border-color: var(--olive);
+  font-weight: 600;
+}

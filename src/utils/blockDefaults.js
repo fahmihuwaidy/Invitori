@@ -1,5 +1,23 @@
 export const BLOCK_TYPES = {
   // ─── ESSENTIALS ──────────────────────────────────────────
+  desktopHero: {
+    label: 'Desktop Showcase Cover',
+    category: 'essential',
+    icon: '🖥️',
+    description: 'Foto & tampilan khusus layar desktop (dual-pane left showcase)',
+    defaults: {
+      backgroundImage: '',
+      title: '',
+      subtitle: '',
+      date: '',
+      overlayGradient: 'cinematic', // 'cinematic' | 'dark' | 'warm' | 'subtle' | 'none'
+      overlayOpacity: 0.7,
+      showMonogram: true,
+      showGuestTag: true,
+      showScrollGuide: true,
+      fullWidth: true,
+    }
+  },
   cover: {
     label: 'Hero Cover',
     category: 'essential',

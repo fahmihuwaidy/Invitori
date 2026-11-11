@@ -403,6 +403,137 @@ function BlockSpecificStylePanel({ block, onChange }) {
   const type = block.type
   const data = block.data || {}
 
+  // ── DESKTOP SHOWCASE COVER (DESKTOP HERO OVERLAY) ─────────────────────
+  if (type === 'desktopHero') {
+    return (
+      <>
+        <div className="settings-section">
+          <span className="label-caps">Foto Showcase Desktop</span>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 10px', lineHeight: 1.5 }}>
+            Foto ini khusus tampil di layar sebelah kiri pada tampilan desktop (dual-pane showcase). Saat upload, Anda dapat memotong foto secara presisi.
+          </p>
+          <div style={{ marginTop: 8 }}>
+            <MediaUploader
+              currentUrl={data.backgroundImage}
+              onUpload={(url) => onChange({ backgroundImage: url })}
+              withCrop={true}
+              cropAspectRatio={16 / 9}
+              cropTitle="Potong Foto Desktop Showcase (16:9)"
+            />
+          </div>
+          <div className="input-group">
+            <label>Atau tempel URL Gambar</label>
+            <input
+              className="settings-input"
+              value={data.backgroundImage || ''}
+              onChange={e => onChange({ backgroundImage: e.target.value })}
+              placeholder="https://images.unsplash.com/..."
+            />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="label-caps">Overlay & Visual Efek</span>
+          <div className="input-group">
+            <label>Gradient Overlay Style</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 6 }}>
+              {[
+                ['cinematic', 'Cinematic Dark'],
+                ['dark', 'Deep Charcoal'],
+                ['warm', 'Warm Mocha'],
+                ['subtle', 'Subtle Mist'],
+                ['none', 'Tanpa Overlay'],
+              ].map(([val, lbl]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => onChange({ overlayGradient: val })}
+                  className={`btn-tabs-choice ${(data.overlayGradient || 'cinematic') === val ? 'active' : ''}`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>Overlay Opacity</label>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--olive)' }}>{Math.round((data.overlayOpacity ?? 0.7) * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={data.overlayOpacity ?? 0.7}
+              onChange={e => onChange({ overlayOpacity: Number(e.target.value) })}
+              style={{ width: '100%', accentColor: 'var(--olive)' }}
+            />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="label-caps">Teks & Kustomisasi Khusus Desktop</span>
+          <div className="input-group">
+            <label>Custom Title (Default: Judul Undangan)</label>
+            <input
+              className="settings-input"
+              value={data.title || ''}
+              onChange={e => onChange({ title: e.target.value })}
+              placeholder="Kosongkan untuk pakai judul default"
+            />
+          </div>
+          <div className="input-group">
+            <label>Custom Subtitle / Kicker</label>
+            <input
+              className="settings-input"
+              value={data.subtitle || ''}
+              onChange={e => onChange({ subtitle: e.target.value })}
+              placeholder="Kosongkan untuk pakai subtitle cover"
+            />
+          </div>
+          <div className="input-group">
+            <label>Custom Date</label>
+            <input
+              className="settings-input"
+              value={data.date || ''}
+              onChange={e => onChange({ date: e.target.value })}
+              placeholder="Contoh: Saturday, 12 December 2026"
+            />
+          </div>
+
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={data.showMonogram ?? true}
+                onChange={e => onChange({ showMonogram: e.target.checked })}
+              />
+              Tampilkan Monogram Crest Badge
+            </label>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={data.showGuestTag ?? true}
+                onChange={e => onChange({ showGuestTag: e.target.checked })}
+              />
+              Tampilkan Tag Nama Tamu ("Khusus Kepada Yth:")
+            </label>
+            <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={data.showScrollGuide ?? true}
+                onChange={e => onChange({ showScrollGuide: e.target.checked })}
+              />
+              Tampilkan Indikator Gulir Mouse
+            </label>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   // ── COVER ────────────────────────────────────────────────────────────
   if (type === 'cover') {
     return (
@@ -419,7 +550,13 @@ function BlockSpecificStylePanel({ block, onChange }) {
         <div className="settings-section">
           <span className="label-caps">Media Cover</span>
           <div style={{ marginTop: 8 }}>
-            <MediaUploader currentUrl={data.backgroundImage} onUpload={(url) => onChange({ backgroundImage: url })} />
+            <MediaUploader
+              currentUrl={data.backgroundImage}
+              onUpload={(url) => onChange({ backgroundImage: url })}
+              withCrop={true}
+              cropAspectRatio={9 / 16}
+              cropTitle="Potong Foto Cover (9:16)"
+            />
           </div>
           <div className="input-group">
             <label>Or paste URL</label>
@@ -1526,18 +1663,317 @@ function RightSettingsPanel({ block, onChange, activeTab, allBlocks }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MEDIA UPLOADER & MODALS (SETTINGS, VERSION, SEO, ACCESS AUDIT, JSON, HELP)
+// MEDIA UPLOADER & MODALS (IMAGE CROPPER, SETTINGS, VERSION, SEO, ACCESS AUDIT)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MediaUploader({ currentUrl, onUpload, multiple = false }) {
+function ImageCropperModal({ file, onCropComplete, onClose, defaultAspectRatio = 16 / 9, title = 'Potong & Sesuaikan Foto' }) {
+  const [imgSrc, setImgSrc] = useState(null)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [rotation, setRotation] = useState(0)
+  const [aspectRatio, setAspectRatio] = useState(defaultAspectRatio)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const imgRef = useRef(null)
+
+  useEffect(() => {
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setImgSrc(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const handleMouseDown = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return
+    setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
+  }
+
+  const handleMouseUp = () => setIsDragging(false)
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true)
+      setDragStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y })
+    }
+  }
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return
+    setPan({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y })
+  }
+
+  const handleTouchEnd = () => setIsDragging(false)
+
+  const ASPECT_PRESETS = [
+    { label: '16:9 (Desktop)', value: 16 / 9 },
+    { label: '4:3 (Standard)', value: 4 / 3 },
+    { label: '1:1 (Persegi)', value: 1 },
+    { label: '9:16 (Story)', value: 9 / 16 },
+  ]
+
+  // Compute crop box dimensions inside standard stage area
+  const stageWidth = 520
+  const stageHeight = 320
+  let cropWidth = stageWidth * 0.88
+  let cropHeight = cropWidth / (aspectRatio || 16 / 9)
+  if (cropHeight > stageHeight * 0.88) {
+    cropHeight = stageHeight * 0.88
+    cropWidth = cropHeight * (aspectRatio || 16 / 9)
+  }
+
+  const handlePerformCrop = async () => {
+    const img = imgRef.current
+    if (!img) return
+
+    setUploading(true)
+    setProgress(0)
+
+    try {
+      const exportWidth = Math.min(1920, Math.max(1200, cropWidth * 2.5))
+      const exportHeight = Math.round(exportWidth / (aspectRatio || 16 / 9))
+
+      const canvas = document.createElement('canvas')
+      canvas.width = exportWidth
+      canvas.height = exportHeight
+      const ctx = canvas.getContext('2d')
+
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+
+      const ratio = exportWidth / cropWidth
+
+      ctx.save()
+      ctx.translate(exportWidth / 2, exportHeight / 2)
+      ctx.translate(pan.x * ratio, pan.y * ratio)
+      ctx.rotate((rotation * Math.PI) / 180)
+      ctx.scale(zoom, zoom)
+
+      const baseScale = Math.max(cropWidth / img.naturalWidth, cropHeight / img.naturalHeight)
+      const drawW = img.naturalWidth * baseScale * ratio
+      const drawH = img.naturalHeight * baseScale * ratio
+
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
+      ctx.restore()
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('Gagal memproses gambar.')
+          setUploading(false)
+          return
+        }
+        try {
+          const result = await uploadToCloudinary(blob, (p) => setProgress(p))
+          onCropComplete(result.url)
+          onClose()
+        } catch (err) {
+          console.error(err)
+          alert('Gagal mengunggah foto: ' + err.message)
+        } finally {
+          setUploading(false)
+        }
+      }, 'image/jpeg', 0.92)
+    } catch (err) {
+      console.error(err)
+      alert('Terjadi kesalahan saat memotong foto.')
+      setUploading(false)
+    }
+  }
+
+  const handleUploadOriginal = async () => {
+    setUploading(true)
+    setProgress(0)
+    try {
+      const result = await uploadToCloudinary(file, (p) => setProgress(p))
+      onCropComplete(result.url)
+      onClose()
+    } catch (err) {
+      alert('Gagal mengunggah foto: ' + err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={uploading ? undefined : onClose}>
+      <div className="modal-content cropper-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="serif-italic">{title}</h3>
+          {!uploading && (
+            <button type="button" onClick={onClose}><HiX size={20} /></button>
+          )}
+        </div>
+
+        <div className="modal-body">
+          <div
+            className="cropper-stage"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div
+              className="cropper-image-wrapper"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+              }}
+            >
+              {imgSrc && (
+                <img
+                  ref={imgRef}
+                  src={imgSrc}
+                  alt="Crop preview"
+                  style={{
+                    width: cropWidth,
+                    height: 'auto',
+                    minHeight: cropHeight,
+                    objectFit: 'cover'
+                  }}
+                  draggable={false}
+                />
+              )}
+            </div>
+
+            <div
+              className="cropper-frame"
+              style={{
+                width: cropWidth,
+                height: cropHeight,
+              }}
+            >
+              <div className="cropper-grid">
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+                <div className="cropper-grid-cell" />
+              </div>
+            </div>
+          </div>
+
+          <p className="cropper-hint-text">
+            💡 Geser / drag untuk atur posisi foto, gunakan slider untuk zoom & atur rasio crop.
+          </p>
+
+          <div className="cropper-controls">
+            <div className="cropper-aspect-row">
+              <span className="cropper-aspect-label">Rasio:</span>
+              {ASPECT_PRESETS.map(preset => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  className={`cropper-tool-btn ${Math.abs(aspectRatio - preset.value) < 0.01 ? 'active' : ''}`}
+                  onClick={() => setAspectRatio(preset.value)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="cropper-zoom-row">
+              <span className="cropper-aspect-label">Zoom:</span>
+              <button
+                type="button"
+                className="cropper-tool-btn"
+                onClick={() => setZoom(z => Math.max(1, +(z - 0.1).toFixed(2)))}
+              >
+                −
+              </button>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={e => setZoom(Number(e.target.value))}
+                className="cropper-zoom-slider"
+              />
+              <button
+                type="button"
+                className="cropper-tool-btn"
+                onClick={() => setZoom(z => Math.min(3, +(z + 0.1).toFixed(2)))}
+              >
+                +
+              </button>
+              <span style={{ fontSize: 12, minWidth: 38, textAlign: 'right', fontWeight: 600 }}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                className="cropper-tool-btn"
+                onClick={() => setRotation(r => (r + 90) % 360)}
+                title="Putar 90 Derajat"
+              >
+                ↻ 90°
+              </button>
+              <button
+                type="button"
+                className="cropper-tool-btn"
+                onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); setRotation(0); }}
+                title="Reset Posisi"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          {uploading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Mengunggah foto... {progress}%</span>
+            </div>
+          ) : (
+            <>
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Batal
+              </button>
+              <button type="button" className="btn btn-outline" onClick={handleUploadOriginal} title="Unggah foto langsung tanpa dipotong">
+                Gunakan Foto Asli
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handlePerformCrop}>
+                Potong & Unggah
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MediaUploader({ currentUrl, onUpload, multiple = false, withCrop = false, cropAspectRatio = 16 / 9, cropTitle = 'Potong & Sesuaikan Foto' }) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [batchInfo, setBatchInfo] = useState({ current: 0, total: 0 })
+  const [pendingCropFile, setPendingCropFile] = useState(null)
   const fileInputRef = useRef(null)
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
+
+    // If withCrop is requested for single image upload, open ImageCropperModal preview
+    if (withCrop && !multiple && files[0]?.type?.startsWith('image/')) {
+      setPendingCropFile(files[0])
+      e.target.value = ''
+      return
+    }
 
     setUploading(true)
     setProgress(0)
@@ -1605,6 +2041,19 @@ function MediaUploader({ currentUrl, onUpload, multiple = false }) {
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
+
+      {pendingCropFile && (
+        <ImageCropperModal
+          file={pendingCropFile}
+          defaultAspectRatio={cropAspectRatio}
+          title={cropTitle}
+          onCropComplete={(url) => {
+            onUpload(url)
+            setPendingCropFile(null)
+          }}
+          onClose={() => setPendingCropFile(null)}
+        />
+      )}
     </div>
   )
 }

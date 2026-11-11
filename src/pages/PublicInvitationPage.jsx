@@ -573,12 +573,24 @@ export default function PublicInvitationPage() {
 
   // Extract decorative/overlay components
   const particlesBlock = invitation?.blocks?.find(b => b.type === 'particles')
+  const desktopHeroBlock = invitation?.blocks?.find(b => b.type === 'desktopHero')
   const coverBlock = invitation?.blocks?.find(b => b.type === 'cover')
   const coupleName = coverBlock?.data?.coupleName || invitation?.title || 'The Wedding'
   const coverSubtitle = coverBlock?.data?.subtitle || 'The Wedding Invitation'
   const coverDate = coverBlock?.data?.date || ''
   const coverPhoto = coverBlock?.data?.backgroundImage
   const monogram = extractMonogram(coupleName)
+
+  // Desktop Left Showcase Pane Specific Data (overridden by desktopHero block if present)
+  const heroPhoto = desktopHeroBlock?.data?.backgroundImage || coverPhoto
+  const heroCoupleName = desktopHeroBlock?.data?.title || coupleName
+  const heroSubtitle = desktopHeroBlock?.data?.subtitle || coverSubtitle
+  const heroDate = desktopHeroBlock?.data?.date || coverDate
+  const heroOverlayOpacity = desktopHeroBlock?.data?.overlayOpacity != null ? Number(desktopHeroBlock.data.overlayOpacity) : 0.7
+  const heroOverlayGradient = desktopHeroBlock?.data?.overlayGradient || 'cinematic'
+  const heroShowMonogram = desktopHeroBlock?.data?.showMonogram !== false
+  const heroShowGuestTag = desktopHeroBlock?.data?.showGuestTag !== false
+  const heroShowScrollGuide = desktopHeroBlock?.data?.showScrollGuide !== false
 
   const giftBlock = invitation?.blocks?.find(b => b.type === 'gift')
   const giftAccounts = giftBlock?.data?.accounts?.length > 0
@@ -620,37 +632,44 @@ export default function PublicInvitationPage() {
           />
 
           <div className="public-desktop-split">
-            {/* Desktop Left Showcase Pane (Tibra Benchmark) */}
+            {/* Desktop Left Showcase Pane (Powered by desktopHero or fallback coverPhoto) */}
             <aside className="public-desktop-left" style={{ '--primary-color': theme.primaryColor || '#652128' }}>
-              {coverPhoto && (
+              {heroPhoto && (
                 <div className="public-desktop-hero-media">
-                  <MediaRenderer src={coverPhoto} alt={coupleName} />
-                  <div className="public-desktop-hero-overlay" />
+                  <MediaRenderer src={heroPhoto} alt={heroCoupleName} />
+                  <div
+                    className={`public-desktop-hero-overlay public-desktop-hero-overlay--${heroOverlayGradient}`}
+                    style={{ opacity: heroOverlayOpacity }}
+                  />
                 </div>
               )}
               <div className="public-desktop-left-inner">
-                <div className="public-desktop-monogram-badge" style={{ borderColor: `${theme.primaryColor || '#652128'}40`, color: theme.primaryColor || '#652128' }}>
-                  <span className="serif-italic">{monogram}</span>
-                </div>
-                <p className="public-desktop-kicker">{coverSubtitle}</p>
-                <h1 className="public-desktop-couple serif-italic">{coupleName}</h1>
-                {coverDate && <p className="public-desktop-event-date">{coverDate}</p>}
+                {heroShowMonogram && (
+                  <div className="public-desktop-monogram-badge" style={{ borderColor: `${theme.primaryColor || '#652128'}40`, color: theme.primaryColor || '#652128' }}>
+                    <span className="serif-italic">{monogram}</span>
+                  </div>
+                )}
+                <p className="public-desktop-kicker">{heroSubtitle}</p>
+                <h1 className="public-desktop-couple serif-italic">{heroCoupleName}</h1>
+                {heroDate && <p className="public-desktop-event-date">{heroDate}</p>}
 
                 <div className="public-desktop-divider" style={{ background: `${theme.primaryColor || '#652128'}30` }} />
 
-                {guestName && guestName !== 'Guest' && (
+                {heroShowGuestTag && guestName && guestName !== 'Guest' && (
                   <div className="public-desktop-guest-tag">
                     <span>Khusus Kepada Yth:</span>
                     <strong>{guestName}</strong>
                   </div>
                 )}
 
-                <div className="public-desktop-mouse-guide">
-                  <div className="public-desktop-mouse-icon">
-                    <div className="public-desktop-mouse-wheel" />
+                {heroShowScrollGuide && (
+                  <div className="public-desktop-mouse-guide">
+                    <div className="public-desktop-mouse-icon">
+                      <div className="public-desktop-mouse-wheel" />
+                    </div>
+                    <span>Gulir layar di sebelah kanan untuk melihat undangan</span>
                   </div>
-                  <span>Gulir layar di sebelah kanan untuk melihat undangan</span>
-                </div>
+                )}
               </div>
             </aside>
 
@@ -1919,6 +1938,40 @@ export function renderPublicBlock(
           </div>
         </div>
       )
+    }
+
+    // ── DESKTOP SHOWCASE HERO (CANVAS PREVIEW & DESKTOP SPLIT DRIVER) ───────────
+    case 'desktopHero': {
+      if (isPreviewUrl) {
+        const heroBg = block.data?.backgroundImage
+        const heroTitle = block.data?.title || invitationTitle || 'The Wedding'
+        const heroSubtitle = block.data?.subtitle || 'Desktop Left Showcase'
+        const heroDate = block.data?.date || ''
+        const heroGrad = block.data?.overlayGradient || 'cinematic'
+        const heroOpacity = block.data?.overlayOpacity != null ? Number(block.data.overlayOpacity) : 0.7
+
+        return (
+          <div className="editor-desktop-hero-preview">
+            {heroBg ? (
+              <img src={heroBg} alt={heroTitle} className="editor-desktop-hero-img" />
+            ) : (
+              <div className="editor-desktop-hero-placeholder">
+                <span>Belum ada foto showcase desktop. Klik untuk atur & unggah foto.</span>
+              </div>
+            )}
+            <div
+              className={`editor-desktop-hero-scrim editor-desktop-hero-scrim--${heroGrad}`}
+              style={{ opacity: heroOpacity }}
+            />
+            <div className="editor-desktop-hero-info">
+              <span className="editor-desktop-hero-badge">🖥️ Desktop Split Showcase</span>
+              <h4 className="serif-italic">{heroTitle}</h4>
+              <p>{heroSubtitle} {heroDate ? `• ${heroDate}` : ''}</p>
+            </div>
+          </div>
+        )
+      }
+      return null
     }
 
     default:
