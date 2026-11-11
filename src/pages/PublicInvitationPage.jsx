@@ -1940,37 +1940,10 @@ export function renderPublicBlock(
       )
     }
 
-    // ── DESKTOP SHOWCASE HERO (CANVAS PREVIEW & DESKTOP SPLIT DRIVER) ───────────
+    // ── DESKTOP SHOWCASE HERO (DESKTOP LEFT SPLIT DRIVER ONLY) ──────────────────
     case 'desktopHero': {
-      if (isPreviewUrl) {
-        const heroBg = block.data?.backgroundImage
-        const heroTitle = block.data?.title || invitationTitle || 'The Wedding'
-        const heroSubtitle = block.data?.subtitle || 'Desktop Left Showcase'
-        const heroDate = block.data?.date || ''
-        const heroGrad = block.data?.overlayGradient || 'cinematic'
-        const heroOpacity = block.data?.overlayOpacity != null ? Number(block.data.overlayOpacity) : 0.7
-
-        return (
-          <div className="editor-desktop-hero-preview">
-            {heroBg ? (
-              <img src={heroBg} alt={heroTitle} className="editor-desktop-hero-img" />
-            ) : (
-              <div className="editor-desktop-hero-placeholder">
-                <span>Belum ada foto showcase desktop. Klik untuk atur & unggah foto.</span>
-              </div>
-            )}
-            <div
-              className={`editor-desktop-hero-scrim editor-desktop-hero-scrim--${heroGrad}`}
-              style={{ opacity: heroOpacity }}
-            />
-            <div className="editor-desktop-hero-info">
-              <span className="editor-desktop-hero-badge">🖥️ Desktop Split Showcase</span>
-              <h4 className="serif-italic">{heroTitle}</h4>
-              <p>{heroSubtitle} {heroDate ? `• ${heroDate}` : ''}</p>
-            </div>
-          </div>
-        )
-      }
+      // Desktop showcase hero exclusively drives the left showcase pane on PC/laptop;
+      // it is completely hidden in the right column feed and on mobile devices.
       return null
     }
 

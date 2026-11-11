@@ -3398,9 +3398,10 @@ export default function EditorPage() {
                             const isSelected = selectedBlockId === block.id
                             const isLocked = !!block.data?.locked
                             const isHidden = !!block.data?.hidden
+                            const isDesktopHero = block.type === 'desktopHero'
 
                             return (
-                              <div key={block.id} style={{ position: 'relative' }}>
+                              <div key={block.id} style={{ position: 'relative', display: (isDesktopHero && !isSelected) ? 'none' : undefined }}>
                                 <SortableBlock id={block.id} isLocked={isLocked}>
                                   <div 
                                     className={`canvas-block-wrapper ${isSelected ? 'is-selected' : ''} ${isLocked ? 'is-locked' : ''} ${isHidden ? 'is-hidden' : ''}`}
@@ -3410,6 +3411,11 @@ export default function EditorPage() {
                                       setSettingsOpen(true)
                                     }}
                                   >
+                                    {isDesktopHero && isSelected && (
+                                      <div style={{ padding: '12px 14px', margin: '6px 0', background: 'var(--ed-surface-hover)', borderRadius: 10, border: '1px dashed var(--ed-border)', textAlign: 'center', fontSize: 11.5, color: 'var(--ed-text-secondary)' }}>
+                                        🖥️ Desktop Showcase Cover (Aktif hanya di layar PC/Laptop sebelah kiri, tersembunyi di kolom kanan & HP)
+                                      </div>
+                                    )}
                                     {/* Selected Block Tag */}
                                     {isSelected && (
                                       <span className="block-selected-label">
