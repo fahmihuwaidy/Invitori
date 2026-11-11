@@ -3453,8 +3453,8 @@ export default function EditorPage() {
                                       className={`public-block ${block.type === 'cover' ? 'public-block-cover' : ''} ${block.type === 'footer' ? 'public-block-footer' : ''}`}
                                       style={{
                                         opacity: isHidden ? 0.4 : 1,
-                                        paddingTop: (block.type === 'cover' || block.type === 'footer') ? 0 : (block.data?.spacingTop ?? 40),
-                                        paddingBottom: (block.type === 'cover' || block.type === 'footer') ? 0 : (block.data?.spacingBottom ?? 40),
+                                        paddingTop: (block.type === 'cover' || block.type === 'footer' || block.type === 'desktopHero') ? 0 : (block.data?.spacingTop ?? 40),
+                                        paddingBottom: (block.type === 'cover' || block.type === 'footer' || block.type === 'desktopHero') ? 0 : (block.data?.spacingBottom ?? 40),
                                         borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
                                         background: block.data?.customBgColor || undefined,
                                         color: block.data?.customTextColor || undefined,
@@ -3476,15 +3476,15 @@ export default function EditorPage() {
                                         </div>
                                       )}
 
-                                      {block.data?.backgroundImage && block.type !== 'cover' && <BlockBackgroundLayer data={block.data} />}
+                                      {block.data?.backgroundImage && block.type !== 'cover' && block.type !== 'desktopHero' && <BlockBackgroundLayer data={block.data} />}
                                       
                                       <div 
                                         className="public-block-content"
                                         style={{
-                                          position: (block.data?.backgroundImage && block.type !== 'cover') ? 'relative' : undefined,
-                                          zIndex: (block.data?.backgroundImage && block.type !== 'cover') ? 2 : undefined,
-                                          paddingLeft: (block.type === 'cover' || block.type === 'footer') ? 0 : 24,
-                                          paddingRight: (block.type === 'cover' || block.type === 'footer') ? 0 : 24,
+                                          position: (block.data?.backgroundImage && block.type !== 'cover' && block.type !== 'desktopHero') ? 'relative' : undefined,
+                                          zIndex: (block.data?.backgroundImage && block.type !== 'cover' && block.type !== 'desktopHero') ? 2 : undefined,
+                                          paddingLeft: (block.type === 'cover' || block.type === 'footer' || block.type === 'desktopHero') ? 0 : 24,
+                                          paddingRight: (block.type === 'cover' || block.type === 'footer' || block.type === 'desktopHero') ? 0 : 24,
                                         }}
                                       >
                                         <div style={{ pointerEvents: 'none' }}>

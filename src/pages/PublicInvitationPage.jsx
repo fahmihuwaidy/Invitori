@@ -705,7 +705,8 @@ export default function PublicInvitationPage() {
                       block.type !== 'backgroundMusic' &&
                       block.type !== 'particles' &&
                       block.type !== 'navigationMenu' &&
-                      block.type !== 'envelopeAnimation'
+                      block.type !== 'envelopeAnimation' &&
+                      block.type !== 'desktopHero'
                     )
                     .map((block) => {
                       const hasBg = !!block.data?.backgroundImage
