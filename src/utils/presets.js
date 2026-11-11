@@ -223,12 +223,6 @@ function buildWeddingBlocks({
       },
     },
     {
-      type: 'navigationMenu',
-      data: {
-        ...(BLOCK_TYPES.navigationMenu?.defaults || {}),
-      },
-    },
-    {
       type: 'cover',
       data: {
         ...(BLOCK_TYPES.cover?.defaults || {}),

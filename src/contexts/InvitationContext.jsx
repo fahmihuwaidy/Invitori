@@ -504,17 +504,12 @@ export function InvitationProvider({ children }) {
 
   // --- Public page operations (no auth required) ---
 
-  const fetchPublicInvitation = async (slug, isPreview = false) => {
+  const fetchPublicInvitation = useCallback(async (slug, isPreview = false) => {
     let query = supabase
       .from('invitations')
       .select('*')
       .eq('slug', slug)
       .limit(1);
-
-    // Add a tiny delay or ensure fresh fetch if needed
-    // Supabase caches can sometimes be aggressive on rapid changes
-    const t = isPreview ? Date.now() : 0; 
-    console.log(`Fetching invitation for slug: ${slug}, preview: ${isPreview}, t: ${t}`);
 
     if (!isPreview) {
       query = query.eq('status', 'published')
@@ -575,13 +570,13 @@ export function InvitationProvider({ children }) {
       analytics: { totalViews: inv.total_views },
       createdAt: inv.created_at,
     }
-  }
+  }, [])
 
-  const incrementView = async (invId) => {
+  const incrementView = useCallback(async (invId) => {
     await supabase.rpc('increment_view', { inv_id: invId })
-  }
+  }, [])
 
-  const addRsvp = async (invId, rsvpData) => {
+  const addRsvp = useCallback(async (invId, rsvpData) => {
     const { error } = await supabase
       .from('rsvps')
       .insert({
@@ -598,9 +593,9 @@ export function InvitationProvider({ children }) {
       return false
     }
     return true
-  }
+  }, [])
 
-  const deleteRsvp = async (rsvpId) => {
+  const deleteRsvp = useCallback(async (rsvpId) => {
     const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId)
     if (error) {
       console.error('Error deleting RSVP:', error)
@@ -609,7 +604,7 @@ export function InvitationProvider({ children }) {
     // Refresh to update UI silently
     fetchInvitations(true)
     return true
-  }
+  }, [fetchInvitations])
 
   const value = {
     invitations,

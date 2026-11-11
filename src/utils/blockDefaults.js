@@ -343,7 +343,7 @@ export const BLOCK_TYPES = {
   },
   navigationMenu: {
     label: 'Floating Nav Menu',
-    category: 'decorative',
+    category: 'deprecated',
     icon: '🧭',
     defaults: {
       showCover: true,

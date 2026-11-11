@@ -1381,41 +1381,6 @@ function BlockSpecificStylePanel({ block, onChange }) {
     )
   }
 
-  // ── FLOATING NAV MENU ─────────────────────────────────────────────────
-  if (type === 'navigationMenu') {
-    return (
-      <div className="settings-section">
-        <span className="label-caps">Floating Navigation Tabs</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showCover !== false} onChange={e => onChange({ showCover: e.target.checked })} />
-            Link to Hero Cover
-          </label>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showCouple !== false} onChange={e => onChange({ showCouple: e.target.checked })} />
-            Link to Couple profiles
-          </label>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showEvent !== false} onChange={e => onChange({ showEvent: e.target.checked })} />
-            Link to Locations/Events
-          </label>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showGallery !== false} onChange={e => onChange({ showGallery: e.target.checked })} />
-            Link to Photo Gallery
-          </label>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showWishes !== false} onChange={e => onChange({ showWishes: e.target.checked })} />
-            Link to Wishes wall
-          </label>
-          <label style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={data.showGift !== false} onChange={e => onChange({ showGift: e.target.checked })} />
-            Link to Digital Gift
-          </label>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="input-group">
       <label>Content details</label>
@@ -2186,7 +2151,7 @@ export default function EditorPage() {
 
   // Find invitation
   const invitation = invitations.find(inv => inv.id === id)
-  const blocks = useMemo(() => invitation?.blocks || [], [invitation?.blocks])
+  const blocks = useMemo(() => (invitation?.blocks || []).filter(b => b.type !== 'navigationMenu'), [invitation?.blocks])
   const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
   // Setup Sensors
@@ -2601,7 +2566,6 @@ export default function EditorPage() {
     { label: 'Add Health Protocol Guidelines Block', action: () => addBlock('healthProtocol'), shortcut: 'Social' },
     { label: 'Add QR Entry Pass E-Invitation Block', action: () => addBlock('qrPass'), shortcut: 'Interactive' },
     { label: 'Add Background Music Block', action: () => addBlock('backgroundMusic'), shortcut: 'Decorative' },
-    { label: 'Add Floating Nav Menu Tabs Block', action: () => addBlock('navigationMenu'), shortcut: 'Decorative' },
     { label: 'Add Particles Cherry Blossom/Heart Block', action: () => addBlock('particles'), shortcut: 'Decorative' },
     { label: 'Add Envelope confirmation Folding Block', action: () => addBlock('envelopeAnimation'), shortcut: 'Decorative' },
     { label: 'Open Global SEO Tag Settings', action: () => setSeoOpen(true), shortcut: 'Ctrl+S' },

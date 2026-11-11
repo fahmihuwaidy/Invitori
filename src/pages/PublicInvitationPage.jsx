@@ -214,46 +214,63 @@ export const MediaRenderer = ({ src, className, style, alt = "", ...props }) => 
 };
 
 // ── NUMERICAL PRELOADER (TIBRA BENCHMARK) ──────────────────────────────────
-function NumericalPreloader({ coupleName, subtitle, primaryColor, onFinish }) {
+function NumericalPreloader({ coupleName, subtitle, primaryColor, isLoading = false, onFinish }) {
   const [progress, setProgress] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
+  const onFinishRef = useRef(onFinish)
+  const isLoadingRef = useRef(isLoading)
+
+  useEffect(() => {
+    onFinishRef.current = onFinish
+    isLoadingRef.current = isLoading
+  }, [onFinish, isLoading])
 
   useEffect(() => {
     const startTime = performance.now()
-    const duration = 1600
+    const duration = 950
     let animId
+    let closeTimer
+    let finishTimer
 
     const update = (now) => {
       const elapsed = now - startTime
-      const current = Math.min(Math.floor((elapsed / duration) * 100), 100)
+      let current = Math.min(Math.floor((elapsed / duration) * 100), 100)
+      if (isLoadingRef.current && current > 90) {
+        current = 90
+      }
       setProgress(current)
 
       if (current < 100) {
         animId = requestAnimationFrame(update)
       } else {
-        setTimeout(() => {
+        closeTimer = setTimeout(() => {
           setIsClosing(true)
-          setTimeout(onFinish, 400)
-        }, 120)
+          finishTimer = setTimeout(() => onFinishRef.current?.(), 380)
+        }, 80)
       }
     }
 
     animId = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(animId)
-  }, [onFinish])
+    return () => {
+      cancelAnimationFrame(animId)
+      clearTimeout(closeTimer)
+      clearTimeout(finishTimer)
+    }
+  }, [])
 
   return (
     <div
       className={`public-preloader-screen ${isClosing ? 'fade-out' : ''}`}
       onClick={() => {
+        if (isLoading) return
         setIsClosing(true)
-        setTimeout(onFinish, 150)
+        setTimeout(() => onFinishRef.current?.(), 150)
       }}
       title="Sentuh untuk langsung membuka"
     >
       <div className="public-preloader-content">
         <p className="public-preloader-kicker">{subtitle || 'THE WEDDING INVITATION'}</p>
-        <h2 className="public-preloader-couple serif-italic">{coupleName}</h2>
+        <h2 className="public-preloader-couple serif-italic">{coupleName || 'Invori'}</h2>
 
         <div className="public-preloader-counter">
           <span className="public-preloader-num">{progress}</span>
@@ -363,17 +380,19 @@ export default function PublicInvitationPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
   const scrollContainerRef = useRef(null)
-  const [activeSection, setActiveSection] = useState('cover')
 
   useEffect(() => {
+    let cancelled = false
     const load = async () => {
       setLoading(true)
       const inv = await fetchPublicInvitation(slug, isPreviewUrl)
+      if (cancelled) return
       setInvitation(inv)
       setLoading(false)
       if (inv) incrementView(inv.id)
     }
     load()
+    return () => { cancelled = true }
   }, [slug, fetchPublicInvitation, incrementView, isPreviewUrl])
 
   // Extract music block details
@@ -460,110 +479,20 @@ export default function PublicInvitationPage() {
         }
         const defaultSpec = 'ital,wght@0,300;0,400;0,500;0,600;0,700;1,400'
         const fontQueries = fontsArray.map(font => `family=${font.replace(/\s+/g, '+')}:${FONT_SPECS[font] || defaultSpec}`).join('&')
-        linkEl.href = `https://fonts.googleapis.com/css2?${fontQueries}&display=swap`
+        const newHref = `https://fonts.googleapis.com/css2?${fontQueries}&display=swap`
+        if (linkEl.href !== newHref) {
+          linkEl.href = newHref
+        }
       }
     }
   }, [invitation])
-
-  const isManualScrollingRef = useRef(false)
-  const scrollTimeoutRef = useRef(null)
-
-  // Track active section for floating menu
-  useEffect(() => {
-    if (!isOpen || !invitation) return
-
-    const sections = ['cover', 'couple', 'event', 'gallery', 'wishes', 'gift']
-    const observedElements = []
-
-    const observerOptions = {
-      root: window.innerWidth >= 480 ? scrollContainerRef.current : null,
-      rootMargin: '-15% 0px -45% 0px',
-      threshold: [0, 0.2, 0.5]
-    }
-
-    const visibleSections = new Map()
-
-    const observer = new IntersectionObserver((entries) => {
-      if (isManualScrollingRef.current) return
-
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          visibleSections.set(entry.target.id, entry.intersectionRatio)
-        } else {
-          visibleSections.delete(entry.target.id)
-        }
-      })
-
-      if (visibleSections.size > 0) {
-        const best = observedElements
-          .filter(el => visibleSections.has(el.id))
-          .sort((a, b) => {
-            const aTop = Math.abs(a.getBoundingClientRect().top)
-            const bTop = Math.abs(b.getBoundingClientRect().top)
-            return aTop - bTop
-          })[0]
-        if (best) {
-          setActiveSection(best.id)
-        }
-      }
-    }, observerOptions)
-
-    sections.forEach(id => {
-      const el = document.getElementById(id)
-      if (el) {
-        observer.observe(el)
-        observedElements.push(el)
-      }
-    })
-
-    return () => {
-      observer.disconnect()
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current)
-    }
-  }, [isOpen, invitation])
-
-  const scrollToSection = (id) => {
-    setActiveSection(id)
-    isManualScrollingRef.current = true
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current)
-    scrollTimeoutRef.current = setTimeout(() => {
-      isManualScrollingRef.current = false
-    }, 850)
-
-    const container = scrollContainerRef.current
-    const isContainerScrollable = container && (container.scrollHeight > container.clientHeight)
-
-    if (id === 'cover') {
-      if (isContainerScrollable) {
-        container.scrollTo({ top: 0, behavior: 'smooth' })
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-      return
-    }
-
-    const el = document.getElementById(id)
-    if (!el) return
-
-    if (isContainerScrollable) {
-      const containerRect = container.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      const targetScroll = elRect.top - containerRect.top + container.scrollTop
-      container.scrollTo({
-        top: Math.max(0, targetScroll),
-        behavior: 'smooth'
-      })
-    } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
 
   const handleOpenInvitation = () => {
     setIsOpen(true)
     if (musicUrl) setIsPlaying(true)
   }
 
-  if (loading) {
+  if (loading && isPreviewUrl) {
     return (
       <div className="public-page-wrapper">
         <div className="public-loading">
@@ -574,7 +503,7 @@ export default function PublicInvitationPage() {
     )
   }
 
-  if (!invitation) {
+  if (!loading && !invitation) {
     return (
       <div className="public-page-wrapper">
         <div className="public-blocks public-not-found">
@@ -588,12 +517,12 @@ export default function PublicInvitationPage() {
     )
   }
 
-  const theme = invitation.theme || {}
-  const displayFont = invitation.blocks?.find(b => b.type === 'cover')?.data?.displayFont || 'Gambarino'
+  const theme = invitation?.theme || {}
+  const displayFont = invitation?.blocks?.find(b => b.type === 'cover')?.data?.displayFont || 'Gambarino'
 
   const handleRsvp = async (e, attendanceValue) => {
     if (e) e.preventDefault()
-    if (isRsvpLoading) return
+    if (isRsvpLoading || !invitation) return
     const submitAttendance = attendanceValue || rsvpForm.attendance || 'yes'
     setSubmittedAttendance(submitAttendance)
     setIsRsvpLoading(true)
@@ -616,7 +545,7 @@ export default function PublicInvitationPage() {
 
   const handleSendWish = async (e) => {
     if (e) e.preventDefault()
-    if (!wishForm.content.trim() || isWishLoading) return
+    if (!wishForm.content.trim() || isWishLoading || !invitation) return
     setIsWishLoading(true)
     try {
       const success = await addRsvp(invitation.id, {
@@ -643,19 +572,7 @@ export default function PublicInvitationPage() {
   }
 
   // Extract decorative/overlay components
-  const particlesBlock = invitation.blocks?.find(b => b.type === 'particles')
-  const navBlock = invitation.blocks?.find(b => b.type === 'navigationMenu')
-  const hasBlock = (type) => invitation.blocks?.some(b => b.type === type)
-
-  const navItems = navBlock ? [
-    ...(navBlock.data?.showCover !== false && hasBlock('cover') ? [{ id: 'cover', label: 'Cover', icon: <HiOutlineHome /> }] : []),
-    ...(navBlock.data?.showCouple !== false && hasBlock('couple') ? [{ id: 'couple', label: 'Couple', icon: <HiOutlineHeart /> }] : []),
-    ...(navBlock.data?.showEvent !== false && hasBlock('location') ? [{ id: 'event', label: 'Event', icon: <HiOutlineCalendar /> }] : []),
-    ...(navBlock.data?.showGallery !== false && hasBlock('gallery') ? [{ id: 'gallery', label: 'Gallery', icon: <HiOutlineViewGrid /> }] : []),
-    ...(navBlock.data?.showWishes !== false && hasBlock('wishes') ? [{ id: 'wishes', label: 'Wishes', icon: <HiOutlineUserGroup /> }] : []),
-    ...(navBlock.data?.showGift !== false && hasBlock('gift') ? [{ id: 'gift', label: 'Gift', icon: <HiOutlineGift /> }] : [])
-  ] : []
-
+  const particlesBlock = invitation?.blocks?.find(b => b.type === 'particles')
   const coverBlock = invitation?.blocks?.find(b => b.type === 'cover')
   const coupleName = coverBlock?.data?.coupleName || invitation?.title || 'The Wedding'
   const coverSubtitle = coverBlock?.data?.subtitle || 'The Wedding Invitation'
@@ -678,200 +595,171 @@ export default function PublicInvitationPage() {
     >
       {!preloaderDone && !isPreviewUrl && (
         <NumericalPreloader
-          coupleName={coupleName}
-          subtitle={coverSubtitle}
+          coupleName={invitation ? coupleName : ''}
+          subtitle={invitation ? coverSubtitle : 'THE WEDDING INVITATION'}
           primaryColor={theme.primaryColor || '#652128'}
+          isLoading={loading}
           onFinish={() => setPreloaderDone(true)}
         />
       )}
 
-      <GiftModal
-        isOpen={isGiftModalOpen}
-        onClose={() => setIsGiftModalOpen(false)}
-        accounts={giftAccounts}
-        physicalGift={{
-          recipient: giftBlock?.data?.physicalRecipient,
-          phone: giftBlock?.data?.physicalPhone,
-          address: giftBlock?.data?.physicalAddress,
-        }}
-        qrisImage={giftBlock?.data?.qrisImage}
-        primaryColor={theme.primaryColor || '#652128'}
-        isPreviewUrl={isPreviewUrl}
-      />
+      {invitation && (
+        <>
+          <GiftModal
+            isOpen={isGiftModalOpen}
+            onClose={() => setIsGiftModalOpen(false)}
+            accounts={giftAccounts}
+            physicalGift={{
+              recipient: giftBlock?.data?.physicalRecipient,
+              phone: giftBlock?.data?.physicalPhone,
+              address: giftBlock?.data?.physicalAddress,
+            }}
+            qrisImage={giftBlock?.data?.qrisImage}
+            primaryColor={theme.primaryColor || '#652128'}
+            isPreviewUrl={isPreviewUrl}
+          />
 
-      <div className="public-desktop-split">
-        {/* Desktop Left Showcase Pane (Tibra Benchmark) */}
-        <aside className="public-desktop-left" style={{ '--primary-color': theme.primaryColor || '#652128' }}>
-          {coverPhoto && (
-            <div className="public-desktop-hero-media">
-              <MediaRenderer src={coverPhoto} alt={coupleName} />
-              <div className="public-desktop-hero-overlay" />
-            </div>
-          )}
-          <div className="public-desktop-left-inner">
-            <div className="public-desktop-monogram-badge" style={{ borderColor: `${theme.primaryColor || '#652128'}40`, color: theme.primaryColor || '#652128' }}>
-              <span className="serif-italic">{monogram}</span>
-            </div>
-            <p className="public-desktop-kicker">{coverSubtitle}</p>
-            <h1 className="public-desktop-couple serif-italic">{coupleName}</h1>
-            {coverDate && <p className="public-desktop-event-date">{coverDate}</p>}
+          <div className="public-desktop-split">
+            {/* Desktop Left Showcase Pane (Tibra Benchmark) */}
+            <aside className="public-desktop-left" style={{ '--primary-color': theme.primaryColor || '#652128' }}>
+              {coverPhoto && (
+                <div className="public-desktop-hero-media">
+                  <MediaRenderer src={coverPhoto} alt={coupleName} />
+                  <div className="public-desktop-hero-overlay" />
+                </div>
+              )}
+              <div className="public-desktop-left-inner">
+                <div className="public-desktop-monogram-badge" style={{ borderColor: `${theme.primaryColor || '#652128'}40`, color: theme.primaryColor || '#652128' }}>
+                  <span className="serif-italic">{monogram}</span>
+                </div>
+                <p className="public-desktop-kicker">{coverSubtitle}</p>
+                <h1 className="public-desktop-couple serif-italic">{coupleName}</h1>
+                {coverDate && <p className="public-desktop-event-date">{coverDate}</p>}
 
-            <div className="public-desktop-divider" style={{ background: `${theme.primaryColor || '#652128'}30` }} />
+                <div className="public-desktop-divider" style={{ background: `${theme.primaryColor || '#652128'}30` }} />
 
-            {guestName && guestName !== 'Guest' && (
-              <div className="public-desktop-guest-tag">
-                <span>Khusus Kepada Yth:</span>
-                <strong>{guestName}</strong>
+                {guestName && guestName !== 'Guest' && (
+                  <div className="public-desktop-guest-tag">
+                    <span>Khusus Kepada Yth:</span>
+                    <strong>{guestName}</strong>
+                  </div>
+                )}
+
+                <div className="public-desktop-mouse-guide">
+                  <div className="public-desktop-mouse-icon">
+                    <div className="public-desktop-mouse-wheel" />
+                  </div>
+                  <span>Gulir layar di sebelah kanan untuk melihat undangan</span>
+                </div>
               </div>
-            )}
+            </aside>
 
-            <div className="public-desktop-mouse-guide">
-              <div className="public-desktop-mouse-icon">
-                <div className="public-desktop-mouse-wheel" />
-              </div>
-              <span>Gulir layar di sebelah kanan untuk melihat undangan</span>
-            </div>
-          </div>
-        </aside>
+            {/* Right Pane (or Single Column Mobile Canvas) */}
+            <main className="public-desktop-right">
+              <div className="public-phone-shell">
+                <IntroOverlay isOpen={isOpen} onOpen={handleOpenInvitation} invitation={invitation} guestName={guestName} />
 
-        {/* Right Pane (or Single Column Mobile Canvas) */}
-        <main className="public-desktop-right">
-          <IntroOverlay isOpen={isOpen} onOpen={handleOpenInvitation} invitation={invitation} guestName={guestName} />
+                {musicUrl && (
+                  <BackgroundMusic url={musicUrl} songTitle={musicSongTitle} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} primaryColor={theme.primaryColor || '#344c2d'} />
+                )}
 
-          {musicUrl && (
-            <BackgroundMusic url={musicUrl} songTitle={musicSongTitle} isPlaying={isPlaying} setIsPlaying={setIsPlaying} audioRef={audioRef} primaryColor={theme.primaryColor || '#344c2d'} />
-          )}
-
-          {isOpen && navBlock && navItems.length > 0 && (
-            <nav className="public-floating-nav" style={{ '--primary-color': theme.primaryColor || '#652128' }} aria-label="Navigasi Undangan">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`public-floating-nav-btn ${activeSection === item.id ? 'active' : ''}`}
-                  onClick={() => scrollToSection(item.id)}
-                  aria-label={item.label}
+                <div
+                  ref={scrollContainerRef}
+                  className="public-blocks"
+                  style={{
+                    background: theme.backgroundColor || '#EDE9E7',
+                    overflowY: isOpen ? 'auto' : 'hidden',
+                  }}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          )}
+                  {particlesBlock && (
+                    <ParticleOverlay 
+                      type={particlesBlock.data?.effect || 'sakura'} 
+                      intensity={particlesBlock.data?.intensity || 30} 
+                    />
+                  )}
 
-          <div ref={scrollContainerRef} className="public-blocks" style={{ background: theme.backgroundColor || '#EDE9E7' }}>
-            {particlesBlock && (
-              <ParticleOverlay 
-                type={particlesBlock.data?.effect || 'sakura'} 
-                intensity={particlesBlock.data?.intensity || 30} 
-              />
-            )}
+                  {(invitation.blocks || [])
+                    .filter(block => 
+                      block.type !== 'music' && 
+                      block.type !== 'signature' && 
+                      block.type !== 'registry' &&
+                      block.type !== 'backgroundMusic' &&
+                      block.type !== 'particles' &&
+                      block.type !== 'navigationMenu' &&
+                      block.type !== 'envelopeAnimation'
+                    )
+                    .map((block) => {
+                      const hasBg = !!block.data?.backgroundImage
+                      const blockMinHeight = block.data?.blockMinHeight || 0
+                      const bgAspectRatio = block.data?.backgroundAspectRatio || null
+                      const isCover = block.type === 'cover'
+                      const isFooter = block.type === 'footer'
+                      const isFullWidth = isCover || isFooter
 
-            {(() => {
-              const assignedIds = new Set()
-              return (invitation.blocks || [])
-                .filter(block => 
-                  block.type !== 'music' && 
-                  block.type !== 'signature' && 
-                  block.type !== 'registry' &&
-                  block.type !== 'backgroundMusic' &&
-                  block.type !== 'particles' &&
-                  block.type !== 'navigationMenu' &&
-                  block.type !== 'envelopeAnimation'
-                )
-                .map((block) => {
-                  const hasBg = !!block.data?.backgroundImage
-                  const blockMinHeight = block.data?.blockMinHeight || 0
-                  const bgAspectRatio = block.data?.backgroundAspectRatio || null
-                  const isCover = block.type === 'cover'
-                  const isFooter = block.type === 'footer'
-                  const isFullWidth = isCover || isFooter
-
-                  // Assign unique IDs to components for scroll spy navigation
-                  let blockId = undefined
-                  if (block.type === 'cover' && !assignedIds.has('cover')) {
-                    blockId = 'cover'
-                    assignedIds.add('cover')
-                  } else if (block.type === 'couple' && !assignedIds.has('couple')) {
-                    blockId = 'couple'
-                    assignedIds.add('couple')
-                  } else if (block.type === 'location' && !assignedIds.has('event')) {
-                    blockId = 'event'
-                    assignedIds.add('event')
-                  } else if (block.type === 'gallery' && !assignedIds.has('gallery')) {
-                    blockId = 'gallery'
-                    assignedIds.add('gallery')
-                  } else if (block.type === 'wishes' && !assignedIds.has('wishes')) {
-                    blockId = 'wishes'
-                    assignedIds.add('wishes')
-                  } else if (block.type === 'gift' && !assignedIds.has('gift')) {
-                    blockId = 'gift'
-                    assignedIds.add('gift')
-                  }
-
-                  return (
-                    <ScrollRevealBlock
-                      key={block.id}
-                      id={blockId}
-                      isCover={isCover}
-                      rootRef={scrollContainerRef}
-                      animationType={block.data?.animation || 'fade-in-up'}
-                      className={`public-block ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`}
-                      style={{
-                        paddingTop: isFullWidth ? 0 : (block.data?.spacingTop ?? 40),
-                        paddingBottom: isFullWidth ? 0 : (block.data?.spacingBottom ?? 40),
-                        position: hasBg ? 'relative' : undefined,
-                        overflow: hasBg || block.data?.customBorderRadius ? 'hidden' : undefined,
-                        minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
-                        aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
-                        display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
-                        alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
-                        justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
-                        background: block.data?.customBgColor || undefined,
-                        color: block.data?.customTextColor || undefined,
-                        textAlign: block.data?.customTextAlign || undefined,
-                        borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
-                        '--text-dark': block.data?.customTextColor || undefined,
-                        '--text-muted': block.data?.customTextColor || undefined,
-                        '--text-light': block.data?.customTextColor || undefined,
-                      }}
-                    >
-                      {hasBg && !isCover && (
-                        <>
-                          <MediaRenderer
-                            src={block.data.backgroundImage}
-                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: block.data.backgroundFit || 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none', borderRadius: 'inherit' }}
-                          />
-                          <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.backgroundOverlayColor || '#000000', opacity: block.data.backgroundOverlay ?? 0.3, zIndex: 1, pointerEvents: 'none', borderRadius: 'inherit' }} />
-                        </>
-                      )}
-                      <div
-                        className="public-block-content"
-                        style={{
-                          ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
-                          ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: isFullWidth ? 0 : 24, paddingRight: isFullWidth ? 0 : 24 } : { paddingLeft: 24, paddingRight: 24 })
-                        }}
-                      >
-                        {renderPublicBlock(
-                          block, theme,
-                          rsvpForm, setRsvpForm, handleRsvp, rsvpSent,
-                          wishForm, setWishForm, handleSendWish, wishSent,
-                          guestName, isPreviewUrl,
-                          invitation.wishes || [],
-                          isRsvpLoading, isWishLoading,
-                          false,
-                          submittedAttendance,
-                          invitation.title,
-                          () => setIsGiftModalOpen(true)
-                        )}
-                      </div>
-                    </ScrollRevealBlock>
-                  )
-                })
-            })()}
+                      return (
+                        <ScrollRevealBlock
+                          key={block.id}
+                          isCover={isCover}
+                          rootRef={scrollContainerRef}
+                          animationType={block.data?.animation || 'fade-in-up'}
+                          className={`public-block ${isCover ? 'public-block-cover' : ''} ${isFooter ? 'public-block-footer' : ''}`}
+                          style={{
+                            paddingTop: isFullWidth ? 0 : (block.data?.spacingTop ?? 40),
+                            paddingBottom: isFullWidth ? 0 : (block.data?.spacingBottom ?? 40),
+                            position: hasBg ? 'relative' : undefined,
+                            overflow: hasBg || block.data?.customBorderRadius ? 'hidden' : undefined,
+                            minHeight: blockMinHeight > 0 ? blockMinHeight : undefined,
+                            aspectRatio: (hasBg && bgAspectRatio) ? bgAspectRatio : undefined,
+                            display: (hasBg && bgAspectRatio) ? 'flex' : undefined,
+                            alignItems: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                            justifyContent: (hasBg && bgAspectRatio) ? 'center' : undefined,
+                            background: block.data?.customBgColor || undefined,
+                            color: block.data?.customTextColor || undefined,
+                            textAlign: block.data?.customTextAlign || undefined,
+                            borderRadius: block.data?.customBorderRadius ? `${block.data?.customBorderRadius}px` : undefined,
+                            '--text-dark': block.data?.customTextColor || undefined,
+                            '--text-muted': block.data?.customTextColor || undefined,
+                            '--text-light': block.data?.customTextColor || undefined,
+                          }}
+                        >
+                          {hasBg && !isCover && (
+                            <>
+                              <MediaRenderer
+                                src={block.data.backgroundImage}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: block.data.backgroundFit || 'cover', objectPosition: 'center', zIndex: 0, pointerEvents: 'none', borderRadius: 'inherit' }}
+                              />
+                              <div style={{ position: 'absolute', inset: 0, backgroundColor: block.data.backgroundOverlayColor || '#000000', opacity: block.data.backgroundOverlay ?? 0.3, zIndex: 1, pointerEvents: 'none', borderRadius: 'inherit' }} />
+                            </>
+                          )}
+                          <div
+                            className="public-block-content"
+                            style={{
+                              ...((hasBg && !isCover) ? { position: 'relative', zIndex: 2 } : {}),
+                              ...(block.data.fullWidth !== false ? { padding: 0, maxWidth: 'none', paddingLeft: isFullWidth ? 0 : 24, paddingRight: isFullWidth ? 0 : 24 } : { paddingLeft: 24, paddingRight: 24 })
+                            }}
+                          >
+                            {renderPublicBlock(
+                              block, theme,
+                              rsvpForm, setRsvpForm, handleRsvp, rsvpSent,
+                              wishForm, setWishForm, handleSendWish, wishSent,
+                              guestName, isPreviewUrl,
+                              invitation.wishes || [],
+                              isRsvpLoading, isWishLoading,
+                              false,
+                              submittedAttendance,
+                              invitation.title,
+                              () => setIsGiftModalOpen(true)
+                            )}
+                          </div>
+                        </ScrollRevealBlock>
+                      )
+                    })}
+                </div>
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
+        </>
+      )}
     </div>
   )
 }
@@ -2033,25 +1921,6 @@ export function renderPublicBlock(
       )
     }
 
-    // ── FLOATING NAVIGATION MENU (EDITOR PREVIEW CARD) ───────────────────────
-    case 'navigationMenu': {
-      return (
-        <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.02)', borderRadius: 16, border: '1px dashed rgba(0,0,0,0.15)' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
-            Floating Navigation Menu (Aktif Mengambang di Undangan)
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', background: '#ffffff', padding: '6px 14px', borderRadius: 9999, boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
-            <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: primaryColor, color: '#fff', fontWeight: 600 }}>Cover</span>
-            <span style={{ fontSize: 10, padding: '4px 10px', color: '#666' }}>Couple</span>
-            <span style={{ fontSize: 10, padding: '4px 10px', color: '#666' }}>Event</span>
-            <span style={{ fontSize: 10, padding: '4px 10px', color: '#666' }}>Gallery</span>
-            <span style={{ fontSize: 10, padding: '4px 10px', color: '#666' }}>Wishes</span>
-            <span style={{ fontSize: 10, padding: '4px 10px', color: '#666' }}>Gift</span>
-          </div>
-        </div>
-      )
-    }
-
     default:
       return null
   }
@@ -2292,8 +2161,11 @@ function ScrollRevealBlock({ id, children, className, style, isCover = false, an
     return () => { if (currentRef) observer.unobserve(currentRef) }
   }, [isCover, rootRef])
   const animClass = isVisible ? (ANIMATION_MAP[animationType] || ANIMATION_MAP['fade-in-up']) : ''
+  const blockStyle = !isVisible && !isCover && animationType !== 'none'
+    ? { ...style, opacity: 0 }
+    : style
   return (
-    <div id={id} ref={domRef} className={`${className} ${animClass}`} style={style}>
+    <div id={id} ref={domRef} className={`${className} ${animClass}`} style={blockStyle}>
       {children}
     </div>
   )
