@@ -2613,61 +2613,81 @@
 /* Floating Navigation Menu Block (on Public page) */
 .public-floating-nav {
   position: fixed;
-  bottom: 24px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border-radius: 30px;
-  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+  padding: 5px 8px;
   display: flex;
+  align-items: center;
   gap: 4px;
   z-index: 1000;
-  width: fit-content;
-  max-width: 92vw;
+  width: max-content;
+  max-width: calc(100vw - 32px);
   animation: slideUpNav 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-}
-
-@media (min-width: 480px) {
-  .public-floating-nav {
-    position: absolute;
-    bottom: 24px;
-  }
+  pointer-events: auto;
 }
 
 .public-floating-nav-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   padding: 6px 10px;
-  border-radius: 20px;
-  color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 600;
-  transition: all 0.2s;
+  min-width: 46px;
+  border-radius: 9999px;
+  color: #71717a;
+  font-size: 10px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   border: none;
   background: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.public-floating-nav-btn:hover {
+  color: #18181b;
 }
 
 .public-floating-nav-btn.active {
-  background: var(--olive);
-  color: white;
+  background: var(--primary-color, var(--olive, #344c2d));
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 .public-floating-nav-btn svg {
-  font-size: 14px;
+  font-size: 15px;
+  stroke-width: 1.8;
+}
+
+@media (max-width: 360px) {
+  .public-floating-nav {
+    padding: 4px 6px;
+    gap: 2px;
+  }
+  .public-floating-nav-btn {
+    padding: 4px 6px;
+    min-width: 38px;
+    font-size: 9px;
+  }
+  .public-floating-nav-btn svg {
+    font-size: 13px;
+  }
 }
 
 @keyframes slideUpNav {
   from {
-    transform: translate(-50%, 100px);
+    transform: translate(-50%, 40px);
     opacity: 0;
   }
 
@@ -3893,18 +3913,22 @@
   }
 
   .public-desktop-right .public-floating-nav {
-    position: fixed !important;
-    left: auto !important;
-    right: calc((480px - 360px) / 2) !important;
-    width: 360px !important;
-    transform: none !important;
+    position: absolute !important;
     bottom: 36px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: max-content !important;
+    max-width: 380px !important;
+    z-index: 1000 !important;
   }
 
   .public-desktop-right .public-music-player {
-    position: fixed !important;
+    position: absolute !important;
     right: calc((480px - 420px) / 2 + 16px) !important;
     top: 36px !important;
+    left: auto !important;
+    z-index: 1000 !important;
   }
 }
 
