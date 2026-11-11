@@ -2177,19 +2177,14 @@ function BackgroundMusic({ url, songTitle, isPlaying, setIsPlaying, audioRef }) 
       <audio ref={audioRef} src={url} loop />
       <button
         type="button"
-        className={`music-pill-wrapper ${isPlaying ? 'playing' : ''}`}
+        className={`music-circle-btn ${isPlaying ? 'playing' : 'paused'}`}
         onClick={() => setIsPlaying(!isPlaying)}
         aria-label={isPlaying ? 'Jeda musik latar' : 'Putar musik latar'}
+        title={songTitle ? `${isPlaying ? 'Jeda musik' : 'Putar musik'}: ${songTitle}` : (isPlaying ? 'Jeda musik latar' : 'Putar musik latar')}
       >
-        <div className={`music-disc ${isPlaying ? 'music-disc-spinning' : ''}`}>
-          <HiOutlineMusicNote size={18} />
-          <div className="music-disc-center" />
+        <div className="music-disc-vinyl">
+          <HiOutlineMusicNote size={20} className="music-disc-icon" />
         </div>
-        {songTitle && (
-          <span className="music-pill-label">
-            {isPlaying ? `♫ ${songTitle}` : 'Musik Dijeda'}
-          </span>
-        )}
       </button>
     </div>
   )
