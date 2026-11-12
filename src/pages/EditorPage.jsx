@@ -2977,9 +2977,12 @@ export default function EditorPage() {
 
   const applyPreset = async (presetKey) => {
     const preset = PRESETS[presetKey]
-    if (!preset || preset.blocks.length === 0) return
+    if (!preset || !preset.blocks || preset.blocks.length === 0) return
     setIsSaving(true)
     try {
+      if (preset.theme) {
+        await updateInvitation(invitation.id, { theme: preset.theme })
+      }
       await ctxAddBlocks(id, preset.blocks)
       setLastSaved(new Date())
       pushHistory(preset.blocks)

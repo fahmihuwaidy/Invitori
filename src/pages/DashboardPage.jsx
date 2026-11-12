@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvitations } from '../contexts/InvitationContext'
-import { PRESET_LIST, PRESETS } from '../utils/presets'
+import { PRESET_LIST, PRESETS, THEME_PALETTES } from '../utils/presets'
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
 import { HiOutlinePlus, HiOutlinePencil, HiOutlineExternalLink, HiOutlineTrash, HiOutlineEye, HiOutlineUserGroup, HiOutlineMail, HiOutlineCheck, HiOutlineX, HiX, HiSelector, HiOutlineLink, HiOutlineDocumentDuplicate, HiOutlineCog, HiOutlineHeart, HiOutlineViewGrid, HiOutlineChatAlt2 } from 'react-icons/hi'
@@ -28,17 +28,55 @@ const WA_TEMPLATES = {
   },
 }
 
-/* ---- Create New Invitation Modal with Curated Preset Gallery ---- */
+/* ---- Create New Invitation Modal with Function Templates & Palette Customization ---- */
 function CreateInvitationModal({ onClose, onSelect }) {
   const [title, setTitle] = useState('')
   const [selectedPreset, setSelectedPreset] = useState('wedding')
+  const [paletteMode, setPaletteMode] = useState('preset') // 'preset' | 'custom'
+  const [selectedPaletteKey, setSelectedPaletteKey] = useState('atelier')
+  const [customColors, setCustomColors] = useState({
+    primaryColor: '#344c2d',
+    backgroundColor: '#f4efea',
+    accentColor: '#c4a882',
+  })
   const [isCreating, setIsCreating] = useState(false)
+
+  // Auto-sync default palette when template changes
+  const handleSelectPreset = (key) => {
+    setSelectedPreset(key)
+    if (paletteMode === 'preset') {
+      if (key === 'wedding') setSelectedPaletteKey('atelier')
+      else if (key === 'birthday') setSelectedPaletteKey('festive-sky')
+      else if (key === 'aqiqah') setSelectedPaletteKey('baby-sage')
+      else setSelectedPaletteKey('atelier')
+    } else {
+      if (key === 'wedding') setCustomColors({ primaryColor: '#344c2d', backgroundColor: '#f4efea', accentColor: '#c4a882' })
+      else if (key === 'birthday') setCustomColors({ primaryColor: '#1e40af', backgroundColor: '#f0f6ff', accentColor: '#d97706' })
+      else if (key === 'aqiqah') setCustomColors({ primaryColor: '#3b7a57', backgroundColor: '#f3f8f5', accentColor: '#c5a059' })
+      else setCustomColors({ primaryColor: '#1e293b', backgroundColor: '#ffffff', accentColor: '#3b82f6' })
+    }
+  }
+
+  // Get active palette object
+  const getActivePalette = () => {
+    if (paletteMode === 'custom') {
+      return {
+        ...customColors,
+        envelopeColor: customColors.primaryColor,
+        paperColor: customColors.backgroundColor,
+      }
+    }
+    const found = THEME_PALETTES.find(p => p.key === selectedPaletteKey)
+    return found || THEME_PALETTES[0]
+  }
+
+  const activePalette = getActivePalette()
 
   const handleCreate = async () => {
     if (!title.trim() || isCreating) return
     setIsCreating(true)
     try {
-      await onSelect(title.trim(), selectedPreset)
+      await onSelect(title.trim(), selectedPreset, activePalette)
     } catch (err) {
       console.error(err)
       alert('Gagal membuat undangan. Silakan coba lagi.')
@@ -46,75 +84,234 @@ function CreateInvitationModal({ onClose, onSelect }) {
     }
   }
 
+  const placeholderText = {
+    wedding: 'Contoh: Sarah & Dimas',
+    birthday: "Contoh: Alvaro's 17th Birthday",
+    aqiqah: 'Contoh: Tasyakuran Aqiqah Rayyan',
+    custom: 'Contoh: Undangan Baru',
+  }[selectedPreset] || 'Contoh: Sarah & Dimas'
+
   return (
     <div className="preset-modal-overlay" onClick={isCreating ? null : onClose}>
-      <div className="preset-modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
+      <div className="preset-modal" style={{ maxWidth: 740, maxHeight: '92vh' }} onClick={e => e.stopPropagation()}>
         {!isCreating && <button className="preset-modal-close" onClick={onClose}><HiX size={20} /></button>}
 
-        <div className="preset-modal-header" style={{ marginBottom: 16 }}>
-          <h2 className="serif-italic" style={{ fontSize: '1.6rem' }}>Buat Undangan Baru</h2>
-          <p>Pilih tema desain kurasi kami dan beri judul undangan Anda.</p>
+        <div className="preset-modal-header" style={{ marginBottom: 20 }}>
+          <h2 className="serif-italic" style={{ fontSize: '1.65rem' }}>Buat Undangan Baru</h2>
+          <p>Pilih kategori acara, sesuaikan palet warna, dan mulai rancang undangan Anda.</p>
         </div>
 
-        <div className="preset-title-form" style={{ marginTop: 8 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--olive)', display: 'block', marginBottom: 6 }}>
-            Judul Undangan / Nama Mempelai
-          </label>
-          <input
-            type="text"
-            className="preset-title-input"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleCreate()}
-            placeholder="Contoh: Aris & Laras"
-            autoFocus
-            disabled={isCreating}
-            style={{ marginBottom: 18 }}
-          />
+        <div className="preset-title-form" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* STEP 1: PILIH TEMPLATE BERDASARKAN FUNGSI */}
+          <div className="modal-step-section">
+            <div className="modal-step-header">
+              <span className="modal-step-number">1</span>
+              <div>
+                <label className="modal-step-label">Pilih Kategori Acara</label>
+                <span className="modal-step-desc">Template disesuaikan dengan kebutuhan dan susunan acara resmi</span>
+              </div>
+            </div>
 
-          <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--olive)', display: 'block', marginBottom: 10 }}>
-            Pilih Tema Desain ({PRESET_LIST.length} Pilihan)
-          </label>
-          <div className="preset-cards-grid">
-            {PRESET_LIST.map(preset => {
-              const isSelected = selectedPreset === preset.key
-              return (
-                <button
-                  type="button"
-                  key={preset.key}
-                  onClick={() => setSelectedPreset(preset.key)}
-                  disabled={isCreating}
-                  className={`preset-choice-card ${isSelected ? 'selected' : ''}`}
-                >
-                  <div className="preset-choice-top">
-                    <span className="preset-choice-icon">{preset.icon}</span>
-                    <div className="preset-choice-swatches">
-                      <span style={{ background: preset.theme?.primaryColor || '#3D4828' }} />
-                      <span style={{ background: preset.theme?.backgroundColor || '#FAF7F2' }} />
+            <div className="preset-cards-grid functional-grid">
+              {PRESET_LIST.map(preset => {
+                const isSelected = selectedPreset === preset.key
+                return (
+                  <button
+                    type="button"
+                    key={preset.key}
+                    onClick={() => handleSelectPreset(preset.key)}
+                    disabled={isCreating}
+                    className={`preset-choice-card ${isSelected ? 'selected' : ''}`}
+                  >
+                    <div className="preset-choice-top">
+                      <span className="preset-choice-icon">{preset.icon}</span>
+                      {preset.badge && <span className="preset-choice-badge">{preset.badge}</span>}
                     </div>
-                  </div>
-                  <div className="preset-choice-title">{preset.label}</div>
-                  {preset.badge && <span className="preset-choice-badge">{preset.badge}</span>}
-                  <p className="preset-choice-desc">{preset.description}</p>
-                </button>
-              )
-            })}
+                    <div className="preset-choice-title">{preset.label}</div>
+                    <p className="preset-choice-desc">{preset.description}</p>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
+          {/* STEP 2: PILIH COLOR PALETTE ATAU CUSTOM SENDIRI */}
+          <div className="modal-step-section">
+            <div className="modal-step-header">
+              <span className="modal-step-number">2</span>
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <label className="modal-step-label">Palet Warna Undangan</label>
+                  <span className="modal-step-desc">Pilih rekomendasi kurasi atau tentukan warna sendiri</span>
+                </div>
+                <div className="palette-mode-toggle">
+                  <button
+                    type="button"
+                    className={`mode-btn ${paletteMode === 'preset' ? 'active' : ''}`}
+                    onClick={() => setPaletteMode('preset')}
+                  >
+                    Rekomendasi
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-btn ${paletteMode === 'custom' ? 'active' : ''}`}
+                    onClick={() => setPaletteMode('custom')}
+                  >
+                    🎨 Kustom Sendiri
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {paletteMode === 'preset' ? (
+              <div className="palette-swatches-grid">
+                {THEME_PALETTES.map(p => {
+                  const isSelected = selectedPaletteKey === p.key
+                  return (
+                    <button
+                      type="button"
+                      key={p.key}
+                      onClick={() => setSelectedPaletteKey(p.key)}
+                      className={`palette-swatch-card ${isSelected ? 'selected' : ''}`}
+                    >
+                      <div className="palette-swatch-dots">
+                        <span style={{ backgroundColor: p.primaryColor }} title="Warna Utama" />
+                        <span style={{ backgroundColor: p.backgroundColor, border: '1px solid rgba(0,0,0,0.1)' }} title="Latar Belakang" />
+                        <span style={{ backgroundColor: p.accentColor }} title="Warna Aksen" />
+                      </div>
+                      <div className="palette-swatch-info">
+                        <span className="palette-swatch-name">{p.name}</span>
+                        {p.subtitle && <span className="palette-swatch-sub">{p.subtitle}</span>}
+                      </div>
+                      {isSelected && <span className="palette-swatch-check">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="palette-custom-panel">
+                <div className="palette-custom-inputs">
+                  <div className="color-field">
+                    <label>Warna Utama (Teks & Tombol)</label>
+                    <div className="color-input-wrapper">
+                      <input
+                        type="color"
+                        value={customColors.primaryColor}
+                        onChange={e => setCustomColors(c => ({ ...c, primaryColor: e.target.value }))}
+                      />
+                      <input
+                        type="text"
+                        value={customColors.primaryColor}
+                        onChange={e => setCustomColors(c => ({ ...c, primaryColor: e.target.value }))}
+                        className="color-hex-text"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="color-field">
+                    <label>Warna Latar (Kertas / Canvas)</label>
+                    <div className="color-input-wrapper">
+                      <input
+                        type="color"
+                        value={customColors.backgroundColor}
+                        onChange={e => setCustomColors(c => ({ ...c, backgroundColor: e.target.value }))}
+                      />
+                      <input
+                        type="text"
+                        value={customColors.backgroundColor}
+                        onChange={e => setCustomColors(c => ({ ...c, backgroundColor: e.target.value }))}
+                        className="color-hex-text"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="color-field">
+                    <label>Warna Aksen (Ornamen & Garis)</label>
+                    <div className="color-input-wrapper">
+                      <input
+                        type="color"
+                        value={customColors.accentColor}
+                        onChange={e => setCustomColors(c => ({ ...c, accentColor: e.target.value }))}
+                      />
+                      <input
+                        type="text"
+                        value={customColors.accentColor}
+                        onChange={e => setCustomColors(c => ({ ...c, accentColor: e.target.value }))}
+                        className="color-hex-text"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Color Preview Chip */}
+                <div
+                  className="palette-preview-card"
+                  style={{
+                    backgroundColor: customColors.backgroundColor,
+                    borderColor: customColors.accentColor,
+                    color: customColors.primaryColor,
+                  }}
+                >
+                  <div className="preview-card-header">
+                    <span style={{ color: customColors.accentColor, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
+                      PREVIEW PALET ANDA
+                    </span>
+                  </div>
+                  <div className="preview-card-title serif-italic" style={{ color: customColors.primaryColor }}>
+                    {title.trim() || PRESETS[selectedPreset]?.label || 'Nama Acara'}
+                  </div>
+                  <button
+                    type="button"
+                    className="preview-card-btn"
+                    style={{
+                      backgroundColor: customColors.primaryColor,
+                      color: customColors.backgroundColor,
+                      borderColor: customColors.accentColor,
+                    }}
+                  >
+                    Buka Undangan
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* STEP 3: JUDUL UNDANGAN */}
+          <div className="modal-step-section">
+            <div className="modal-step-header">
+              <span className="modal-step-number">3</span>
+              <div>
+                <label className="modal-step-label">Judul Undangan / Nama Acara</label>
+                <span className="modal-step-desc">Akan ditampilkan pada sampul depan dan pembuka undangan</span>
+              </div>
+            </div>
+
+            <input
+              type="text"
+              className="preset-title-input"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleCreate()}
+              placeholder={placeholderText}
+              disabled={isCreating}
+            />
+          </div>
+
+          {/* SUBMIT BUTTON */}
           <button
             className="btn btn-primary btn-full preset-create-btn"
             onClick={handleCreate}
             disabled={!title.trim() || isCreating}
-            style={{ marginTop: 20 }}
+            style={{ marginTop: 8, height: 46 }}
           >
             {isCreating ? (
               <>
                 <div className="spinner-sm" style={{ marginRight: 8 }}></div>
-                Menyiapkan Tema & Blok...
+                Menyiapkan Undangan & Palet Warna...
               </>
             ) : (
               <>
-                <HiOutlinePlus size={16} /> Buat Undangan dengan Tema "{PRESETS[selectedPreset]?.label}"
+                <HiOutlinePlus size={16} /> Buat Undangan ({PRESETS[selectedPreset]?.label})
               </>
             )}
           </button>
@@ -812,22 +1009,35 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, deleting])
 
-  const handleCreateInvitation = async (title, presetKey = 'wedding') => {
+  const handleCreateInvitation = async (title, presetKey = 'wedding', customPalette = null) => {
     const preset = PRESETS[presetKey] || PRESETS.custom
+    const paletteToUse = customPalette || preset.theme || {}
 
-    // Pre-customize template blocks upfront with title
-    const blocksToCreate = (preset.blocks || []).map(b => {
+    // Pre-customize template blocks upfront with title and palette
+    const generatedBlocks = typeof preset.buildBlocks === 'function'
+      ? preset.buildBlocks(paletteToUse)
+      : (preset.blocks || [])
+
+    const blocksToCreate = generatedBlocks.map(b => {
       if (b.type === 'cover' || b.type === 'footer') {
         return { ...b, data: { ...b.data, coupleName: title } }
       }
+      if (b.type === 'desktopHero') {
+        return { ...b, data: { ...b.data, title } }
+      }
       return b
     })
+
+    const themeToSave = {
+      ...(preset.theme || {}),
+      ...paletteToUse,
+    }
 
     // Create invitation with initial blocks in one fast step
     const newInv = await addInvitation({
       title,
       category: preset.labelId || 'Wedding',
-      theme: preset.theme,
+      theme: themeToSave,
       initialBlocks: blocksToCreate,
     })
 
