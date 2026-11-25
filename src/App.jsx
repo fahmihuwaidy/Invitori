@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import EditorPage from './pages/EditorPage'
 import PublicInvitationPage from './pages/PublicInvitationPage'
+import CheckInPage from './pages/CheckInPage'
+import WelcomeScreenPage from './pages/WelcomeScreenPage'
 import AtelierLayout from './layouts/AtelierLayout'
 import ContactPage from './pages/ContactPage'
 
@@ -32,6 +34,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/undangan/:slug" element={<PublicInvitationPage />} />
+            <Route path="/checkin/:id" element={<CheckInPage />} />
+            <Route path="/welcome/:id" element={<WelcomeScreenPage />} />
             <Route
               path="/admin"
               element={

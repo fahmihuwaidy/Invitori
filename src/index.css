@@ -9,9 +9,10 @@
   --olive-bg: rgba(137, 156, 117, 0.15);
   --olive-glow: 0 4px 20px rgba(52, 76, 45, 0.2);
   
-  --pink-dusty: #d09ca7;      /* Dusty Rose */
-  --pink-dusty-bg: rgba(208, 156, 167, 0.15);
-  --pink-glow: 0 4px 20px rgba(208, 156, 167, 0.2);
+  --pink-dusty: #9B3B52;      /* Accessible Dusty Rose text (WCAG AA) */
+  --pink-dusty-soft: #d09ca7; /* Decorative Dusty Rose */
+  --pink-dusty-bg: rgba(155, 59, 82, 0.12);
+  --pink-glow: 0 4px 20px rgba(155, 59, 82, 0.18);
   
   --cream: #f4efea;           /* Warm Paper Cream */
   --cream-light: #fbf9f6;     /* Bright paper */
@@ -19,8 +20,8 @@
   --white: #ffffff;
   
   --text-dark: #2a3125;       /* Vintage text green/black */
-  --text-muted: #6b7266;
-  --text-light: #a4aba0;
+  --text-muted: #5b6356;
+  --text-light: #666E62;      /* Accessible secondary text on cream/white (WCAG AA) */
   
   --border: #e2dac9;          /* Vintage warm border */
   --border-light: #eee9dd;
@@ -113,7 +114,10 @@ button {
   background: none;
 }
 
-button:focus-visible, a:focus-visible {
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--olive);
   outline-offset: 2px;
 }
@@ -125,7 +129,7 @@ input, textarea, select {
 
 input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid var(--olive);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* ==================== */
@@ -462,4 +466,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   h2 { font-size: 1.5rem; }
   h3 { font-size: 1.25rem; }
   body { font-size: 14px; }
+
+  /* Prevent iOS Safari auto-zoom on form controls */
+  input,
+  textarea,
+  select,
+  .settings-input,
+  .settings-textarea,
+  .settings-select {
+    font-size: 16px;
+  }
 }

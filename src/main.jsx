@@ -33,10 +33,10 @@ class SimpleErrorBoundary extends Component {
           textAlign: 'center'
         }}>
           <h2 className="serif-italic" style={{ fontSize: '2rem', marginBottom: 12, color: 'var(--olive)' }}>
-            Terjadi Kendala pada Halaman
+            Something Went Wrong
           </h2>
           <p style={{ maxWidth: 440, color: 'var(--text-muted)', marginBottom: 16, fontSize: 14 }}>
-            Sistem mendeteksi kendala rendering. Silakan muat ulang halaman atau hubungi dukungan jika masalah berlanjut.
+            We encountered an unexpected rendering issue. Please reload the page or contact support if the problem persists.
           </p>
           {this.state.error?.message && (
             <p style={{ fontSize: 12, color: '#b91c1c', marginBottom: 20, maxWidth: 500, background: 'rgba(185, 28, 28, 0.08)', padding: '8px 14px', borderRadius: 6 }}>
@@ -48,7 +48,7 @@ class SimpleErrorBoundary extends Component {
             className="btn btn-primary"
             style={{ padding: '12px 28px' }}
           >
-            Muat Ulang Halaman
+            Reload Page
           </button>
         </div>
       )

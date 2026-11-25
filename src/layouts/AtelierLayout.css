@@ -309,10 +309,108 @@
   }
   .atelier-topbar {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding-top: max(env(safe-area-inset-top, 0px), 12px);
+    padding-left: 16px;
+    padding-right: 16px;
+    gap: 12px;
+  }
+  .topbar-center {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+  }
+  .topbar-page-title {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 100%;
   }
   .atelier-content {
     padding: 20px 16px;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 32px);
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 76px), 88px);
+  }
+}
+
+/* Mobile Bottom Navigation Dock */
+.atelier-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .atelier-bottom-nav {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+    padding: 6px 12px max(env(safe-area-inset-bottom, 0px), 8px);
+  }
+
+  .bottom-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 6px;
+    max-width: 520px;
+    margin: 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bottom-nav-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bottom-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 14px;
+    min-height: 48px;
+    min-width: 60px;
+    border-radius: var(--radius-full);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+  }
+
+  .bottom-nav-link:hover {
+    color: var(--text-dark);
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .bottom-nav-link.active {
+    color: var(--olive);
+    background: var(--olive-bg);
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(52, 76, 45, 0.12);
+  }
+
+  .bottom-nav-link svg {
+    transition: transform 0.2s ease;
+  }
+
+  .bottom-nav-link.active svg {
+    transform: scale(1.1);
   }
 }

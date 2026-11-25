@@ -4,7 +4,7 @@ export const BLOCK_TYPES = {
     label: 'Desktop Showcase Cover',
     category: 'essential',
     icon: '🖥️',
-    description: 'Foto & tampilan khusus layar desktop (dual-pane left showcase)',
+    description: 'Dedicated photo and showcase view for desktop screens (dual-pane left showcase)',
     defaults: {
       backgroundImage: '',
       title: '',
@@ -27,6 +27,7 @@ export const BLOCK_TYPES = {
       coupleName: 'Oliver & Sophia',
       date: 'Monday, March 30, 2026',
       subtitle: 'We Are Getting Married',
+      displayFont: 'Gambarino',
       showGuestName: true,
       showScrollIndicator: true,
       overlayOpacity: 0.4,
@@ -62,7 +63,7 @@ export const BLOCK_TYPES = {
     defaults: {
       content: 'Write your text here...',
       fontSize: 15,
-      color: '#8A8A8A',
+      color: '#666E62',
       align: 'center',
       lineHeight: 1.7,
       letterSpacing: 0,
@@ -75,10 +76,10 @@ export const BLOCK_TYPES = {
     category: 'essential',
     icon: '✍️',
     defaults: {
-      title: 'Terima Kasih',
-      description: 'Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu kepada kedua mempelai.',
-      signature1: 'Keluarga Bpk. Montague & Ibu Montague',
-      signature2: 'Keluarga Bpk. Capulet & Ibu Capulet',
+      title: 'Thank You',
+      description: 'It is a great honor and joy for us if you are able to attend and share your warmest blessings with us.',
+      signature1: 'The Montague Family',
+      signature2: 'The Capulet Family',
       coupleSignature: 'Romeo & Juliet',
       fullWidth: true,
     }
@@ -110,7 +111,7 @@ export const BLOCK_TYPES = {
       name2: 'Juliet Capulet',
       photo1: '',
       photo2: '',
-      description: 'We found love in a hopeless place, and now we pledge our lives to one another under the stars.',
+      description: 'We found love in an unexpected place, and now we pledge our lives to one another.',
       instagram1: 'romeo',
       instagram2: 'juliet',
       title1: 'Son of Mr. & Mrs. Montague',
@@ -130,7 +131,7 @@ export const BLOCK_TYPES = {
     defaults: {
       events: [
         { name: 'Akad Nikah', date: 'Saturday, August 30, 2026', time: '08:00 AM - 10:00 AM', venue: 'Grand Mosque', address: 'Jl. Masjid Agung No. 12', mapUrl: '' },
-        { name: 'Resepsi Pernikahan', date: 'Saturday, August 30, 2026', time: '11:00 AM - 02:00 PM', venue: 'Grand Ballroom', address: 'Jl. Pemuda Kencana No. 45', mapUrl: '' }
+        { name: 'Wedding Reception', date: 'Saturday, August 30, 2026', time: '11:00 AM - 02:00 PM', venue: 'Grand Ballroom', address: 'Jl. Pemuda Kencana No. 45', mapUrl: '' }
       ],
       mapDisplay: 'iframe',
       fullWidth: true,
@@ -141,12 +142,12 @@ export const BLOCK_TYPES = {
     category: 'event',
     icon: '📅',
     defaults: {
-      title: 'Wedding Agenda',
+      title: 'Event Schedule',
       layoutMode: 'timeline',
       items: [
         { time: '08:00', title: 'Akad Nikah', description: 'Sacred wedding vow ceremony', icon: '💍' },
-        { time: '11:00', title: 'Resepsi', description: 'Wedding reception guest greetings', icon: '🥂' },
-        { time: '18:00', title: 'Dinner Party', description: 'Intimate dinner party with family', icon: '🕯️' },
+        { time: '11:00', title: 'Resepsi', description: 'Wedding reception & guest greetings', icon: '🥂' },
+        { time: '18:00', title: 'Evening Soirée', description: 'Intimate dinner celebration with family & friends', icon: '🕯️' },
       ],
       fullWidth: true,
     }
@@ -157,8 +158,8 @@ export const BLOCK_TYPES = {
     icon: '⏰',
     defaults: {
       targetDate: '2026-08-30T08:00:00',
-      label: 'Menuju Hari Bahagia',
-      expiredMessage: '🎉 The day has come!',
+      label: 'Counting Down to the Day',
+      expiredMessage: 'The celebration has arrived!',
       showSeconds: true,
       style: 'boxed',
       fullWidth: true,
@@ -171,6 +172,7 @@ export const BLOCK_TYPES = {
     category: 'gallery',
     icon: '📸',
     defaults: {
+      title: '',
       images: [],
       layoutMode: 'masonry',
       columns: 2,
@@ -229,8 +231,8 @@ export const BLOCK_TYPES = {
     icon: '📖',
     defaults: {
       items: [
-        { date: '2020', title: 'First Meet', description: 'We locked eyes across a crowded room and knew instantly.', photo: '' },
-        { date: '2023', title: 'The Proposal', description: 'Underneath a canopy of stars, he asked and she said yes!', photo: '' }
+        { date: '2020', title: 'First Meet', description: 'We crossed paths in an unexpected moment and talked until evening.', photo: '' },
+        { date: '2023', title: 'The Proposal', description: 'Underneath a quiet twilight sky, we promised to walk forward together.', photo: '' }
       ],
       fullWidth: true,
     }
@@ -242,18 +244,18 @@ export const BLOCK_TYPES = {
     category: 'social',
     icon: '🔗',
     defaults: {
-      message: 'Anda diundang ke pernikahan Romeo & Juliet. Klik link berikut untuk melihat undangan digital kami.',
+      message: 'You are warmly invited to celebrate with Romeo & Juliet. Tap the link below to view our digital invitation.',
       platforms: ['whatsapp', 'facebook', 'twitter', 'telegram'],
       fullWidth: true,
     }
   },
   weddingAR: {
-    label: 'Wedding Filter / AR',
+    label: 'Event AR Filter',
     category: 'social',
     icon: '🤳',
     defaults: {
       title: 'Instagram AR Filter',
-      subtitle: 'Abadikan momen bahagia kami dengan menggunakan filter Instagram khusus pernikahan kami!',
+      subtitle: 'Capture and share moments from our celebration using our custom Instagram AR filter.',
       url: 'https://instagram.com/a/r/filter',
       qrCode: '',
       fullWidth: true,
@@ -266,13 +268,13 @@ export const BLOCK_TYPES = {
     category: 'interactive',
     icon: '✉️',
     defaults: {
-      title: 'Konfirmasi Kehadiran',
-      attendingLabel: 'Hadir',
-      declineLabel: 'Berhalangan',
+      title: 'RSVP',
+      attendingLabel: 'Joyfully Accepts',
+      declineLabel: 'Regretfully Declines',
       showGuestCount: true,
       showSessionChoice: true,
       showQrTicket: true,
-      confirmationMessage: 'Terima kasih atas konfirmasi kehadiran Anda! Simpan tiket QR di bawah ini untuk akses buku tamu.',
+      confirmationMessage: 'Thank you for confirming your attendance! Save your QR entry pass below for check-in at the venue.',
       fullWidth: true,
     }
   },
@@ -281,7 +283,7 @@ export const BLOCK_TYPES = {
     category: 'interactive',
     icon: '💬',
     defaults: {
-      title: 'Ucapan & Doa Restu',
+      title: 'Wishes & Blessings',
       displayMode: 'masonry',
       messages: [],
       fullWidth: true,
@@ -292,8 +294,8 @@ export const BLOCK_TYPES = {
     category: 'interactive',
     icon: '🎁',
     defaults: {
-      title: 'Tanda Kasih',
-      subtitle: 'Doa restu Anda adalah karunia terindah. Namun jika ingin mengirimkan tanda kasih, Anda dapat menyalurkannya melalui rekening atau alamat berikut:',
+      title: 'Digital Gift',
+      subtitle: 'Your presence and blessings mean the world to us. Should you wish to send a token of love, you may use the details below:',
       accounts: [
         { bankName: 'BCA', accountNumber: '8420918273', accountName: 'Romeo Montague', logo: '' }
       ],
@@ -311,7 +313,7 @@ export const BLOCK_TYPES = {
     icon: '📺',
     defaults: {
       title: 'Live Streaming',
-      description: 'Bergabunglah bersama kami secara virtual dalam merayakan momen suci ini.',
+      description: 'Join us virtually as we celebrate this sacred moment from afar.',
       provider: 'youtube', // 'youtube' | 'zoom' | 'custom'
       url: '',
       fullWidth: true,
@@ -390,7 +392,7 @@ export const BLOCK_TYPES = {
     defaults: {
       gateStyle: 'arch-gate', // 'arch-gate' | 'wax-seal' | 'editorial' | 'classic'
       monogram: '',
-      openButtonText: 'Buka Undangan',
+      openButtonText: 'Open Invitation',
       envelopeColor: '#344c2d',
       paperColor: '#fbf9f6',
       fullWidth: true,
@@ -401,7 +403,7 @@ export const BLOCK_TYPES = {
     category: 'decorative',
     icon: '❝',
     defaults: {
-      text: '"Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya."',
+      text: '"And among His signs is that He created for you spouses from among yourselves so that you may find tranquility in them, and He placed between you affection and mercy."',
       source: '— QS. Ar-Rum: 21',
       style: 'framed',
       color: '#565F34',
@@ -415,23 +417,23 @@ export const BLOCK_TYPES = {
     icon: '👔',
     defaults: {
       title: 'Dress Code',
-      description: 'Formal attire is appreciated. Earth tones and pastels are encouraged.',
+      description: 'Formal attire is appreciated. Earth tones and soft neutrals are encouraged.',
       note: '',
       swatches: [
-        { name: 'Sage', color: '#899c75' },
-        { name: 'Dusty Rose', color: '#d09ca7' },
-        { name: 'Cream', color: '#f4efea' },
+        { label: 'Sage', color: '#899c75' },
+        { label: 'Dusty Rose', color: '#d09ca7' },
+        { label: 'Cream', color: '#f4efea' },
       ],
       fullWidth: true,
     }
   },
   healthProtocol: {
-    label: 'Health Protocol',
+    label: 'Health & Safety',
     category: 'social',
     icon: '😷',
     defaults: {
-      title: 'Protokol Kesehatan',
-      description: 'Untuk kenyamanan bersama, mohon patuhi protokol kesehatan berikut:',
+      title: 'Health & Safety Guidelines',
+      description: 'For everyone’s comfort and wellbeing, please observe the following guidelines:',
       fullWidth: true,
     }
   },
@@ -441,7 +443,7 @@ export const BLOCK_TYPES = {
     icon: '🎟️',
     defaults: {
       title: 'QR E-Invitation',
-      subtitle: 'Tunjukkan QR code ini kepada penerima tamu di lokasi acara untuk check-in dan menukarkan suvenir.',
+      subtitle: 'Present this QR code to our reception host at the venue for check-in and souvenir redemption.',
       showGuestName: true,
       cardColor: '#FAF7F2',
       accentColor: '#652128',
